@@ -12,6 +12,7 @@
     "mcp:http": "tsx src/mcp/index.ts --http"
   },
   "dependencies": {
+    "@cloudbase/node-sdk": "^3.18.1",
     "cors": "^2.8.5",
     "cos-nodejs-sdk-v5": "^2.15.4",
     "dotenv": "^16.4.7",

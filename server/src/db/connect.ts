@@ -1,11 +1,18 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { env } from '../config/env.js';
-import { usePostgres, useMongo } from './driver.js';
+import { usePostgres, useMongo, useCloudBase } from './driver.js';
 
 let memoryServer: MongoMemoryServer | null = null;
 
 export async function connectDb(): Promise<void> {
+  if (useCloudBase()) {
+    const { getCloudBase } = await import('./cloudbase/init.js');
+    getCloudBase({ envId: env.cloudbaseEnvId, secretId: env.cloudbaseSecretId, secretKey: env.cloudbaseSecretKey });
+    console.log(`[db] CloudBase (TCB_ENV_ID=${env.cloudbaseEnvId})`);
+    return;
+  }
+
   if (usePostgres()) {
     const { initPostgres } = await import('./postgres/docModel.js');
     await initPostgres();

@@ -7,7 +7,7 @@ function envStr(key: string, fallback = ''): string {
 }
 
 export type AuthMode = 'dev' | 'production' | 'auto';
-export type DbDriverSetting = '' | 'mongo' | 'postgres';
+export type DbDriverSetting = '' | 'mongo' | 'postgres' | 'cloudbase';
 
 export const env = {
   port: Number(process.env.PORT) || 3001,
@@ -57,6 +57,11 @@ export const env = {
   xcdApiKey: envStr('XCD_API_KEY'),
   xcdWebhookSecret: envStr('XCD_WEBHOOK_SECRET'),
   xcdPlatform: envStr('XCD_PLATFORM', 'xiaoChen-dao'),
+
+  /** CloudBase 云开发（与 xiaoChen-dao 共用环境） */
+  cloudbaseEnvId: envStr('TCB_ENV_ID'),
+  cloudbaseSecretId: envStr('TCB_SECRET_ID'),
+  cloudbaseSecretKey: envStr('TCB_SECRET_KEY'),
 };
 
 export function hasTencentSms(): boolean {
