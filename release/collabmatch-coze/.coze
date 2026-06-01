@@ -1,0 +1,10 @@
+[project]
+requires = ["nodejs-24"]
+
+[deploy]
+build = ["bash", "-c", "cd server && npm ci && npm run build && npm prune --omit=dev"]
+run = ["bash", "-c", "cd server && exec node dist/index.js"]
+
+[dev]
+build = ["bash", "-c", "cd server && npm install && npm run build"]
+run = ["bash", "-c", "cd server && npm run dev"]

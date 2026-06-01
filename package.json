@@ -1,0 +1,9 @@
+{
+  "name": "collabmatch",
+  "version": "1.0.0",
+  "private": true,
+  "description": "CollabMatch 协作需求匹配",
+  "scripts": {
+    "pack:coze": "node scripts/pack-coze-release.mjs"
+  }
+}
