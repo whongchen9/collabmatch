@@ -69,6 +69,7 @@ const CREATABLE_FIELDS = [
   'title', 'status', 'visibility', 'domain', 'skills', 'keywords',
   'background', 'goal', 'timeline', 'outcome', 'desc', 'matchProgress',
   'fulfillmentType',
+  'sceneTag', 'projectStage', 'weeklyHours', 'collabMode', 'lookingFor', 'remoteOk',
 ] as const;
 
 router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
@@ -198,6 +199,7 @@ router.put('/:id', requireAuth, async (req: AuthRequest, res, next) => {
       'title', 'status', 'visibility', 'domain', 'skills', 'keywords',
       'background', 'goal', 'timeline', 'outcome', 'desc', 'matchProgress',
       'fulfillmentType',
+      'sceneTag', 'projectStage', 'weeklyHours', 'collabMode', 'lookingFor', 'remoteOk',
     ] as const;
     for (const f of fields) {
       if (req.body[f] !== undefined) reqDoc.set(f, req.body[f]);

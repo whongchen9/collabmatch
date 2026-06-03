@@ -1420,6 +1420,87 @@
   </div>
 </div>
 
+<!-- Skill Detail Modal -->
+<div class="modal-overlay" id="modal-skill-detail">
+  <div class="modal-box" style="max-width:440px;">
+    <div class="modal-header"><span class="modal-title" id="sd-title">技能详情</span><button class="modal-close" onclick="closeModal('modal-skill-detail')"></button></div>
+    <div style="padding:16px;" id="sd-body">
+      <div style="text-align:center;padding:30px;color:var(--text-muted);">加载中…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Requirement Wizard Modal (3-step) -->
+<div class="modal-overlay" id="modal-req-wizard">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-header">
+      <span class="modal-title" id="wiz-title">发布需求 · 第1步</span>
+      <button class="modal-close" onclick="closeModal('modal-req-wizard')"></button>
+    </div>
+    <div style="padding:16px;">
+      <!-- Step indicators -->
+      <div style="display:flex;gap:4px;margin-bottom:18px;">
+        <div class="wiz-step-dot active" id="wiz-dot-0" style="flex:1;height:3px;border-radius:2px;background:var(--accent-purple);"></div>
+        <div class="wiz-step-dot" id="wiz-dot-1" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
+        <div class="wiz-step-dot" id="wiz-dot-2" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
+      </div>
+
+      <!-- Step 1: What's the project? -->
+      <div id="wiz-step-0">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">项目是什么？</div>
+        <div style="display:flex;gap:8px;margin-bottom:12px;">
+          <label class="wiz-chip active" onclick="wizPickScene(this,'side-project')" style="flex:1;text-align:center;padding:8px;border:1px solid var(--accent-purple);border-radius:8px;cursor:pointer;font-size:12px;">Side Project 联创</label>
+          <label class="wiz-chip" onclick="wizPickScene(this,'opensource')" style="flex:1;text-align:center;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;">开源协作</label>
+        </div>
+        <textarea id="wiz-desc" rows="3" placeholder="简述你的项目想法…" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;margin-bottom:12px;"></textarea>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">项目阶段</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+          <span class="wiz-chip active" onclick="wizPickStage(this,'idea')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;">💡 Idea</span>
+          <span class="wiz-chip" onclick="wizPickStage(this,'prototype')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">🧪 Prototype</span>
+          <span class="wiz-chip" onclick="wizPickStage(this,'mvp')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">🚀 MVP</span>
+          <span class="wiz-chip" onclick="wizPickStage(this,'growth')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">📈 Growth</span>
+        </div>
+      </div>
+
+      <!-- Step 2: Who do you need? -->
+      <div id="wiz-step-1" style="display:none;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">缺什么人？（可多选）</div>
+        <div id="wiz-roles" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+      </div>
+
+      <!-- Step 3: How to collaborate? -->
+      <div id="wiz-step-2" style="display:none;">
+        <div style="font-size:14px;font-weight:600;margin-bottom:12px;">怎么合作？</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">合作方式</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <span class="wiz-chip active" onclick="wizPickCollab(this,'联创')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;">🤝 联创</span>
+          <span class="wiz-chip" onclick="wizPickCollab(this,'有偿')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">💰 有偿</span>
+          <span class="wiz-chip" onclick="wizPickCollab(this,'股权/分成面议')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">📊 股权/分成</span>
+          <span class="wiz-chip" onclick="wizPickCollab(this,'开源贡献')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">🌐 开源贡献</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">每周期望投入</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <span class="wiz-chip" onclick="wizPickHours(this,'≤5h')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">≤5h</span>
+          <span class="wiz-chip active" onclick="wizPickHours(this,'5-10h')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;">5-10h</span>
+          <span class="wiz-chip" onclick="wizPickHours(this,'10-20h')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">10-20h</span>
+          <span class="wiz-chip" onclick="wizPickHours(this,'20h+')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">20h+</span>
+        </div>
+        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
+          <input type="checkbox" id="wiz-remote" checked style="accent-color:var(--accent-purple);"> 接受远程协作
+        </label>
+      </div>
+
+      <!-- Navigation buttons -->
+      <div style="display:flex;justify-content:space-between;margin-top:20px;">
+        <button class="btn btn-ghost" id="wiz-prev" onclick="wizPrev()" style="display:none;">上一步</button>
+        <div style="margin-left:auto;display:flex;gap:8px;">
+          <button class="btn btn-primary" id="wiz-next" onclick="wizNext()">下一步</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Full-screen Market Modal -->
 <div class="modal-overlay" id="modal-market-full">
   <div class="modal-box" style="max-width:600px;max-height:85vh;">
@@ -2342,12 +2423,107 @@ function createSkillViaChat() {
 }
 
 function goPublishRequirement() {
-  newConversation();
-  switchSection('home', document.querySelector('[data-section=home]'));
-  setTimeout(() => {
-    const input = document.getElementById('chat-input');
-    if (input) input.focus();
-  }, 150);
+  wizStep = 0; wizData = { sceneTag:'side-project', projectStage:'idea', weeklyHours:'5-10h', collabMode:'联创', lookingFor:[], remoteOk:true, desc:'' };
+  wizShowStep(0);
+  openModal('modal-req-wizard');
+}
+
+/* ---- Wizard state & helpers ---- */
+let wizStep = 0;
+let wizData = {};
+const WIZ_ROLES = ['前端','后端','全栈','UI','UX','产品','运营','增长','移动端'];
+
+function wizShowStep(n) {
+  wizStep = n;
+  for (let i = 0; i < 3; i++) {
+    const el = document.getElementById('wiz-step-' + i);
+    if (el) el.style.display = i === n ? '' : 'none';
+    const dot = document.getElementById('wiz-dot-' + i);
+    if (dot) dot.style.background = i <= n ? 'var(--accent-purple)' : 'var(--bg-tertiary)';
+  }
+  document.getElementById('wiz-title').textContent = ['发布需求 · 第1步','选择协作者 · 第2步','合作方式 · 第3步'][n];
+  document.getElementById('wiz-prev').style.display = n === 0 ? 'none' : '';
+  document.getElementById('wiz-next').textContent = n === 2 ? '生成草稿' : '下一步';
+  if (n === 1) wizRenderRoles();
+}
+
+function wizPickScene(el, v) {
+  wizData.sceneTag = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
+  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+}
+function wizPickStage(el, v) {
+  wizData.projectStage = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
+  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+}
+function wizPickCollab(el, v) {
+  wizData.collabMode = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
+  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+}
+function wizPickHours(el, v) {
+  wizData.weeklyHours = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
+  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+}
+
+function wizRenderRoles() {
+  const c = document.getElementById('wiz-roles');
+  if (!c) return;
+  c.innerHTML = WIZ_ROLES.map(r => {
+    const sel = wizData.lookingFor.includes(r);
+    return `<span class="wiz-chip ${sel?'active':''}" onclick="wizToggleRole(this,'${r}')" style="padding:6px 14px;border:1px solid ${sel?'var(--accent-purple)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;">${r}</span>`;
+  }).join('');
+}
+function wizToggleRole(el, role) {
+  const arr = wizData.lookingFor;
+  const i = arr.indexOf(role);
+  if (i >= 0) { arr.splice(i, 1); el.classList.remove('active'); el.style.borderColor = 'var(--border)'; }
+  else { arr.push(role); el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)'; }
+}
+
+function wizPrev() { if (wizStep > 0) wizShowStep(wizStep - 1); }
+
+async function wizNext() {
+  if (wizStep === 0) {
+    wizData.desc = (document.getElementById('wiz-desc')?.value || '').trim();
+    if (!wizData.desc) { showToast('请简述你的项目想法', 'warning'); return; }
+    wizShowStep(1); return;
+  }
+  if (wizStep === 1) {
+    if (!wizData.lookingFor.length) { showToast('请至少选择一个角色', 'warning'); return; }
+    wizShowStep(2); return;
+  }
+  // Step 3: submit
+  wizData.remoteOk = document.getElementById('wiz-remote')?.checked ?? true;
+  const btn = document.getElementById('wiz-next');
+  btn.disabled = true; btn.textContent = '生成中…';
+  try {
+    const req = await CollabApi.createRequirement({
+      title: wizData.desc.slice(0, 60),
+      desc: wizData.desc,
+      domain: 'tech',
+      sceneTag: wizData.sceneTag,
+      projectStage: wizData.projectStage,
+      weeklyHours: wizData.weeklyHours,
+      collabMode: wizData.collabMode,
+      lookingFor: wizData.lookingFor,
+      remoteOk: wizData.remoteOk,
+      status: 'draft',
+      skills: wizData.lookingFor,
+    });
+    closeModal('modal-req-wizard');
+    REQUIREMENTS.push(req);
+    showToast('草稿已创建，可继续编辑后发布', 'success');
+    switchSection('home', document.querySelector('[data-section=home]'));
+    if (typeof renderConvList === 'function') renderConvList();
+    openReqDetail(req.id);
+  } catch(e) {
+    showToast(e.message || '创建失败', 'warning');
+  } finally {
+    btn.disabled = false; btn.textContent = '生成草稿';
+  }
 }
 
 function switchSideTab(tab, el) {
@@ -2592,6 +2768,64 @@ function renderSkillCards(list) {
   }).join('');
 }
 
+async function showSkillDetail(skillId) {
+  const local = SKILLS[skillId];
+  const body = document.getElementById('sd-body');
+  const title = document.getElementById('sd-title');
+  // Show local data immediately
+  if (local) {
+    title.textContent = local.name;
+    const installed = installedSkills.has(skillId);
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+        <div style="font-size:36px;line-height:1;">${local.icon}</div>
+        <div>
+          <div style="font-size:16px;font-weight:600;">${local.name}</div>
+          <div style="font-size:12px;color:var(--text-muted);">${local.author || '未知'} ${local.version ? '· v' + local.version : ''}</div>
+        </div>
+      </div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">${local.desktop || '暂无详细描述'}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+        ${(local.tags||[]).map(t => `<span class="skill-page-card-tag">${t}</span>`).join('')}
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+        <span>${(local.installs||0).toLocaleString()} 次安装</span>
+        <span>${local.category === 'official' ? '官方' : '社区'}</span>
+      </div>
+      <button class="btn ${installed?'btn-secondary':'btn-primary'}" style="width:100%;" onclick="toggleSkill('${skillId}',this);showSkillDetail('${skillId}');">${installed?'✓ 已安装':'安装技能'}</button>
+    `;
+  } else {
+    body.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">加载中…</div>';
+  }
+  openModal('modal-skill-detail');
+  // Try fetching enriched detail from API
+  try {
+    const detail = await CollabApi.fetchSkillDetail(skillId);
+    if (detail && document.getElementById('modal-skill-detail')?.classList.contains('open')) {
+      const installed = installedSkills.has(skillId);
+      title.textContent = detail.name || (local && local.name) || '技能详情';
+      body.innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:14px;">
+          <div style="font-size:36px;line-height:1;">${detail.icon || (local && local.icon) || '⚡'}</div>
+          <div>
+            <div style="font-size:16px;font-weight:600;">${detail.name || '技能'}</div>
+            <div style="font-size:12px;color:var(--text-muted);">${detail.author || '未知'} ${detail.version ? '· v' + detail.version : ''}</div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:14px;line-height:1.6;">${detail.description || detail.desktop || '暂无详细描述'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          ${(detail.tags||local&&local.tags||[]).map(t => `<span class="skill-page-card-tag">${t}</span>`).join('')}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--text-muted);margin-bottom:16px;">
+          <span>${(detail.installs||local&&local.installs||0).toLocaleString()} 次安装</span>
+          <span>${detail.category === 'official' || local&&local.category === 'official' ? '官方' : '社区'}</span>
+        </div>
+        <button class="btn ${installed?'btn-secondary':'btn-primary'}" style="width:100%;" onclick="toggleSkill('${skillId}',this);showSkillDetail('${skillId}');">${installed?'✓ 已安装':'安装技能'}</button>
+      `;
+    }
+  } catch(e) { /* local data already shown */ }
+}
+
 async function deleteCustomSkill(skillId) {
   if (!confirm('确认删除这个自定义技能？')) return;
   try {
@@ -2627,12 +2861,18 @@ function installFeaturedSkill(skillId) {
 function renderWorkflowPage() {
   const grid = document.getElementById('wf-page-list');
   if (!grid) return;
-  grid.innerHTML = getWorkflows().map(w => `<div class="wf-card">
+  grid.innerHTML = getWorkflows().map(w => {
+    const isCustom = w.id && w.id.startsWith('uwf_');
+    return `<div class="wf-card">
     <div class="wf-card-name">${w.name}</div><div class="wf-card-desc">${w.desc}</div>
     <div class="wf-steps">${w.steps.map((s,i)=>`${i>0?'<span class="wf-step-arrow"></span>':''}<span class="wf-step">${s.icon} ${s.title}</span>`).join('')}</div>
-    <button class="wf-run-btn" onclick="runWorkflow('${w.id}')">▶ 执行</button>
+    <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
+      <button class="wf-run-btn" onclick="runWorkflow('${w.id}')">▶ 执行</button>
+      ${isCustom ? `<button class="btn btn-ghost btn-sm" onclick="deleteCustomWorkflow('${w.id}')" style="color:var(--danger);font-size:11px;">🗑 删除</button>` : ''}
+    </div>
     <div style="font-size:11px;color:var(--accent-purple);margin-top:8px;" id="wf-status-${w.id}"></div>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 
 function showCustomSkillModal() { openModal('modal-skill-create'); }
@@ -2696,6 +2936,19 @@ async function createCustomWorkflow(){
   } catch (e) {
     showToast(e.message || '创建工作流失败', 'warning');
   }
+}
+
+async function deleteCustomWorkflow(workflowId) {
+  if (!confirm('确认删除这个自定义工作流？')) return;
+  try {
+    await CollabApi.deleteUserWorkflow(workflowId);
+    if (workflowsCache) {
+      workflowsCache = workflowsCache.filter(w => w.id !== workflowId);
+    }
+    renderWorkflowPage();
+    renderWorkflows();
+    showToast('工作流已删除', 'info');
+  } catch(e) { showToast(e.message || '删除失败', 'warning'); }
 }
 
 // ============================================================
@@ -3218,7 +3471,7 @@ function renderConvList() {
       const d = DOMAINS[r.domain] || DOMAINS.tech;
       const visBadge = r.visibility === 'match_only' ? '<span class="vis-badge vis-badge-private">🔒</span>' :
                        r.visibility === 'invite_only' ? '<span class="vis-badge vis-badge-invite">🔐</span>' : '';
-      html += `<div class="mini-req-card" onclick="openReqDetail('${r.id}')">
+      html += `<div class="mini-req-card" onclick="${r.status==='draft' ? `showToast('请先发布后再匹配/招募','info');` : ''}openReqDetail('${r.id}')">
         <div class="mini-req-card-title">${escapeHtml(r.title)}${visBadge}</div>
         <div class="mini-req-card-sub">${d.icon} ${d.name.split(' ')[1]} · ${r.status==='draft'?'📝 草稿':r.status==='open'?'🌟 已发布':'✅ 已匹配'} · ${r.time}</div>
         <div class="mini-req-card-tags">${renderBadges(r.skills, 3)}</div>
@@ -3475,6 +3728,9 @@ async function upgradeVisibility(reqId) {
     showToast(`✅ 已升级为「${label}」`, 'success');
     renderConvList();
     renderSquare();
+    if (document.getElementById('modal-req-detail')?.classList.contains('open')) {
+      openReqDetail(reqId);
+    }
   } catch (e) {
     showToast(e.message || '更新失败', 'warning');
   }
@@ -3542,6 +3798,18 @@ function openReqDetail(reqId) {
         <p>${escapeHtml(req.outcome)}</p>
       </div>
     </div>
+    ${req.sceneTag || req.projectStage || req.weeklyHours || req.collabMode ? `
+    <div style="margin:12px 0 6px;font-size:12px;color:var(--text-muted);">协作信息</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
+      ${req.sceneTag ? `<span class="badge badge-purple">${req.sceneTag === 'opensource' ? '🌐 开源协作' : '🚀 Side Project'}</span>` : ''}
+      ${req.projectStage ? `<span class="badge badge-blue">${({idea:'💡 Idea',prototype:'🧪 Prototype',mvp:'🚀 MVP',growth:'📈 Growth'})[req.projectStage] || req.projectStage}</span>` : ''}
+      ${req.weeklyHours ? `<span class="badge badge-gray">⏱ ${req.weeklyHours}/周</span>` : ''}
+      ${req.collabMode ? `<span class="badge badge-green">🤝 ${req.collabMode}</span>` : ''}
+      ${req.remoteOk ? `<span class="badge badge-gray">🌍 远程OK</span>` : ''}
+    </div>` : ''}
+    ${(req.lookingFor && req.lookingFor.length) ? `
+    <div style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">招募角色</div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">${req.lookingFor.map(r => `<span class="badge badge-purple">${r}</span>`).join('')}</div>` : ''}
     <div style="margin:12px 0 6px;font-size:12px;color:var(--text-muted);">所需技能</div>
     <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;">${renderBadges(req.skills)}</div>
     <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">${escapeHtml(req.desc)}</div>
@@ -3612,7 +3880,7 @@ function renderMatchSection() {
       <div class="icon">📝</div>
       <h3>暂无需求</h3>
       <p>先去 AI 对话页面生成一条需求</p>
-      <button class="btn btn-primary btn-sm" onclick="newConversation();switchSection('home', document.querySelector('[data-section=home]'))">去生成需求</button>
+      <button class="btn btn-primary btn-sm" onclick="newConversation();switchSection('home', document.querySelector('[data-section=home]'));setTimeout(()=>{const el=document.getElementById('chat-input');if(el)el.focus();},200)">去生成需求</button>
     </div>`;
     return;
   }
@@ -3924,7 +4192,8 @@ async function confirmInvite(uid, reqId) {
 function renderGroupsList() {
   const container = document.getElementById('group-list-items');
   container.innerHTML = GROUPS.map(g => {
-    const lastMsg = g.messages[g.messages.length - 1];
+    const msgs = g.messages||[];
+    const lastMsg = msgs[msgs.length - 1];
     return `
       <div class="group-list-item ${activeGroupId === g.id ? 'active' : ''}" id="group-item-${g.id}" onclick="openGroup('${g.id}')">
         <div class="group-list-avatar" style="background:${g.avatarColor};">${g.emoji}</div>
@@ -3957,15 +4226,15 @@ function openGroup(gid) {
   document.getElementById('active-group-avatar').textContent = group.emoji;
   document.getElementById('active-group-avatar').style.background = group.avatarColor;
   document.getElementById('active-group-name').textContent = group.name;
-  document.getElementById('active-group-desc').textContent = `${group.members.length} 位成员 · ${group.desc.slice(0,40)}`;
+  document.getElementById('active-group-desc').textContent = `${(group.members||[]).length} 位成员 · ${(group.desc||'').slice(0,40)}`;
 
   // Render messages
   renderGroupMessages(group, false);
 
   // Render members
   const membersCount = document.getElementById('members-count');
-  membersCount.textContent = `(${group.members.length})`;
-  document.getElementById('active-members-list').innerHTML = group.members.map(m => `
+  membersCount.textContent = `(${(group.members||[]).length})`;
+  document.getElementById('active-members-list').innerHTML = (group.members||[]).map(m => `
     <div class="member-item">
       <div class="avatar avatar-sm" style="background:${m.avatarColor || 'var(--accent-gradient)'};">${m.avatar}</div>
       <div>
@@ -3979,7 +4248,7 @@ function openGroup(gid) {
 
 function renderGroupMessages(group, scrollEnd = false) {
   const container = document.getElementById('active-group-messages');
-  container.innerHTML = group.messages.map(msg => renderGroupMessage(msg)).join('');
+  container.innerHTML = (group.messages||[]).map(msg => renderGroupMessage(msg)).join('');
   if (scrollEnd) requestAnimationFrame(() => scrollToBottom(container));
 }
 
@@ -4158,7 +4427,11 @@ function renderSquareCard(r) {
       </div>
       <div class="square-card-tags">${renderBadges(r.skills)}</div>
       <div class="square-card-footer">
-        <div style="font-size:11.5px;color:var(--text-muted);">📅 ${r.timeline}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:11.5px;color:var(--text-muted);">
+          <span>📅 ${r.timeline}</span>
+          ${r.weeklyHours ? `<span style="color:var(--accent-purple);">⏱ ${r.weeklyHours}/周</span>` : ''}
+          ${r.collabMode ? `<span style="color:var(--accent-green,#34d399);">🤝 ${r.collabMode}</span>` : ''}
+        </div>
         ${applyBtn}
       </div>
     </div>`;
@@ -4269,6 +4542,25 @@ function renderProfile() {
       <div class="profile-field">
         <label>自我介绍</label>
         <textarea id="input-bio">${escapeHtml(currentUser.bio)}</textarea>
+      </div>
+      <div class="profile-field">
+        <label>可投入时间（每周）</label>
+        <select id="input-weekly-hours" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
+          <option value="" ${!currentUser.weeklyHours?'selected':''}>未设置</option>
+          <option value="≤5h" ${currentUser.weeklyHours==='≤5h'?'selected':''}>≤5小时</option>
+          <option value="5-10h" ${currentUser.weeklyHours==='5-10h'?'selected':''}>5-10小时</option>
+          <option value="10-20h" ${currentUser.weeklyHours==='10-20h'?'selected':''}>10-20小时</option>
+          <option value="20h+" ${currentUser.weeklyHours==='20h+'?'selected':''}>20小时以上</option>
+        </select>
+      </div>
+      <div class="profile-field">
+        <label>联创意向</label>
+        <select id="input-collab-intent" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
+          <option value="" ${!currentUser.collabIntent?'selected':''}>未设置</option>
+          <option value="联创" ${currentUser.collabIntent==='联创'?'selected':''}>联创（共同创业）</option>
+          <option value="有偿副业" ${currentUser.collabIntent==='有偿副业'?'selected':''}>有偿副业</option>
+          <option value="开源贡献" ${currentUser.collabIntent==='开源贡献'?'selected':''}>开源贡献</option>
+        </select>
       </div>
     </div>
 
@@ -4520,8 +4812,10 @@ async function saveProfile() {
   const name = document.getElementById('input-name')?.value?.trim();
   const pos = document.getElementById('input-position')?.value?.trim();
   const bio = document.getElementById('input-bio')?.value?.trim();
+  const weeklyHours = document.getElementById('input-weekly-hours')?.value || '';
+  const collabIntent = document.getElementById('input-collab-intent')?.value || '';
   try {
-    currentUser = await CollabApi.saveUserProfile({ name, position: pos, bio });
+    currentUser = await CollabApi.saveUserProfile({ name, position: pos, bio, weeklyHours, collabIntent });
     await CollabApi.saveUserSkills(currentUser.skills);
     currentUser = await CollabApi.saveUserResources(currentUser.resources);
     syncSidebarUser();
@@ -4603,6 +4897,7 @@ async function deleteMyRequirement(reqId) {
     closeModal('modal-req-detail');
     renderSquare();
     renderMatchSection();
+    renderConvList();
     showToast('需求已删除', 'success');
   } catch (e) {
     showToast(e.message || '删除失败', 'warning');

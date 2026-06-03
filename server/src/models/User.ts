@@ -39,6 +39,10 @@ export interface IUser extends Document {
   projects: number;
   resources: IUserResource[];
   portfolio: IPortfolioItem[];
+  /** Phase 2: Side Project user fields */
+  weeklyHours: string;
+  collabIntent: string;
+  interestedStages: string[];
   lastSeenAt?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -79,6 +83,10 @@ const userSchema = new Schema<IUser>(
       ],
       default: [],
     },
+    /** Phase 2: Side Project user fields */
+    weeklyHours: { type: String, enum: ['≤5h', '5-10h', '10-20h', '20h+', ''], default: '' },
+    collabIntent: { type: String, enum: ['联创', '有偿副业', '开源贡献', ''], default: '' },
+    interestedStages: { type: [String], default: [] },
   },
   { timestamps: true },
 );

@@ -33,6 +33,13 @@ export interface IRequirement extends Document {
   externalSyncStatus: ExternalSyncStatus;
   externalSyncError: string;
   externalSyncedAt?: Date;
+  /** Phase 2: Side Project fields */
+  sceneTag: string;
+  projectStage: string;
+  weeklyHours: string;
+  collabMode: string;
+  lookingFor: string[];
+  remoteOk: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +71,13 @@ const requirementSchema = new Schema<IRequirement>(
     },
     externalSyncError: { type: String, default: '' },
     externalSyncedAt: { type: Date },
+    /** Phase 2: Side Project fields */
+    sceneTag: { type: String, enum: ['side-project', 'opensource'], default: 'side-project' },
+    projectStage: { type: String, enum: ['idea', 'prototype', 'mvp', 'growth'], default: 'idea' },
+    weeklyHours: { type: String, enum: ['≤5h', '5-10h', '10-20h', '20h+'], default: '5-10h' },
+    collabMode: { type: String, enum: ['联创', '有偿', '股权/分成面议', '开源贡献'], default: '联创' },
+    lookingFor: { type: [String], default: [] },
+    remoteOk: { type: Boolean, default: true },
   },
   { timestamps: true },
 );

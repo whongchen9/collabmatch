@@ -96,6 +96,8 @@
     return {
       ...u,
       portfolio: u.portfolio || [],
+      resources: u.resources || [],
+      skills: u.skills || [],
       avatar: u.avatar || (u.name && u.name[0]) || '?',
       avatarColor: u.avatarColor || 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
     };
@@ -245,32 +247,42 @@
       const err = await res.json().catch(() => ({}));
       throw new Error(err.error || `AI 请求失败 ${res.status}`);
     }
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = '';
-    let result = { message: null, conversation: null, userMessage: null };
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
-      for (const line of lines) {
-        if (!line.startsWith('data: ')) continue;
-        try {
-          const data = JSON.parse(line.slice(6));
-          if (data.chunk && onChunk) onChunk(data.chunk);
-          if (data.done) {
-            result.message = data.message;
-            result.conversation = data.conversation;
-            result.userMessage = data.userMessage;
-          }
-        } catch {
-          /* ignore */
+    const ct = res.headers.get('content-type') || '';
+    // SSE streaming (Express)
+    if (ct.includes('text/event-stream')) {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let result = { message: null, conversation: null, userMessage: null };
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const data = JSON.parse(line.slice(6));
+            if (data.chunk && onChunk) onChunk(data.chunk);
+            if (data.done) {
+              result.message = data.message;
+              result.conversation = data.conversation;
+              result.userMessage = data.userMessage;
+            }
+          } catch { /* ignore */ }
         }
       }
+      return result;
     }
-    return result;
+    // Plain JSON (cloud function)
+    const data = await res.json();
+    if (onChunk) onChunk(data.message?.content || '');
+    return {
+      message: data.message || null,
+      conversation: data.conversation || null,
+      userMessage: data.userMessage || null,
+    };
   }
 
   async function runSkill(conversationId, skillId, context) {
@@ -295,6 +307,11 @@
 
   async function publishRequirement(id, visibility) {
     const data = await api(`/requirements/${id}/publish`, { method: 'PUT', body: { visibility } });
+    return data.requirement;
+  }
+
+  async function createRequirement(body) {
+    const data = await api('/requirements', { method: 'POST', body });
     return data.requirement;
   }
 
@@ -502,6 +519,7 @@
     matchForward,
     matchReverse,
     publishRequirement,
+    createRequirement,
     updateRequirement,
     applyRequirement,
     saveUserProfile,
