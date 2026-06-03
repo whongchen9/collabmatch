@@ -1,3 +1,4 @@
+// @ts-nocheck -- CloudBase SDK 类型兼容性，仅在 cloudbase 驱动下使用
 /**
  * CloudBase SDK 初始化（与 xiaoChen-dao 共用同一个环境）
  */

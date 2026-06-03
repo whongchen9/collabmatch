@@ -1,5 +1,4 @@
 import { getDomain, type DomainKey } from '../config/domains.js';
-import { asOne } from '../db/helpers.js';
 import type { IUser } from '../models/User.js';
 import { Requirement } from '../models/Requirement.js';
 import type { IRequirement } from '../models/Requirement.js';
@@ -44,7 +43,7 @@ export function shouldGenerateRequirement(userText: string): boolean {
   );
 }
 
-/** LLM 未返回 REQ 标记时的启发式需求生成 */
+/** LLM 未返回 REQ 标记时的启发式需求生成（仅生成数据，不持久化） */
 export async function maybeGenerateRequirementFromText(
   userText: string,
   domainKey: DomainKey,
@@ -53,6 +52,34 @@ export async function maybeGenerateRequirementFromText(
   if (!shouldGenerateRequirement(userText)) return undefined;
   const result = await mockAiChat(userText, domainKey, user);
   return result.reqCard;
+}
+
+/** 生成需求数据对象（不持久化到数据库），调用方自行决定是否保存 */
+function buildMockRequirement(
+  userText: string,
+  domainKey: DomainKey,
+  user: IUser,
+): IRequirement {
+  const domain = getDomain(domainKey);
+  const reqTitle = extractDomainTitle(userText);
+  const skills = extractDomainSkills(userText, domainKey);
+  const domainTag = domain.name.split(' ')[1] || domain.name;
+
+  return new Requirement({
+    title: reqTitle,
+    author: user._id,
+    status: 'draft',
+    visibility: 'public',
+    domain: domainKey,
+    skills,
+    keywords: skills,
+    background: `用户描述：${userText.slice(0, 100)}${userText.length > 100 ? '...' : ''}`,
+    goal: `在「${domainTag}」领域满足上述需求，实现核心目标。`,
+    timeline: '3-6 个月',
+    outcome: '完成阶段性目标并找到核心协作伙伴',
+    desc: userText.slice(0, 120) + (userText.length > 120 ? '...' : ''),
+    matchProgress: 0,
+  }) as IRequirement;
 }
 
 export async function mockAiChat(
@@ -76,32 +103,12 @@ export async function mockAiChat(
   }
 
   if (shouldGenReq) {
-    const reqTitle = extractDomainTitle(userText);
-    const skills = extractDomainSkills(userText, domainKey);
-    const domainTag = domain.name.split(' ')[1] || domain.name;
-
-    const req = asOne(
-      await Requirement.create({
-      title: reqTitle,
-      author: user._id,
-      status: 'draft',
-      visibility: 'public',
-      domain: domainKey,
-      skills,
-      keywords: skills,
-      background: `用户描述：${userText.slice(0, 100)}${userText.length > 100 ? '...' : ''}`,
-      goal: `在「${domainTag}」领域满足上述需求，实现核心目标。`,
-      timeline: '3-6 个月',
-      outcome: '完成阶段性目标并找到核心协作伙伴',
-      desc: userText.slice(0, 120) + (userText.length > 120 ? '...' : ''),
-      matchProgress: 0,
-      }),
-    );
+    const req = buildMockRequirement(userText, domainKey, user);
 
     return {
       content: `已为你在「${domain.name}」领域生成结构化需求文档 ✨\n\n**需求已整理完成**，你可以：\n• 点击下方卡片查看完整详情\n• 发布到需求广场\n• 进入智能匹配查看推荐${imageNote}`,
       reqCard: req,
-      renameTitle: reqTitle.slice(0, 20),
+      renameTitle: req.title.slice(0, 20),
     };
   }
 

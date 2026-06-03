@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose';
+import type { AnyObjectId } from '../db/objectId.js';
 import { Requirement } from '../models/Requirement.js';
 import { User } from '../models/User.js';
 import type { IUser } from '../models/User.js';
@@ -22,7 +22,7 @@ export function normalizeWorkflowStep(step: WorkflowStep): WorkflowStep & { acti
 
 async function findLatestRequirementId(
   conversationId: string,
-  userId: Types.ObjectId,
+  userId: AnyObjectId,
 ): Promise<string | null> {
   const { Conversation } = await import('../models/Conversation.js');
   const conv = await Conversation.findOne({ _id: conversationId, userId });
@@ -38,7 +38,7 @@ async function findLatestRequirementId(
 
 async function appendAiToConversation(
   conversationId: string,
-  userId: Types.ObjectId,
+  userId: AnyObjectId,
   result: SkillRunResult,
 ): Promise<void> {
   const { Conversation } = await import('../models/Conversation.js');

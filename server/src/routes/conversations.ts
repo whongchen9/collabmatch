@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import { asOne } from '../db/helpers.js';
 import { Conversation } from '../models/Conversation.js';
+import { FileAsset } from '../models/FileAsset.js';
 import { Requirement } from '../models/Requirement.js';
 import { toConversationJson, toRequirementJson, populateReqAuthor } from '../utils/serialize.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { getDomain } from '../config/domains.js';
 import { formatChatTime } from '../utils/serialize.js';
 import { saveFileAsset } from '../services/fileStorage.js';
+import { validate } from '../middleware/validate.js';
+
+/** 单条对话最大消息数，超出则保留最新 N 条 */
+const MAX_MESSAGES = 500;
 
 const router = Router();
 
@@ -31,7 +36,9 @@ router.get('/', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
-router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
+router.post('/', requireAuth, validate({
+  domain: { type: 'string' },
+}), async (req: AuthRequest, res, next) => {
   try {
     const domain = (req.body.domain as string) || req.user!.domain || 'tech';
     const d = getDomain(domain);
@@ -68,7 +75,13 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res, next) => {
 
 router.delete('/:id', requireAuth, async (req: AuthRequest, res, next) => {
   try {
-    await Conversation.deleteOne({ _id: req.params.id, userId: req.user!._id });
+    const conv = await Conversation.findOneAndDelete({ _id: req.params.id, userId: req.user!._id });
+    if (!conv) {
+      res.status(404).json({ error: '对话不存在' });
+      return;
+    }
+    // M-05: Clean up associated file assets
+    await FileAsset.deleteMany({ conversationId: conv._id });
     res.json({ success: true });
   } catch (e) {
     next(e);
@@ -122,6 +135,9 @@ router.post('/:id/attachments', requireAuth, async (req: AuthRequest, res, next)
       content: `📎 已发送文件：${fileName}\n${saved.url}`,
       time: new Date(),
     });
+    if (conv.messages.length > MAX_MESSAGES) {
+      conv.messages = conv.messages.slice(-MAX_MESSAGES);
+    }
     await conv.save();
     res.status(201).json({
       conversation: await enrichConversation(conv),
@@ -164,6 +180,9 @@ router.post('/:id/forward', requireAuth, async (req: AuthRequest, res, next) => 
 
     const forwarded = `↗️ 转发：\n${msg.content}`;
     target.messages.push({ role: 'user', content: forwarded, time: new Date() });
+    if (target.messages.length > MAX_MESSAGES) {
+      target.messages = target.messages.slice(-MAX_MESSAGES);
+    }
     await target.save();
 
     res.json({

@@ -12,7 +12,9 @@ export function getPgPool(): pg.Pool {
     }
     pool = new Pool({
       connectionString: env.databaseUrl,
-      ssl: env.pgSsl ? { rejectUnauthorized: false } : undefined,
+      ssl: env.pgSsl
+        ? { rejectUnauthorized: env.pgSslRejectUnauthorized }
+        : undefined,
     });
   }
   return pool;

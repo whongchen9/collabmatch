@@ -21,7 +21,7 @@ export async function requireAuth(req: AuthRequest, res: Response, next: NextFun
     }
     req.user = user;
     user.lastSeenAt = new Date();
-    void user.save();
+    user.save().catch((err) => console.error('[auth] 更新 lastSeenAt 失败:', err));
     next();
   } catch {
     res.status(401).json({ error: '登录已过期' });

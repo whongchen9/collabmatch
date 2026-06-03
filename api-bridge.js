@@ -212,10 +212,13 @@
   }
 
   async function loadRequirements() {
-    const [pub, mine] = await Promise.all([
-      api('/requirements', { auth: false }).catch(() => []),
+    const [pubRaw, mineRaw] = await Promise.all([
+      api('/requirements', { auth: false }).catch(() => ({ items: [] })),
       api('/requirements/mine'),
     ]);
+    // Handle paginated response format { items, total, ... }
+    const pub = Array.isArray(pubRaw) ? pubRaw : (pubRaw.items || []);
+    const mine = Array.isArray(mineRaw) ? mineRaw : (mineRaw.items || []);
     return mergeRequirements([pub, mine]);
   }
 
@@ -226,15 +229,19 @@
     if (filters.weeklyHours) params.set('weeklyHours', filters.weeklyHours);
     if (filters.lookingFor) params.set('lookingFor', filters.lookingFor);
     const qs = params.toString();
-    return api(`/requirements${qs ? '?' + qs : ''}`, { auth: false }).catch(() => []);
+    // M-02: Handle paginated response — extract items array
+    const result = await api(`/requirements${qs ? '?' + qs : ''}`, { auth: false }).catch(() => ({ items: [] }));
+    return Array.isArray(result) ? result : (result.items || []);
   }
 
   async function loadConversations() {
-    return api('/conversations');
+    const data = await api('/conversations');
+    return Array.isArray(data) ? data : (data.items || []);
   }
 
   async function loadGroups() {
-    return api('/groups');
+    const data = await api('/groups');
+    return Array.isArray(data) ? data : (data.items || []);
   }
 
   async function createConversation(domain) {
@@ -242,9 +249,10 @@
     return data.conversation;
   }
 
-  async function streamAiChat(conversationId, message, onChunk, fileIds) {
+  async function streamAiChat(conversationId, message, onChunk, fileIds, domain) {
     const body = { conversationId, message };
     if (fileIds?.length) body.fileIds = fileIds;
+    if (domain) body.domain = domain;
     const res = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
       headers: {
@@ -304,11 +312,13 @@
   }
 
   async function matchForward(requirementId) {
-    return api(`/match/forward?requirementId=${encodeURIComponent(requirementId)}`);
+    const data = await api(`/match/forward?requirementId=${encodeURIComponent(requirementId)}`);
+    return Array.isArray(data) ? data : (data.items || []);
   }
 
   async function matchReverse(limit) {
-    const list = await api(`/match/reverse?limit=${limit || 3}`);
+    const data = await api(`/match/reverse?limit=${limit || 3}`);
+    const list = Array.isArray(data) ? data : (data.items || []);
     return list.map((item) => ({
       ...item.requirement,
       userMatchPct: item.matchPct ?? item.requirement?.userMatchPct,
@@ -348,7 +358,8 @@
   async function fetchSkillMarket(q) {
     const path = q ? `/skills/market?q=${encodeURIComponent(q)}` : '/skills/market';
     const data = await api(path, { auth: false });
-    return data.skills || [];
+    const list = Array.isArray(data) ? data : (data.items || data.skills || []);
+    return list;
   }
 
   async function fetchInstalledSkillIds() {
@@ -422,7 +433,7 @@
 
   async function fetchReqApplications(reqId) {
     const data = await api(`/requirements/${reqId}/applications`);
-    return data.applications || [];
+    return Array.isArray(data) ? data : (data.items || data.applications || []);
   }
   async function reviewApplication(reqId, appId, status) {
     const data = await api(`/requirements/${reqId}/applications/${appId}`, { method: 'PUT', body: { status } });
@@ -459,7 +470,7 @@
   }
   async function fetchMyApplications() {
     const data = await api('/users/me/applications');
-    return data.applications || [];
+    return Array.isArray(data) ? data : (data.items || data.applications || []);
   }
 
   function resolveFileUrl(fileUrl) {
@@ -504,6 +515,15 @@
   async function pingPresence() {
     return api('/users/me/presence', { method: 'POST' });
   }
+
+  global.escapeHtml = function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;')
+      .replace(/'/g,'&#39;');
+  };
 
   global.CollabApi = {
     API_BASE,

@@ -11,6 +11,7 @@ import { Application } from '../models/Application.js';
 import { Requirement } from '../models/Requirement.js';
 import { toApplicationJson } from '../utils/applicationSerialize.js';
 import { enhanceUserProfile } from '../services/profileEnhance.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 
@@ -219,7 +220,10 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.put('/me', requireAuth, async (req: AuthRequest, res, next) => {
+router.put('/me', requireAuth, validate({
+  name: { type: 'string', maxLength: 50 },
+  bio: { type: 'string', maxLength: 2000 },
+}), async (req: AuthRequest, res, next) => {
   try {
     const { name, avatar, avatarColor, position, bio, domain, weeklyHours, collabIntent, interestedStages } = req.body;
     if (name !== undefined) req.user!.name = name;

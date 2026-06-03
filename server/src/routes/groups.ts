@@ -8,6 +8,10 @@ import { User } from '../models/User.js';
 import { toGroupJson, toUserJson, formatChatTime, isUserOnline } from '../utils/serialize.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { saveFileAsset } from '../services/fileStorage.js';
+import { validate } from '../middleware/validate.js';
+
+/** 群组消息最大条数，超出则保留最新 N 条 */
+const MAX_MESSAGES = 500;
 
 const router = Router();
 
@@ -23,12 +27,14 @@ async function loadGroupWithMembers(groupId: string, userId: string) {
 router.get('/', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const groups = await Group.find({ members: req.user!._id });
-    const out = await Promise.all(
-      groups.map(async (g: IGroup) => {
-        const members = await User.find({ _id: { $in: g.members } });
-        return toGroupJson(g, members);
-      }),
-    );
+    // M-01: Batch-fetch all members to avoid N+1 queries
+    const allMemberIds = [...new Set(groups.flatMap((g: IGroup) => g.members.map((m: Types.ObjectId) => String(m))))];
+    const users = await User.find({ _id: { $in: allMemberIds } });
+    const userMap = new Map(users.map((u) => [String(u._id), u]));
+    const out = groups.map((g: IGroup) => {
+      const members = g.members.map((m: Types.ObjectId) => userMap.get(String(m))).filter(Boolean) as import('../models/User.js').IUser[];
+      return toGroupJson(g, members);
+    });
     res.json(out);
   } catch (e) {
     next(e);
@@ -49,7 +55,9 @@ router.get('/:id', requireAuth, async (req: AuthRequest, res, next) => {
 });
 
 /** 手动创建群组（不经过匹配邀请） */
-router.post('/create', requireAuth, async (req: AuthRequest, res, next) => {
+router.post('/create', requireAuth, validate({
+  name: { required: true, type: 'string' },
+}), async (req: AuthRequest, res, next) => {
   try {
     const { name, reqId, memberIds } = req.body as {
       name?: string;
@@ -124,7 +132,10 @@ router.post('/create', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
-router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
+router.post('/', requireAuth, validate({
+  reqId: { required: true, type: 'string' },
+  invitedUserId: { required: true, type: 'string' },
+}), async (req: AuthRequest, res, next) => {
   try {
     const { reqId, invitedUserId, inviteMessage } = req.body as {
       reqId?: string;
@@ -245,6 +256,9 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res, next) =>
       time: new Date(),
     };
     group.messages.push(msg);
+    if (group.messages.length > MAX_MESSAGES) {
+      group.messages = group.messages.slice(-MAX_MESSAGES);
+    }
     await group.save();
 
     const members = await User.find({ _id: { $in: group.members } });
@@ -284,9 +298,72 @@ router.post('/:id/meeting', requireAuth, async (req: AuthRequest, res, next) => 
       content: `📹 视频会议已创建：${meetingUrl}`,
       time: new Date(),
     });
+    if (group.messages.length > MAX_MESSAGES) {
+      group.messages = group.messages.slice(-MAX_MESSAGES);
+    }
     await group.save();
     const members = await User.find({ _id: { $in: group.members } });
     res.json({ meetingUrl, group: toGroupJson(group, members) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// M-04: Leave a group
+router.post('/:id/leave', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group || !group.members.some((m: Types.ObjectId) => String(m) === String(req.user!._id))) {
+      res.status(404).json({ error: '群组不存在或无权限' });
+      return;
+    }
+    group.members = group.members.filter((m: Types.ObjectId) => String(m) !== String(req.user!._id));
+    group.messages.push({
+      user: req.user!._id,
+      type: 'system',
+      content: `${req.user!.name} 退出了群组`,
+      time: new Date(),
+    });
+    if (group.messages.length > MAX_MESSAGES) {
+      group.messages = group.messages.slice(-MAX_MESSAGES);
+    }
+    await group.save();
+    res.json({ success: true });
+  } catch (e) {
+    next(e);
+  }
+});
+
+// M-04: Remove a member from a group
+router.post('/:id/remove/:userId', requireAuth, async (req: AuthRequest, res, next) => {
+  try {
+    const group = await Group.findById(req.params.id);
+    if (!group || !group.members.some((m: Types.ObjectId) => String(m) === String(req.user!._id))) {
+      res.status(404).json({ error: '群组不存在或无权限' });
+      return;
+    }
+    const targetId = req.params.userId;
+    if (!group.members.some((m: Types.ObjectId) => String(m) === String(targetId))) {
+      res.status(404).json({ error: '目标用户不在群组中' });
+      return;
+    }
+    if (String(targetId) === String(req.user!._id)) {
+      res.status(400).json({ error: '不能移除自己，请使用退出群组功能' });
+      return;
+    }
+    const removedUser = await User.findById(targetId);
+    group.members = group.members.filter((m: Types.ObjectId) => String(m) !== String(targetId));
+    group.messages.push({
+      user: req.user!._id,
+      type: 'system',
+      content: `${req.user!.name} 将 ${removedUser?.name || '用户'} 移出了群组`,
+      time: new Date(),
+    });
+    if (group.messages.length > MAX_MESSAGES) {
+      group.messages = group.messages.slice(-MAX_MESSAGES);
+    }
+    await group.save();
+    res.json({ success: true });
   } catch (e) {
     next(e);
   }

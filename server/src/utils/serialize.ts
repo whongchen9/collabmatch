@@ -32,15 +32,14 @@ export function formatChatTime(date: Date): string {
 
 export function toUserJson(
   user: IUser | Record<string, unknown>,
-  opts?: { includePrivatePortfolio?: boolean },
+  opts?: { includePrivatePortfolio?: boolean; includePhone?: boolean },
 ) {
   const u = user as IUser;
   const portfolio = opts?.includePrivatePortfolio
     ? (u.portfolio || []).map(toPortfolioJson)
     : publicPortfolio(u);
-  return {
+  const json: Record<string, unknown> = {
     id: String(u._id),
-    phone: u.phone,
     name: u.name,
     avatar: u.avatar,
     avatarColor: u.avatarColor,
@@ -62,6 +61,7 @@ export function toUserJson(
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
   };
+  return json;
 }
 
 export function toRequirementJson(

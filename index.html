@@ -8,6 +8,11 @@
     /* ===== CSS RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif; background: #0f0f0f; color: #e2e2e2; overflow: hidden; }
+    a { color: var(--accent-purple); text-decoration: none; }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+    :focus-visible { outline: 2px solid var(--accent-purple); outline-offset: 2px; border-radius: var(--radius-sm); }
 
     /* ===== CSS VARIABLES ===== */
     :root {
@@ -19,8 +24,8 @@
       --border: #2e2e2e;
       --border-light: #3a3a3a;
       --text-primary: #e2e2e2;
-      --text-secondary: #999;
-      --text-muted: #666;
+      --text-secondary: #b0b0b0;
+      --text-muted: #888;
       --accent-purple: #8b5cf6;
       --accent-blue: #3b82f6;
       --accent-gradient: linear-gradient(135deg, #8b5cf6, #3b82f6);
@@ -70,7 +75,7 @@
       background-clip: text;
     }
     .sidebar-logo-sub {
-      font-size: 11px;
+      font-size: 12px;
       color: var(--text-muted);
       margin-top: 2px;
     }
@@ -89,7 +94,7 @@
       padding: 10px 12px;
       border-radius: var(--radius-md);
       cursor: pointer;
-      font-size: 13.5px;
+      font-size: 14px;
       color: var(--text-secondary);
       transition: var(--transition);
       user-select: none;
@@ -113,7 +118,7 @@
       padding: 8px 12px;
       border-radius: var(--radius-md);
       cursor: pointer;
-      font-size: 12.5px;
+      font-size: 13px;
       color: var(--text-secondary);
       transition: var(--transition);
     }
@@ -156,7 +161,7 @@
     }
     .user-info { flex: 1; min-width: 0; }
     .user-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .user-status { font-size: 11px; color: var(--text-muted); }
+    .user-status { font-size: 12px; color: var(--text-muted); }
 
     /* ===== MAIN CONTENT ===== */
     #main-content {
@@ -185,7 +190,7 @@
     .btn {
       display: inline-flex; align-items: center; gap: 6px;
       padding: 7px 14px; border-radius: var(--radius-md);
-      font-size: 12.5px; font-weight: 500; cursor: pointer;
+      font-size: 13px; font-weight: 500; cursor: pointer;
       border: none; transition: var(--transition); white-space: nowrap;
     }
     .btn-primary { background: var(--accent-gradient); color: #fff; }
@@ -194,7 +199,7 @@
     .btn-secondary:hover { background: var(--bg-hover); border-color: #555; }
     .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .btn-sm { padding: 5px 10px; font-size: 11.5px; }
+    .btn-sm { padding: 5px 10px; font-size: 12px; }
     .btn-xs { padding: 3px 8px; font-size: 11px; }
     .btn-danger { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
     .btn-danger:hover { background: rgba(239,68,68,0.25); }
@@ -205,8 +210,8 @@
     /* ===== BADGE / TAG ===== */
     .badge {
       display: inline-flex; align-items: center;
-      padding: 2px 8px; border-radius: 20px;
-      font-size: 11px; font-weight: 500; white-space: nowrap;
+      padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 500; white-space: nowrap;
     }
     .badge-purple { background: rgba(139,92,246,0.18); color: #a78bfa; }
     .badge-blue { background: rgba(59,130,246,0.18); color: #60a5fa; }
@@ -253,7 +258,7 @@
     input, textarea, select {
       background: var(--bg-tertiary); border: 1px solid var(--border);
       border-radius: var(--radius-md); color: var(--text-primary);
-      font-family: inherit; font-size: 13px;
+      font-family: inherit; font-size: 14px;
       transition: border-color 0.2s;
       outline: none;
     }
@@ -267,6 +272,20 @@
       animation: spin 0.8s linear infinite; display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ===== SKELETON LOADING ===== */
+    .skeleton {
+      background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-hover) 50%, var(--bg-tertiary) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: var(--radius-sm);
+    }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .skeleton-text { height: 14px; margin-bottom: 8px; }
+    .skeleton-text.short { width: 60%; }
+    .skeleton-card { height: 120px; border-radius: var(--radius-md); }
+    .skeleton-avatar { width: 40px; height: 40px; border-radius: 50%; }
+    .skeleton-chip { height: 28px; width: 80px; border-radius: 20px; display: inline-block; }
 
     /* ===== TOAST ===== */
     #toast-container {
@@ -338,7 +357,7 @@
     }
     .domain-tabs::-webkit-scrollbar { display: none; }
     .domain-tab {
-      padding: 5px 14px; border-radius: 20px; font-size: 12px; cursor: pointer; white-space: nowrap;
+      padding: 5px 14px; border-radius: 20px; font-size: 13px; cursor: pointer; white-space: nowrap;
       background: var(--bg-tertiary); color: var(--text-secondary); transition: var(--transition); user-select: none;
       border: 1px solid transparent;
     }
@@ -364,7 +383,7 @@
     .skill-panel-item-icon { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
     .skill-panel-item-info { display: flex; flex-direction: column; gap: 2px; }
     .skill-panel-item-name { font-weight: 500; font-size: 13px; }
-    .skill-panel-item-desc { font-size: 11px; color: var(--text-muted); }
+    .skill-panel-item-desc { font-size: 12px; color: var(--text-muted); }
     .chat-header-left { display: flex; align-items: center; gap: 10px; }
     .ai-indicator {
       width: 8px; height: 8px; border-radius: 50%;
@@ -416,7 +435,7 @@
     .message-row.user .message-bubble {
       background: none; color: var(--text-primary);
     }
-    .message-time { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+    .message-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .message-row.user .message-time { text-align: right; }
 
     /* Message actions · hover to show */
@@ -571,7 +590,7 @@
     .quick-chip {
       padding: 5px 12px; border-radius: 20px;
       background: var(--bg-card); border: 1px solid var(--border);
-      font-size: 12px; color: var(--text-secondary); cursor: pointer;
+      font-size: 13px; color: var(--text-secondary); cursor: pointer;
       transition: var(--transition);
     }
     .quick-chip:hover { border-color: var(--accent-purple); color: #a78bfa; background: rgba(139,92,246,0.08); }
@@ -591,8 +610,8 @@
       cursor: pointer; transition: var(--transition);
     }
     .mini-req-card:hover { border-color: var(--accent-purple); transform: translateY(-1px); }
-    .mini-req-card-title { font-size: 12.5px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-    .mini-req-card-sub { font-size: 11px; color: var(--text-muted); }
+    .mini-req-card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .mini-req-card-sub { font-size: 12px; color: var(--text-muted); }
     .mini-req-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 
     /* Conversation item in side panel */
@@ -626,7 +645,7 @@
     .match-req-item:hover { border-color: var(--border-light); }
     .match-req-item.selected { border-color: var(--accent-purple); background: rgba(139,92,246,0.07); }
     .match-req-item-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
-    .match-req-item-sub { font-size: 11.5px; color: var(--text-muted); }
+    .match-req-item-sub { font-size: 12px; color: var(--text-muted); }
     .match-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .match-right-header { padding: 16px 20px; padding-top: 58px; border-bottom: 1px solid var(--border); background: var(--bg-secondary); flex-shrink: 0; }
     .match-users-grid { flex: 1; overflow-y: auto; padding: 16px 20px; display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; align-content: start; }
@@ -648,10 +667,10 @@
     .match-score.high { border-color: var(--success); color: var(--success); background: rgba(34,197,94,0.1); }
     .match-score.mid { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.1); }
     .match-score.low { border-color: var(--accent-blue); color: var(--accent-blue); background: rgba(59,130,246,0.1); }
-    .user-match-bio { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+    .user-match-bio { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
     .user-match-skills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
     .user-match-footer { display: flex; align-items: center; justify-content: space-between; }
-    .collab-score-label { font-size: 11px; color: var(--text-muted); }
+    .collab-score-label { font-size: 12px; color: var(--text-muted); }
     .collab-score-val { font-size: 12px; color: var(--text-secondary); }
 
     /* ========================================
@@ -676,7 +695,7 @@
     .group-list-avatar { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
     .group-list-info { flex: 1; min-width: 0; }
     .group-list-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .group-list-last { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+    .group-list-last { font-size: 12px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
     .group-chat-area { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
     .group-chat-header {
       padding: 12px 20px; border-bottom: 1px solid var(--border);
@@ -743,9 +762,20 @@
       border-radius: var(--radius-lg) 4px var(--radius-lg) var(--radius-lg);
       text-align: left;
     }
-    .group-msg-sender { font-size: 11px; color: var(--text-muted); margin-bottom: 3px; font-weight: 500; }
-    .group-msg-time { font-size: 10.5px; color: var(--text-muted); margin-top: 3px; }
+    .group-msg-sender { font-size: 12px; color: var(--text-muted); margin-bottom: 3px; font-weight: 500; }
+    .group-msg-time { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
     .group-msg-row.self .group-msg-time { text-align: right; }
+    .group-msg-actions {
+      display: none; gap: 4px; margin-top: 4px;
+    }
+    .group-msg-row:hover .group-msg-actions { display: flex; }
+    .group-msg-actions button {
+      font-size: 11px; padding: 2px 8px; border: 1px solid var(--border);
+      border-radius: 10px; background: var(--bg-card); color: var(--text-muted);
+      cursor: pointer; transition: var(--transition);
+    }
+    .group-msg-actions button:hover { color: var(--text-primary); border-color: var(--border-light); }
+    .group-msg-row.self .group-msg-actions { justify-content: flex-end; }
     .file-bubble {
       display: inline-flex; align-items: center; gap: 10px;
       max-width: 100%;
@@ -755,8 +785,8 @@
     }
     .file-bubble:hover { border-color: var(--accent-blue); }
     .file-icon { font-size: 22px; }
-    .file-info-name { font-size: 12.5px; font-weight: 600; color: var(--text-primary); }
-    .file-info-size { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .file-info-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .file-info-size { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
     .group-input-area {
       padding: 12px 20px 20px; border-top: 1px solid var(--border);
       background: var(--bg-secondary); flex-shrink: 0;
@@ -796,8 +826,8 @@
     .member-status { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
     .member-status.online { background: var(--success); }
     .member-status.offline { background: var(--text-muted); }
-    .member-name { font-size: 12.5px; color: var(--text-primary); }
-    .member-role { font-size: 11px; color: var(--text-muted); }
+    .member-name { font-size: 13px; color: var(--text-primary); }
+    .member-role { font-size: 12px; color: var(--text-muted); }
     .empty-group-state {
       flex: 1; display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 12px;
@@ -809,14 +839,46 @@
     /* ========================================
        SECTION 4: SQUARE (需求广场
        ======================================== */
-    #section-square .square-content { flex: 1; overflow-y: auto; padding: 20px; }
+    #section-square .square-content { flex: 1; overflow-y: auto; padding: 20px; width: 100%; }
     .square-filters {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 18px; flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .square-search-row {
+      margin-bottom: 12px;
+    }
+    .square-search {
+      width: 100%;
+      padding: 10px 16px 10px 38px;
+      border-radius: var(--radius-md);
+      background: var(--bg-tertiary); border: 1px solid var(--border);
+      color: var(--text-primary); font-size: 14px; outline: none;
+      transition: var(--transition);
+    }
+    .square-search::placeholder { color: var(--text-muted); }
+    .square-search:focus { border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(139,92,246,0.12); }
+    .square-search-wrap { position: relative; }
+    .square-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
+    .square-scene-row {
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    }
+    .square-scene-controls {
+      display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0;
+    }
+    .square-domain-select {
+      padding: 7px 12px; border-radius: 20px;
+      background: var(--bg-tertiary); border: 1px solid var(--border);
+      color: var(--text-primary); font-size: 13px; cursor: pointer; outline: none;
+    }
+    .square-domain-select:focus { border-color: var(--accent-purple); }
+    .square-sort-select {
+      padding: 7px 12px; border-radius: 20px;
+      background: var(--bg-tertiary); border: 1px solid var(--border);
+      color: var(--text-primary); font-size: 13px; cursor: pointer;
     }
     .filter-chip {
       padding: 6px 14px; border-radius: 20px;
       background: var(--bg-card); border: 1px solid var(--border);
-      font-size: 12px; color: var(--text-secondary); cursor: pointer;
+      font-size: 13px; color: var(--text-secondary); cursor: pointer;
       transition: var(--transition);
     }
     .filter-chip:hover { border-color: var(--border-light); color: var(--text-primary); }
@@ -829,13 +891,13 @@
       border-radius: var(--radius-lg); padding: 18px;
       transition: var(--transition); cursor: pointer;
     }
-    .square-req-card:hover { border-color: var(--accent-purple); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(139,92,246,0.12); }
+    .square-req-card:hover { border-color: var(--accent-purple); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(139,92,246,0.15); }
     .square-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
     .square-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.4; flex: 1; margin-right: 10px; }
-    .square-card-body { font-size: 12.5px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
+    .square-card-body { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
     .square-card-meta { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
     .square-card-author { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
-    .square-card-time { font-size: 11.5px; color: var(--text-muted); }
+    .square-card-time { font-size: 12px; color: var(--text-muted); }
     .square-card-match { margin-bottom: 10px; }
     .square-card-match-label { display: flex; justify-content: space-between; margin-bottom: 5px; }
     .square-card-match-label span { font-size: 11px; color: var(--text-muted); }
@@ -919,7 +981,7 @@
     .profile-name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
     .profile-name { font-size: 20px; font-weight: 700; }
     .profile-pos { font-size: 13px; color: var(--text-muted); }
-    .profile-bio { font-size: 13.5px; color: var(--text-secondary); line-height: 1.65; margin: 10px 0; }
+    .profile-bio { font-size: 14px; color: var(--text-secondary); line-height: 1.65; margin: 10px 0; }
     .profile-field { margin-bottom: 18px; }
     .profile-field label { font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 6px; font-weight: 500; }
     .profile-field input, .profile-field textarea {
@@ -955,22 +1017,22 @@
     .resource-item-icon { font-size: 18px; }
     .resource-item-text { flex: 1; }
     .resource-item-text .name { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-    .resource-item-text .desc { font-size: 11.5px; color: var(--text-muted); margin-top: 2px; }
+    .resource-item-text .desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* Portfolio */
     .portfolio-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
     .port-card {
-      background: var(--bg-tertiary); border-radius: var(--radius-md);
+      background: var(--bg-tertiary); border-radius: var(--radius-lg);
       overflow: hidden; cursor: pointer; transition: var(--transition); border: 1px solid var(--border);
     }
-    .port-card:hover { border-color: var(--accent-purple); transform: translateY(-2px); }
+    .port-card:hover { border-color: var(--accent-purple); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(139,92,246,0.15); }
     .port-card-header { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
     .port-card-body { padding: 12px; }
     .port-card-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .port-card-role { font-size: 11px; color: var(--accent-purple); font-weight: 500; margin-bottom: 6px; }
-    .port-card-desc { font-size: 11.5px; color: var(--text-secondary); line-height: 1.5;
+    .port-card-role { font-size: 12px; color: var(--accent-purple); font-weight: 500; margin-bottom: 6px; }
+    .port-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-    .port-card-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .port-card-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
     .port-card-vis { font-size: 10px; padding: 1px 6px; border-radius: 8px; }
     .port-card-vis.pub { background: rgba(34,197,94,0.15); color: var(--success); }
     .port-card-vis.pri { background: rgba(245,158,11,0.15); color: var(--warning); }
@@ -1047,7 +1109,7 @@
     .chat-side-backdrop.show { display: block; }
 
     .skill-cat {
-      font-size: 12px; padding: 6px 14px; border-radius: 18px;
+      font-size: 13px; padding: 6px 14px; border-radius: 18px;
       cursor: pointer; transition: var(--transition); color: var(--text-muted);
       border: 1px solid var(--border); white-space: nowrap;
     }
@@ -1057,16 +1119,16 @@
       display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 12px; padding: 16px 20px;
     }
     .skill-page-card {
-      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 16px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px;
       cursor: pointer; transition: var(--transition);
     }
-    .skill-page-card:hover { border-color: var(--accent-purple); transform: translateY(-1px); }
+    .skill-page-card:hover { border-color: var(--accent-purple); transform: translateY(-3px); box-shadow: 0 6px 20px rgba(139,92,246,0.15); }
     .skill-page-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
     .skill-page-card-icon { font-size: 28px; }
     .skill-page-card-name { font-size: 14px; font-weight: 600; }
     .skill-page-card-author { font-size: 11px; color: var(--text-muted); }
-    .skill-page-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
-    .skill-page-card-meta { display: flex; gap: 10px; font-size: 11px; color: var(--text-muted); align-items: center; }
+    .skill-page-card-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
+    .skill-page-card-meta { display: flex; gap: 10px; font-size: 12px; color: var(--text-muted); align-items: center; }
     .skill-page-card-tag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: var(--bg-tertiary); }
     .skill-page-card-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
 
@@ -1105,8 +1167,8 @@
     .market-card-icon { font-size: 22px; width: 36px; height: 36px; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; background: var(--bg-tertiary); }
     .market-card-body { flex: 1; }
     .market-card-name { font-size: 13px; font-weight: 600; }
-    .market-card-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-    .market-card-meta { display: flex; gap: 8px; font-size: 10px; color: var(--text-muted); margin-top: 6px; align-items: center; }
+    .market-card-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .market-card-meta { display: flex; gap: 8px; font-size: 11px; color: var(--text-muted); margin-top: 6px; align-items: center; }
     .market-card-tag { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: var(--bg-tertiary); }
     .market-install-btn {
       font-size: 11px; padding: 4px 10px; border-radius: 12px; flex-shrink: 0;
@@ -1154,8 +1216,8 @@
     .mt-2 { margin-top: 8px; }
     .mt-3 { margin-top: 12px; }
     .mb-2 { margin-bottom: 8px; }
-    .text-sm { font-size: 12.5px; }
-    .text-xs { font-size: 11.5px; }
+    .text-sm { font-size: 13px; }
+    .text-xs { font-size: 12px; }
     .text-muted { color: var(--text-muted); }
     .text-secondary { color: var(--text-secondary); }
     .font-semibold { font-weight: 600; }
@@ -1195,7 +1257,9 @@
     /* ========================================
        RESPONSIVE: MOBILE (≀68px)
        ======================================== */
+    .group-members-toggle { display: none; }
     @media (max-width: 768px) {
+      .group-members-toggle { display: inline-flex; }
       /* Sidebar ↀbottom tab bar */
       #app { flex-direction: column; }
       #sidebar {
@@ -1239,10 +1303,11 @@
       .match-mode-toggle { font-size: 11px; }
 
       /* Square */
-      #section-square .section-content { padding: 0; }
-      .square-content { padding: 0; }
-      .square-filters { padding: 8px 12px; flex-wrap: wrap; gap: 4px; }
-      .square-grid { grid-template-columns: 1fr; padding: 10px; }
+      #section-square .square-content { padding: 12px; }
+      .square-filters { padding: 0; }
+      .square-scene-row { gap: 6px; }
+      .square-scene-controls { margin-left: 0; }
+      .square-grid { grid-template-columns: 1fr; padding: 0; }
 
       /* Groups */
       .groups-layout { flex-direction: column; min-height: 0; }
@@ -1251,6 +1316,15 @@
       .group-chat-main { min-height: 0; }
       .group-chat-body { min-height: 0; }
       .group-members-panel { display: none; }
+      .group-members-panel.mobile-open {
+        display: flex; position: fixed; right: 0; top: 0; height: 100%; z-index: 200;
+        width: 260px; box-shadow: -4px 0 20px rgba(0,0,0,0.4);
+      }
+      .group-members-backdrop {
+        display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 199;
+      }
+      .group-members-backdrop.show { display: block; }
+      .group-members-toggle { display: inline-flex; }
 
       /* Profile */
       #section-profile .profile-content { padding: 12px; max-width: 100%; }
@@ -1340,13 +1414,16 @@
 <!-- ===== LOGIN ===== -->
 <div id="login-overlay" class="login-overlay">
   <div class="login-box">
-    <h2>CollabMatch</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <h2 style="margin:0;">CollabMatch</h2>
+      <button id="login-close-btn" class="btn btn-ghost btn-xs" onclick="closeLogin()" style="display:none;" title="关闭">✕</button>
+    </div>
     <p id="login-subtitle">说一个想法，找到志同道合的伙伴</p>
-    <label>手机号</label>
-    <input type="tel" id="login-phone" value="13800000000" maxlength="11" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <label>验证码</label>
+    <label for="login-phone">手机号</label>
+    <input type="tel" id="login-phone" aria-label="手机号" value="13800000000" maxlength="11" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <label for="login-code">验证码</label>
     <div class="login-code-row">
-      <input type="text" id="login-code" value="123456" maxlength="6" placeholder="6 位验证码" />
+      <input type="text" id="login-code" aria-label="验证码" value="123456" maxlength="6" placeholder="6 位验证码" />
       <button type="button" class="btn btn-ghost" id="login-sms-btn" onclick="sendLoginSms()">获取验证码</button>
     </div>
     <div class="login-hint" id="login-hint"></div>
@@ -1361,7 +1438,7 @@
   <div class="modal" style="max-width:640px;">
     <div class="modal-header">
       <span class="modal-title" id="modal-req-title">需求详情</span>
-      <button class="modal-close" onclick="closeModal('modal-req-detail')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-req-detail')"></button>
     </div>
     <div id="modal-req-body"></div>
   </div>
@@ -1372,7 +1449,7 @@
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title">发送协作邀请</span>
-      <button class="modal-close" onclick="closeModal('modal-invite')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-invite')"></button>
     </div>
     <div id="modal-invite-body"></div>
   </div>
@@ -1383,7 +1460,7 @@
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">发布需求</span>
-      <button class="modal-close" onclick="closeModal('modal-visibility')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-visibility')"></button>
     </div>
     <div id="modal-visibility-body"></div>
   </div>
@@ -1392,7 +1469,7 @@
 <!-- Custom Skill Modal -->
 <div class="modal-overlay" id="modal-skill-create">
   <div class="modal-box" style="max-width:420px;">
-    <div class="modal-header"><span class="modal-title">创建自定义技能</span><button class="modal-close" onclick="closeModal('modal-skill-create')"></button></div>
+    <div class="modal-header"><span class="modal-title" id="modal-skill-create-title">创建自定义技能</span><button class="modal-close" aria-label="关闭" onclick="closeModal('modal-skill-create')"></button></div>
     <div style="padding:16px;">
       <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">技能名称</label>
       <input id="new-skill-name" placeholder="例如：技术方案评价" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;">
@@ -1408,7 +1485,7 @@
 <!-- Custom Workflow Modal -->
 <div class="modal-overlay" id="modal-workflow-create">
   <div class="modal-box" style="max-width:480px;">
-    <div class="modal-header"><span class="modal-title">创建自定义工作流</span><button class="modal-close" onclick="closeModal('modal-workflow-create')"></button></div>
+    <div class="modal-header"><span class="modal-title" id="modal-workflow-create-title">创建自定义工作流</span><button class="modal-close" aria-label="关闭" onclick="closeModal('modal-workflow-create')"></button></div>
     <div style="padding:16px;">
       <input id="new-wf-name" placeholder="工作流名称，例如：项目启动流程" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;">
       <div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">选择技能（按顺序）</div>
@@ -1423,7 +1500,7 @@
 <!-- Skill Detail Modal -->
 <div class="modal-overlay" id="modal-skill-detail">
   <div class="modal-box" style="max-width:440px;">
-    <div class="modal-header"><span class="modal-title" id="sd-title">技能详情</span><button class="modal-close" onclick="closeModal('modal-skill-detail')"></button></div>
+    <div class="modal-header"><span class="modal-title" id="sd-title">技能详情</span><button class="modal-close" aria-label="关闭" onclick="closeModal('modal-skill-detail')"></button></div>
     <div style="padding:16px;" id="sd-body">
       <div style="text-align:center;padding:30px;color:var(--text-muted);">加载中…</div>
     </div>
@@ -1435,14 +1512,17 @@
   <div class="modal-box" style="max-width:500px;">
     <div class="modal-header">
       <span class="modal-title" id="wiz-title">发布需求 · 第1步</span>
-      <button class="modal-close" onclick="closeModal('modal-req-wizard')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-req-wizard')"></button>
     </div>
     <div style="padding:16px;">
       <!-- Step indicators -->
-      <div style="display:flex;gap:4px;margin-bottom:18px;">
-        <div class="wiz-step-dot active" id="wiz-dot-0" style="flex:1;height:3px;border-radius:2px;background:var(--accent-purple);"></div>
-        <div class="wiz-step-dot" id="wiz-dot-1" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
-        <div class="wiz-step-dot" id="wiz-dot-2" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <div style="display:flex;gap:4px;flex:1;">
+          <div class="wiz-step-dot active" id="wiz-dot-0" style="flex:1;height:3px;border-radius:2px;background:var(--accent-purple);"></div>
+          <div class="wiz-step-dot" id="wiz-dot-1" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
+          <div class="wiz-step-dot" id="wiz-dot-2" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
+        </div>
+        <span id="wiz-step-label" style="font-size:11px;color:var(--text-muted);white-space:nowrap;">Step 1/3</span>
       </div>
 
       <!-- Step 1: What's the project? -->
@@ -1506,10 +1586,10 @@
   <div class="modal-box" style="max-width:600px;max-height:85vh;">
     <div class="modal-header">
       <span class="modal-title">⚡ 技能市场</span>
-      <button class="modal-close" onclick="closeModal('modal-market-full')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-market-full')"></button>
     </div>
     <div style="padding:12px 16px;border-bottom:1px solid var(--border);">
-      <input id="skill-page-search" placeholder="搜索技能.." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;" oninput="renderSkillPage()">
+      <input class="skill-page-search" placeholder="搜索技能.." style="width:100%;border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;outline:none;" oninput="renderSkillPage()">
     </div>
     <div id="skill-page-list" style="padding:0 0 12px;overflow:auto;max-height:60vh;">
       <!-- JS render compact list -->
@@ -1522,7 +1602,7 @@
   <div class="modal-box" style="max-width:600px;max-height:85vh;">
     <div class="modal-header">
       <span class="modal-title">🔄 工作流</span>
-      <button class="modal-close" onclick="closeModal('modal-workflow-full')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-workflow-full')"></button>
     </div>
     <div id="wf-page-list" style="padding:16px;overflow:auto;max-height:70vh;"></div>
   </div>
@@ -1533,7 +1613,7 @@
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title" id="modal-portfolio-title">添加作品</span>
-      <button class="modal-close" onclick="closeModal('modal-portfolio')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-portfolio')"></button>
     </div>
     <div id="modal-portfolio-body" style="padding:16px;"></div>
   </div>
@@ -1544,7 +1624,7 @@
   <div class="modal-box" style="max-width:520px;max-height:85vh;">
     <div class="modal-header">
       <span class="modal-title">我的申请</span>
-      <button class="modal-close" onclick="closeModal('modal-applications')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-applications')"></button>
     </div>
     <div id="modal-applications-body" style="padding:16px;overflow:auto;max-height:65vh;"></div>
   </div>
@@ -1555,7 +1635,7 @@
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">申请参与</span>
-      <button class="modal-close" onclick="closeModal('modal-apply')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-apply')"></button>
     </div>
     <div id="modal-apply-body" style="padding:16px;"></div>
   </div>
@@ -1566,7 +1646,7 @@
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">转发到对话</span>
-      <button class="modal-close" onclick="closeModal('modal-forward')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-forward')"></button>
     </div>
     <div id="modal-forward-body" style="padding:16px;max-height:50vh;overflow:auto;"></div>
   </div>
@@ -1577,7 +1657,7 @@
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">创建群组</span>
-      <button class="modal-close" onclick="closeModal('modal-group-create')"></button>
+      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-group-create')"></button>
     </div>
     <div id="modal-group-create-body" style="padding:16px;"></div>
   </div>
@@ -1589,7 +1669,12 @@
   <nav id="sidebar">
     <div class="sidebar-logo">
       <div class="sidebar-logo-title">CollabMatch</div>
-      <div class="sidebar-logo-sub">协作需求匹配</div>
+      <div class="sidebar-logo-sub" id="sidebar-logo-sub">协作需求匹配</div>
+    </div>
+    <!-- Domain Switcher -->
+    <div style="padding:6px 10px;">
+      <select id="domain-switcher" aria-label="选择领域" onchange="switchDomain(this.value)" style="width:100%;padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;">
+      </select>
     </div>
     <div class="sidebar-nav">
       <div class="nav-item active" data-section="home" onclick="switchSection('home', this)">
@@ -1623,7 +1708,7 @@
     <div class="sidebar-user" onclick="switchSection('profile', document.querySelector('[data-section=profile]'))">
       <div class="avatar avatar-sm" id="sidebar-user-avatar" style="background:linear-gradient(135deg,#8b5cf6,#3b82f6);"></div>
       <div class="user-info">
-        <div class="user-name" id="sidebar-user-name">李云帆</div>
+        <div class="user-name" id="sidebar-user-name">用户</div>
         <div class="user-status">● 在线</div>
       </div>
     </div>
@@ -1660,9 +1745,9 @@
               <div class="chat-input-box">
                 <div class="chat-pending-files" id="chat-pending-files"></div>
                 <div class="chat-input-row">
-                  <textarea class="chat-textarea" id="chat-input" placeholder="例如：我想做一个 AI 工具 Side Project，缺一位会 React 的全栈开发者，每周可投入 10 小时…" rows="2"
+                  <textarea class="chat-textarea" id="chat-input" aria-label="输入协作需求或消息" placeholder="例如：我想做一个 AI 工具 Side Project，缺一位会 React 的全栈开发者，每周可投入 10 小时…" rows="2"
                     onkeydown="handleChatKeydown(event)" oninput="autoResize(this)"></textarea>
-                  <button class="chat-send-btn" onclick="sendChatMessage()">
+                  <button class="chat-send-btn" onclick="sendChatMessage()" aria-label="发送消息">
                     <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
                   </button>
                 </div>
@@ -1682,11 +1767,10 @@
         </div>
       </div>
 
-      <!-- Right: Conversations + Workflows -->
+      <!-- Right: Conversations -->
       <div class="chat-side-panel">
         <div style="display:flex;border-bottom:1px solid var(--border);">
-          <div class="side-tab active" onclick="switchSideTab('conv',this)">💬 对话</div>
-          <div class="side-tab" onclick="switchSideTab('workflow',this)">🔄 流程</div>
+          <div class="side-tab active">💬 对话</div>
         </div>
         <div id="side-conv" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
           <div class="side-panel-header" style="border-bottom:1px solid var(--border);">
@@ -1694,16 +1778,6 @@
             <span style="margin-left:auto;font-size:12px;color:var(--accent-purple);cursor:pointer;" onclick="newConversation()">＋ 新对话</span>
           </div>
           <div class="side-panel-body" id="conv-req-list"></div>
-        </div>
-        <div id="side-workflow" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
-          <div style="padding:8px 12px;display:flex;justify-content:flex-end;">
-            <span style="font-size:11px;color:var(--accent-purple);cursor:pointer;" onclick="createSkillViaChat()">💬 AI 创建</span>
-          </div>
-          <div class="side-panel-body" id="workflow-list"></div>
-        </div>
-        <div class="mobile-bar" id="mobile-bar">
-          <div class="mobile-bar-item active" data-mobile-tab="conv" onclick="switchSideTab('conv',document.querySelector('.side-tab:first-child'),this)">💬 对话</div>
-          <div class="mobile-bar-item" data-mobile-tab="workflow" onclick="switchSideTab('workflow',document.querySelector('.side-tab:nth-child(2)'),this)">🔄 流程</div>
         </div>
       </div>
     </div>
@@ -1715,14 +1789,19 @@
       <div class="section-header">
         <div>
           <h1>🔍 智能匹配</h1>
-          <p>根据技能、投入时间与协作意向，推荐最合适的协作者</p>
+          <p id="match-section-desc">根据技能、投入时间与协作意向，推荐最合适的协作者</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <select id="match-domain-filter" aria-label="筛选领域" onchange="filterMatchByDomain(this.value)" style="padding:5px 10px;border-radius:6px;font-size:12px;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);cursor:pointer;">
+            <option value="all">全部领域</option>
+          </select>
         </div>
       </div>
       <div class="match-layout">
         <div class="match-mode-bar">
           <span class="match-mode-label">模式</span>
           <div class="match-mode-toggle">
-            <div class="match-mode-opt active" data-mode="reqs" onclick="switchMatchMode('reqs', this)">我有需求，找伙伴</div>
+            <div class="match-mode-opt active" data-mode="reqs" onclick="switchMatchMode('reqs', this)" id="match-mode-reqs-label">我有需求，找伙伴</div>
             <div class="match-mode-opt" data-mode="user" onclick="switchMatchMode('user', this)">我有技能，找 Side Project</div>
           </div>
         </div>
@@ -1784,6 +1863,7 @@
               <div style="display:flex;gap:8px;">
                 <button class="btn btn-ghost btn-sm" onclick="sendFileMessage()">📁 文件</button>
                 <button class="btn btn-ghost btn-sm" onclick="startGroupMeeting()">📹 会议</button>
+                <button class="btn btn-ghost btn-sm group-members-toggle" onclick="toggleGroupMembers()">👥</button>
               </div>
             </div>
             <div class="group-chat-body">
@@ -1794,7 +1874,7 @@
                 <div class="group-input-area">
                   <div class="group-input-box">
                     <button class="chat-tool-btn" onclick="sendFileMessage()" title="发送文件">📎</button>
-                    <textarea class="group-textarea" id="group-chat-input" placeholder="发送消息…（Shift+Enter 换行）" rows="1"
+                    <textarea class="group-textarea" id="group-chat-input" aria-label="发送群组消息" placeholder="发送消息…（Shift+Enter 换行）" rows="1"
                       onkeydown="handleGroupKeydown(event)"></textarea>
                     <button class="group-send-btn" onclick="sendGroupMessage()">
                       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -1803,11 +1883,12 @@
                 </div>
               </div>
               <div class="group-members-panel">
-                <div class="members-header">成员 <span id="members-count" style="color:var(--text-muted);font-weight:400;font-size:11px;"></span></div>
+                <div class="members-header">成员 <span id="members-count" style="color:var(--text-muted);font-weight:400;font-size:12px;"></span></div>
                 <div class="members-list" id="active-members-list">
                   <!-- JS render -->
                 </div>
               </div>
+              <div class="group-members-backdrop" onclick="closeGroupMembers()"></div>
             </div>
           </div>
         </div>
@@ -1826,24 +1907,25 @@
         <button class="btn btn-primary btn-sm" onclick="goPublishRequirement()">+ 发布需求</button>
       </div>
       <div class="square-content">
-        <div class="square-filters" id="square-filters">
-          <div class="square-scene-row" id="square-scene-filters" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;margin-bottom:8px;">
-            <span style="font-size:12px;color:var(--text-muted);">场景</span>
-            <div class="filter-chip active" data-filter-scene="side-project" onclick="filterSquareScene('side-project', this)">🚀 项目需求</div>
-            <div class="filter-chip" data-filter-scene="opensource" onclick="filterSquareScene('opensource', this)">🛠 开源协作</div>
-            <div class="filter-chip" data-filter-scene="all" onclick="filterSquareScene('all', this)">全部</div>
+        <div class="square-filters">
+          <div class="square-search-row">
+            <div class="square-search-wrap">
+              <span class="square-search-icon">🔍</span>
+              <input class="square-search" id="square-search-input" type="text" placeholder="搜索关键词、技能、项目名..." oninput="onSquareSearch(this.value)">
+            </div>
           </div>
-          <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;width:100%;">
-          <span style="font-size:12px;color:var(--text-muted);">领域</span>
-          <div class="filter-chip active" data-filter-domain="all" onclick="filterSquareDomain('all', this)">全部</div>
-          <!-- Domain chips rendered by JS -->
-          <div style="margin-left:auto;">
-            <select style="padding:5px 10px;font-size:12px;border-radius:var(--radius-md);" onchange="sortSquare(this.value)">
-              <option value="newest">最新发布</option>
-              <option value="match">匹配度最高</option>
-              <option value="skills">技能最符合</option>
-            </select>
-          </div>
+          <div class="square-scene-row" id="square-scene-filters">
+            <span id="square-scene-chips" style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;"></span>
+            <div class="square-scene-controls">
+              <select class="square-domain-select" id="square-domain-select" onchange="filterSquareDomain(this.value)">
+                <option value="all">全部领域</option>
+              </select>
+              <select id="square-sort-select" class="square-sort-select" onchange="sortSquare(this.value)">
+                <option value="newest">最新发布</option>
+                <option value="match">匹配度最高</option>
+                <option value="skills">技能最符合</option>
+              </select>
+            </div>
           </div>
         </div>
         <div class="square-grid" id="square-grid">
@@ -1863,7 +1945,9 @@
         </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-secondary btn-sm" id="ai-enhance-btn" onclick="aiEnhanceProfile()">✨ AI 完善名片</button>
-          <button class="btn btn-primary btn-sm" id="save-profile-btn" onclick="saveProfile()">保存更改</button>
+          <button class="btn btn-primary btn-sm" id="save-profile-btn" onclick="saveProfile()" style="display:none;">保存更改</button>
+          <button class="btn btn-ghost btn-sm" id="cancel-edit-btn" onclick="toggleProfileEdit(false)" style="display:none;">取消</button>
+          <button class="btn btn-primary btn-sm" id="edit-profile-btn" onclick="toggleProfileEdit(true)">编辑</button>
         </div>
       </div>
       <div class="profile-content" id="profile-content">
@@ -1876,42 +1960,12 @@
       <div class="section-content" style="padding:0;overflow:auto;background:var(--bg-secondary);">
         <!-- Top bar -->
         <div style="padding:12px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:16px;">
-          <span class="skill-tab active" onclick="switchSkillTab('store',this)">技能商</span>
+          <span class="skill-tab active" onclick="switchSkillTab('store',this)">技能市场</span>
           <span class="skill-tab" onclick="switchSkillTab('mine',this)">我的技能</span>
           <div style="flex:1;max-width:320px;margin-left:auto;">
-            <input id="skill-page-search" placeholder="搜索更多技能.." style="width:100%;border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;outline:none;background:var(--bg-tertiary);" oninput="renderSkillPage()">
+            <input id="skill-page-search" aria-label="搜索技能" placeholder="搜索更多技能.." style="width:100%;border:1px solid var(--border);border-radius:20px;padding:8px 16px;font-size:13px;outline:none;background:var(--bg-tertiary);" oninput="renderSkillPage()">
           </div>
           <button class="btn btn-primary btn-sm" onclick="createSkillViaChat()">💬 AI 创建</button>
-        </div>
-
-        <!-- Banner -->
-        <div style="padding:20px 24px;">
-          <div class="skill-banner" onclick="installFeaturedSkill('generate_prd')">
-            <div class="skill-banner-text">
-              <h3 style="font-size:18px;font-weight:700;margin-bottom:8px;">最新 Side Project <span style="background:var(--accent-gradient-soft);padding:2px 8px;border-radius:4px;">idea</span></h3>
-              <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">AI 帮你整理需求、匹配伙伴，从想法到组队一步到位</p>
-              <div style="display:flex;gap:8px;">
-                <span class="skill-banner-tag">需求匹配</span>
-                <span class="skill-banner-tag">Side Project</span>
-              </div>
-            </div>
-            <div class="skill-banner-img">🤖</div>
-          </div>
-        </div>
-
-        <!-- Category tags -->
-        <div style="padding:0 24px 16px;display:flex;gap:12px;flex-wrap:wrap;">
-          <span class="skill-cat active" onclick="filterSkillCat('all',this)">全部</span>
-          <span class="skill-cat" onclick="filterSkillCat('文档',this)">📋 文档</span>
-          <span class="skill-cat" onclick="filterSkillCat('分析',this)">🔍 分析</span>
-          <span class="skill-cat" onclick="filterSkillCat('设计',this)">🎨 设计</span>
-          <span class="skill-cat" onclick="filterSkillCat('沟通',this)">💬 沟通</span>
-        </div>
-
-        <!-- Section title -->
-        <div style="padding:8px 24px;display:flex;align-items:center;justify-content:space-between;">
-          <h3 style="font-size:14px;font-weight:600;">编辑精选</h3>
-          <span style="font-size:12px;color:var(--accent-purple);cursor:pointer;">查看更多 </span>
         </div>
 
         <!-- Cards grid -->
@@ -1951,6 +2005,7 @@ const BADGE_COLORS = ['badge-purple','badge-blue','badge-green','badge-yellow','
 /** 领域定义 */
 const DOMAINS = {
   tech: { name: '💻 技术开发', icon: '💻', color: '#8b5cf6',
+    sceneTags: ['项目需求', '开源协作'],
     skills: ['React','Vue','Node.js','Python','Go','TypeScript','Java','Docker','Kubernetes','AI/ML','NLP','后端开发','前端开发','全栈开发','区块链','推荐算法','算法'],
     templates: [
       ['Side Project', '我想做一个 AI 工具 Side Project，缺一位会 React 的全栈开发者，每周可投入 10 小时'],
@@ -1960,6 +2015,7 @@ const DOMAINS = {
     chatIntro: '描述你的 Side Project 或开源计划，AI 帮你整理需求并匹配合适的工程师'
   },
   design: { name: '🎨 创意设计', icon: '🎨', color: '#f59e0b',
+    sceneTags: ['品牌设计', '插画合作', 'UI/UX'],
     skills: ['Figma','UI设计','UX研究','品牌视觉','插画','动画','3D','Framer','设计系统'],
     templates: [
       ['品牌设计', '寻找设计师一起做一套品牌 VI 系统'],
@@ -1969,6 +2025,7 @@ const DOMAINS = {
     chatIntro: '描述你的创意项目，AI 帮你整理需求并匹配设计师、插画师等创意人才'
   },
   content: { name: '📝 内容创作', icon: '📝', color: '#22c55e',
+    sceneTags: ['播客制作', '视频创作', '专栏合作'],
     skills: ['写作','视频剪辑','播客','自媒体运营','编辑','新媒体','摄影','内容策划'],
     templates: [
       ['播客制作', '想找一个搭档一起做科技类播客节目'],
@@ -1978,6 +2035,7 @@ const DOMAINS = {
     chatIntro: '描述你的内容创作方向，AI 帮你整理需求并匹配创作者、编辑、运营伙伴'
   },
   education: { name: '🎓 教育培训', icon: '🎓', color: '#3b82f6',
+    sceneTags: ['课程共创', '教育工具', '知识社区'],
     skills: ['课程设计','教学设计','知识付费','培训','教育科技','教研','辅导'],
     templates: [
       ['课程共创', '寻找学科专家一起开发在线课程'],
@@ -1987,6 +2045,7 @@ const DOMAINS = {
     chatIntro: '描述你的教育项目或教学需求，AI 帮你整理并匹配教育行业伙伴'
   },
   business: { name: '📈 商业合作', icon: '📈', color: '#ef4444',
+    sceneTags: ['技术合伙', '运营合伙', '融资合作'],
     skills: ['市场营销','BD','融资','数据分析','运营','产品管理','PRD撰写','商业模式','供应链'],
     templates: [
       ['技术合伙', '有产品 idea，寻找技术合伙人一起创业，每周可投入 10-15 小时'],
@@ -1994,6 +2053,26 @@ const DOMAINS = {
       ['商业合伙', '项目已有原型，寻找商业合伙人负责市场和融资'],
     ],
     chatIntro: '描述你的创业 Side Project，AI 帮你整理需求并匹配技术或商业伙伴'
+  },
+  food: { name: '🧋 餐饮美食', icon: '🧋', color: '#f97316',
+    sceneTags: ['找商家', '拼单组队', '新品推广', '美食探店'],
+    skills: ['奶茶','咖啡','甜品','烘焙','火锅','日料','小吃','中餐','西餐','轻食','素食','调酒','私房菜','外卖运营','食品安全'],
+    templates: [
+      ['找奶茶店', '我想找一家能做无糖燕麦奶+黑糖珍珠的奶茶店，离我近的'],
+      ['找顾客', '本店推出新品"桂花酒酿奶茶"，寻找喜欢尝鲜的顾客'],
+      ['拼单组队', '想组办公室奶茶拼单，5杯起送，求拼友'],
+    ],
+    chatIntro: '描述你的口味偏好或饮食需求，AI 帮你匹配商家、拼单伙伴或推荐新店'
+  },
+  service: { name: '🏠 本地服务', icon: '🏠', color: '#14b8a6',
+    sceneTags: ['找服务', '提供服务', '急需帮忙'],
+    skills: ['家政保洁','搬家','维修','装修','美容美发','健身私教','宠物寄养','摄影跟拍','补习辅导','月嫂','家电清洗','二手回收'],
+    templates: [
+      ['找服务', '我需要一个靠谱的家政阿姨，每周打扫一次'],
+      ['提供服务', '我是专业摄影师，可接婚礼跟拍、写真约拍'],
+      ['找人帮忙', '周末需要搬家帮手，有偿'],
+    ],
+    chatIntro: '描述你需要什么本地服务或你能提供什么技能，AI 帮你精准匹配'
   },
 };
 
@@ -2020,6 +2099,8 @@ const DOMAIN_SKILL_MAP = {
   content:   ['generate_prd','diagnose','optimize','invite','generate_ui'],
   education: ['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],
   business:  ['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],
+  food:      ['diagnose','optimize','invite','summary'],
+  service:   ['diagnose','optimize','invite','summary'],
 };
 
 /** 预设工作流模板*/
@@ -2064,6 +2145,7 @@ const USERS = [];
 
 /** 需求 / 群组 / 对话（登录后由 API 加载）*/
 let REQUIREMENTS = [];
+let filteredReqs = null; // H-04: 局部过滤结果，避免覆盖全局 REQUIREMENTS
 let GROUPS = [];
 let conversations = [];
 let activeConvId = null;
@@ -2143,10 +2225,18 @@ function syncSidebarUser() {
 
 let loginSmsCooldown = 0;
 let loginSmsTimer = null;
+let hasAttemptedLogin = false; // V-05: Track if login was previously attempted
 
 function showLogin() {
   document.getElementById('login-overlay').classList.remove('hidden');
+  // V-05: Show close button only if not first login attempt
+  document.getElementById('login-close-btn').style.display = hasAttemptedLogin ? '' : 'none';
   initLoginAuth();
+}
+
+// V-05: Close login overlay without logging in
+function closeLogin() {
+  document.getElementById('login-overlay').classList.add('hidden');
 }
 
 async function initLoginAuth() {
@@ -2232,6 +2322,8 @@ async function doLogin() {
   } catch (e) {
     setAppLoading(false);
     errEl.textContent = e.message || '登录失败（开发环境验证码一般为 123456）';
+    hasAttemptedLogin = true; // V-05: Enable close button on next login prompt
+    document.getElementById('login-close-btn').style.display = '';
     btn.disabled = false;
     btn.textContent = '登录';
     return;
@@ -2256,12 +2348,21 @@ async function doLogin() {
 
 function renderAllSections() {
   renderDomainTabs();
+  renderDomainSwitcher();
   renderQuickActions();
   document.getElementById('chat-intro-text').textContent = (DOMAINS[currentDomain] || DOMAINS.tech).chatIntro;
+  // Update match page domain-adaptive text
+  const matchDesc = document.getElementById('match-section-desc');
+  if (matchDesc) matchDesc.textContent = getDomainMatchDesc(currentDomain);
+  const matchModeLabel = document.getElementById('match-mode-reqs-label');
+  if (matchModeLabel) matchModeLabel.textContent = getDomainMatchModeLabel(currentDomain);
+  // Populate match domain filter
+  renderMatchDomainFilter();
   renderChatHistory();
   renderConvList();
   renderSkillPanel();
-  renderSquareDomainChips();
+  renderSquareDomainSelect();
+  renderSquareSceneChips();
   renderSquare();
   renderMatchSection();
   renderGroupsList();
@@ -2441,6 +2542,9 @@ function wizShowStep(n) {
     const dot = document.getElementById('wiz-dot-' + i);
     if (dot) dot.style.background = i <= n ? 'var(--accent-purple)' : 'var(--bg-tertiary)';
   }
+  // UX-04: Update step indicator label
+  const stepLabel = document.getElementById('wiz-step-label');
+  if (stepLabel) stepLabel.textContent = `Step ${n + 1}/3`;
   document.getElementById('wiz-title').textContent = ['发布需求 · 第1步','选择协作者 · 第2步','合作方式 · 第3步'][n];
   document.getElementById('wiz-prev').style.display = n === 0 ? 'none' : '';
   document.getElementById('wiz-next').textContent = n === 2 ? '生成草稿' : '下一步';
@@ -2503,7 +2607,7 @@ async function wizNext() {
     const req = await CollabApi.createRequirement({
       title: wizData.desc.slice(0, 60),
       desc: wizData.desc,
-      domain: 'tech',
+      domain: currentDomain, // M-07: Use user-selected domain instead of hardcoded 'tech'
       sceneTag: wizData.sceneTag,
       projectStage: wizData.projectStage,
       weeklyHours: wizData.weeklyHours,
@@ -2546,8 +2650,8 @@ function switchSection(sectionId, navEl) {
   document.getElementById('section-' + sectionId).classList.add('active');
   if (navEl) navEl.classList.add('active');
   // Lazy renders
-  if (sectionId === 'match') { if (matchMode === 'reqs') renderMatchSection(); else renderReverseMatchSection(); }
-  if (sectionId === 'square') renderSquare();
+  if (sectionId === 'match') { renderMatchDomainFilter(); if (matchMode === 'reqs') renderMatchSection(); else renderReverseMatchSection(); }
+  if (sectionId === 'square') { renderSquareDomainSelect(); renderSquareSceneChips(); renderSquare(); }
   if (sectionId === 'groups') renderGroupsList();
   if (sectionId === 'profile') renderProfile();
   if (sectionId === 'home') setTimeout(() => scrollToBottom(document.getElementById('chat-messages')), 50);
@@ -2592,6 +2696,14 @@ function openMarketFullscreen() {
 function openWorkflowFullscreen() {
   document.getElementById('modal-workflow-full').classList.add('open');
   renderWorkflowPage();
+}
+
+// UX-07: Open workflow panel from sidebar nav
+function openWorkflowFromSidebar() {
+  switchSection('home', document.querySelector('[data-section=home]'));
+  setTimeout(() => {
+    switchSideTab('workflow', document.querySelector('.side-tab:nth-child(2)'));
+  }, 100);
 }
 
 async function renderSkillMarket() {
@@ -2725,7 +2837,8 @@ async function runWorkflow(wfId) {
 //  FULL-PAGE SKILLS & WORKFLOWS + CUSTOM CREATION
 // ============================================================
 function renderSkillPage() {
-  const q = (document.getElementById('skill-page-search')?.value || '').toLowerCase();
+  // M-08: Support both id (main page) and class (modal) selectors
+  const q = (document.getElementById('skill-page-search') || document.querySelector('.skill-page-search'))?.value?.toLowerCase() || '';
   const cat = window._skillCat || 'all';
   const tab = window._skillTab || 'store';
   const grid = document.getElementById('skill-page-grid');
@@ -2762,6 +2875,7 @@ function renderSkillCards(list) {
       <div class="skill-page-card-meta">${(v.tags||[]).map(t=>`<span class="skill-page-card-tag">${t}</span>`).join('')}<span style="margin-left:auto;font-size:11px;color:var(--text-muted);">${(v.installs||0).toLocaleString()}次安</span></div>
       <div class="skill-page-card-footer">
         <button class="btn btn-sm ${i?'btn-secondary':'btn-primary'}" onclick="event.stopPropagation();toggleSkill('${k}',this)">${i?'✓ 已安装':'安装'}</button>
+        ${isCustom ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();editCustomSkill('${k}')" style="font-size:11px;">✏️ 编辑</button>` : ''}
         ${isCustom ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteCustomSkill('${k}')" style="color:var(--danger);">🗑 删除</button>` : ''}
       </div>
     </div>`;
@@ -2854,6 +2968,8 @@ function filterSkillCat(cat, el) {
 
 function installFeaturedSkill(skillId) {
   installedSkills.add(skillId);
+  // H-07: 持久化到后端
+  CollabApi.saveInstalledSkillIds([...installedSkills]).catch(() => {});
   renderSkillPage(); renderSkillPanel();
   showToast(`已安装 ${SKILLS[skillId]?.name}`, 'success');
 }
@@ -2868,6 +2984,7 @@ function renderWorkflowPage() {
     <div class="wf-steps">${w.steps.map((s,i)=>`${i>0?'<span class="wf-step-arrow"></span>':''}<span class="wf-step">${s.icon} ${s.title}</span>`).join('')}</div>
     <div style="display:flex;gap:6px;align-items:center;margin-top:4px;">
       <button class="wf-run-btn" onclick="runWorkflow('${w.id}')">▶ 执行</button>
+      ${isCustom ? `<button class="btn btn-ghost btn-sm" onclick="editCustomWorkflow('${w.id}')" style="font-size:11px;">✏️ 编辑</button>` : ''}
       ${isCustom ? `<button class="btn btn-ghost btn-sm" onclick="deleteCustomWorkflow('${w.id}')" style="color:var(--danger);font-size:11px;">🗑 删除</button>` : ''}
     </div>
     <div style="font-size:11px;color:var(--accent-purple);margin-top:8px;" id="wf-status-${w.id}"></div>
@@ -2875,13 +2992,20 @@ function renderWorkflowPage() {
   }).join('');
 }
 
-function showCustomSkillModal() { openModal('modal-skill-create'); }
+let editingSkillId = null;
+
 async function createCustomSkill() {
   const name = document.getElementById('new-skill-name').value.trim();
   const prompt = document.getElementById('new-skill-prompt').value.trim();
   const desc = document.getElementById('new-skill-desc').value.trim();
   if(!name||!prompt){showToast('名称和指令不能为空','warning');return;}
   try {
+    // 编辑模式：先删除旧技能
+    if (editingSkillId) {
+      await CollabApi.deleteUserSkill(editingSkillId);
+      delete SKILLS[editingSkillId];
+      installedSkills.delete(editingSkillId);
+    }
     const { skill, skillIds } = await CollabApi.createUserSkill({
       name, instruct: prompt, desktop: desc || name, icon: '✨',
     });
@@ -2890,20 +3014,40 @@ async function createCustomSkill() {
     Object.keys(DOMAIN_SKILL_MAP).forEach(k=>{
       if(!DOMAIN_SKILL_MAP[k].includes(skill.id)) DOMAIN_SKILL_MAP[k].push(skill.id);
     });
+    const wasEditing = !!editingSkillId;
+    editingSkillId = null;
     closeModal('modal-skill-create');
     document.getElementById('new-skill-name').value = '';
     document.getElementById('new-skill-prompt').value = '';
     document.getElementById('new-skill-desc').value = '';
     renderSkillPage(); renderSkillPanel();
-    showToast('已创建并安装 '+name,'success');
+    showToast(wasEditing ? '技能已更新' : '已创建并安装 '+name,'success');
   } catch (e) {
     showToast(e.message || '创建技能失败', 'warning');
   }
 }
+
+function editCustomSkill(skillId) {
+  const skill = SKILLS[skillId];
+  if (!skill) return;
+  editingSkillId = skillId;
+  document.getElementById('modal-skill-create-title').textContent = '编辑自定义技能';
+  document.getElementById('new-skill-name').value = skill.name || '';
+  document.getElementById('new-skill-prompt').value = skill.instruct || '';
+  document.getElementById('new-skill-desc').value = skill.desktop || '';
+  openModal('modal-skill-create');
+}
 let wfSteps=[];
-function showCustomWorkflowModal(){
-  wfSteps=[];
-  document.getElementById('wf-preview').innerHTML='';
+let editingWorkflowId = null;
+function showCustomWorkflowModal(existingWf){
+  if (existingWf) {
+    editingWorkflowId = existingWf.id;
+    wfSteps = existingWf.steps.map(s => ({ skill: s.skillId, icon: s.icon, title: s.title }));
+  } else {
+    editingWorkflowId = null;
+    wfSteps = [];
+  }
+  document.getElementById('wf-preview').innerHTML = wfSteps.map((s,i)=>`${i>0?' ↀ':''}<span style="background:var(--bg-tertiary);padding:3px 8px;border-radius:10px;font-size:11px;">${s.icon} ${s.title}</span>`).join('');
   document.getElementById('wf-skill-picker').innerHTML = Object.entries(SKILLS).filter(([,v])=>v.isInstallable).map(([k,v])=>
     `<div style="padding:8px 12px;cursor:pointer;border-radius:6px;border:1px solid var(--border);display:flex;align-items:center;gap:8px;margin:3px 0;" onmouseover="this.style.borderColor='var(--accent-purple)';this.style.background='var(--bg-hover)';" onmouseout="this.style.borderColor='var(--border)';this.style.background='';" onclick="wfAddStep('${k}')">
       <span>${v.icon}</span><span style="font-size:12px;font-weight:500;">${v.name}</span>
@@ -2911,6 +3055,10 @@ function showCustomWorkflowModal(){
     </div>`
   ).join('');
   openModal('modal-workflow-create');
+  document.getElementById('modal-workflow-create-title').textContent = existingWf ? '编辑工作流' : '创建工作流';
+  if (existingWf) {
+    document.getElementById('new-wf-name').value = existingWf.name || '';
+  }
 }
 function wfAddStep(skillId){
   if(wfSteps.find(s=>s.skill===skillId))return;
@@ -2921,21 +3069,34 @@ async function createCustomWorkflow(){
   const name=document.getElementById('new-wf-name').value.trim();
   if(!name||!wfSteps.length){showToast('名称和步骤不能为空','warning');return;}
   try {
+    // 编辑模式：先删除旧工作流
+    if (editingWorkflowId) {
+      await CollabApi.deleteUserWorkflow(editingWorkflowId);
+      workflowsCache = workflowsCache.filter(w => w.id !== editingWorkflowId);
+    }
     const wf = await CollabApi.createUserWorkflow({
       name,
       desc: '自定义流程',
       steps: wfSteps.map(s => ({ skillId: s.skill, title: s.title, icon: s.icon })),
     });
+    const wasEditing = !!editingWorkflowId;
     workflowsCache = [...getWorkflows(), wf];
     wfSteps = [];
+    editingWorkflowId = null;
     closeModal('modal-workflow-create');
     document.getElementById('new-wf-name').value = '';
     renderWorkflowPage();
     renderWorkflows();
-    showToast('已创建「'+name+'」','success');
+    showToast(wasEditing ? '工作流已更新' : '已创建「'+name+'」','success');
   } catch (e) {
     showToast(e.message || '创建工作流失败', 'warning');
   }
+}
+
+function editCustomWorkflow(workflowId) {
+  const wf = getWorkflows().find(w => w.id === workflowId);
+  if (!wf) return;
+  showCustomWorkflowModal(wf);
 }
 
 async function deleteCustomWorkflow(workflowId) {
@@ -2982,10 +3143,13 @@ function renderChatMessage(msg) {
         </div>
       </div>`;
   } else {
+    // V-03: User message avatar — prefer msg.user.avatar if present, else fallback to currentUser
+    const userAvatar = (msg.user && msg.user.avatar) ? msg.user.avatar : (currentUser?.avatar || '👤');
+    const userAvatarColor = (msg.user && msg.user.avatarColor) ? msg.user.avatarColor : (currentUser?.avatarColor || 'var(--accent-gradient)');
     return `
       <div class="message-row user">
         <div class="msg-avatar">
-          <div class="avatar avatar-sm" style="background:${currentUser?.avatarColor || 'var(--accent-gradient)'};">${currentUser?.avatar || '👤'}</div>
+          <div class="avatar avatar-sm" style="background:${userAvatarColor};">${userAvatar}</div>
         </div>
         <div class="msg-wrapper">
           <div class="msg-actions">
@@ -3027,7 +3191,8 @@ function renderInlineReqCard(req) {
 }
 
 function renderProtoCard(code) {
-  const id = 'proto-' + Date.now();
+  // M-06: Use stronger ID generation to avoid collision risk
+  const id = 'proto-' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   return `<div class="proto-card" id="${id}">
     <iframe class="proto-frame" srcdoc="${escapeHtml(code)}" sandbox="allow-scripts" id="${id}-frame"></iframe>
     <div class="proto-toolbar">
@@ -3132,7 +3297,16 @@ function escapeHtml(str) {
     .replace(/&/g,'&amp;')
     .replace(/</g,'&lt;')
     .replace(/>/g,'&gt;')
-    .replace(/"/g,'&quot;');
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function escapeAttr(str) {
+  return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'\\\\');
+}
+
+function copyText(text) {
+  navigator.clipboard.writeText(text).then(() => showToast('已复制')).catch(() => showToast('复制失败', 'warning'));
 }
 
 function insertQuick(text) {
@@ -3142,17 +3316,80 @@ function insertQuick(text) {
   autoResize(input);
 }
 
+function insertQuickFromAttr(el) {
+  insertQuick(el.dataset.text);
+}
+
+function downloadGroupFileFromAttr(el) {
+  downloadGroupFile(el.dataset.fileUrl, el.dataset.fileName);
+}
+
 /** 切换领域 */
 function switchDomain(domainKey, el) {
   currentDomain = domainKey;
+  // Update domain tabs
   document.querySelectorAll('.domain-tab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
+  const activeTab = document.querySelector(`.domain-tab[data-domain="${domainKey}"]`);
+  if (activeTab) activeTab.classList.add('active');
+  // Update sidebar subtitle
   const domain = DOMAINS[domainKey];
+  const sub = document.getElementById('sidebar-logo-sub');
+  if (sub) sub.textContent = getDomainSubtitle(domainKey);
+  // Update sidebar switcher
+  const switcher = document.getElementById('domain-switcher');
+  if (switcher) switcher.value = domainKey;
+  // Update chat intro
   document.getElementById('chat-intro-text').textContent = domain.chatIntro;
+  // Update match page domain-adaptive text
+  const matchDesc = document.getElementById('match-section-desc');
+  if (matchDesc) matchDesc.textContent = getDomainMatchDesc(domainKey);
+  const matchModeLabel = document.getElementById('match-mode-reqs-label');
+  if (matchModeLabel) matchModeLabel.textContent = getDomainMatchModeLabel(domainKey);
   // Update conversation domain
   getActiveConv().domain = domainKey;
   renderQuickActions();
   renderSkillPanel();
+}
+
+function getDomainSubtitle(domainKey) {
+  const map = {
+    tech: '技术协作匹配',
+    design: '创意设计匹配',
+    content: '内容创作匹配',
+    education: '教育协作匹配',
+    business: '商业合作匹配',
+    food: '餐饮美食匹配',
+    service: '本地服务匹配',
+  };
+  return map[domainKey] || '协作需求匹配';
+}
+
+/** 获取领域对应的匹配页面描述 */
+function getDomainMatchDesc(domainKey) {
+  const map = {
+    tech: '根据技能、投入时间与协作意向，推荐最合适的技术合伙人',
+    design: '根据创意风格与项目需求，推荐最匹配的设计师',
+    content: '根据创作方向与内容类型，推荐最合拍的创作者',
+    education: '根据教学方向与课程需求，推荐最适配的教育伙伴',
+    business: '根据商业模式与合作意向，推荐最合适的商业合伙人',
+    food: '根据口味偏好与饮食需求，推荐最匹配的商家与拼单伙伴',
+    service: '根据服务类型与需求描述，推荐最靠谱的本地服务提供者',
+  };
+  return map[domainKey] || '根据技能与需求，推荐最合适的协作者';
+}
+
+/** 获取领域对应的匹配模式正向标签 */
+function getDomainMatchModeLabel(domainKey) {
+  const map = {
+    tech: '我有需求，找伙伴',
+    design: '我有项目，找设计师',
+    content: '我有选题，找创作者',
+    education: '我有课程，找伙伴',
+    business: '我有项目，找合伙人',
+    food: '我想吃喝，找搭子',
+    service: '我需要服务，找人',
+  };
+  return map[domainKey] || '我有需求，找伙伴';
 }
 
 /** 渲染技能下拉面板*/
@@ -3242,7 +3479,7 @@ function renderQuickActions() {
   const container = document.getElementById('quick-actions');
   const domain = DOMAINS[currentDomain];
   const allChips = (domain.templates || DOMAINS.tech.templates).map(([label, text]) => 
-    `<div class="quick-chip" onclick="insertQuick('${escapeHtml(text)}')">${label}</div>`
+    `<div class="quick-chip" data-text="${escapeHtml(text)}" onclick="insertQuickFromAttr(this)">${escapeHtml(label)}</div>`
   ).join('');
   container.innerHTML = allChips;
 }
@@ -3255,20 +3492,13 @@ function renderDomainTabs() {
   ).join('');
 }
 
-/** 渲染需求广场领域筛选chip */
-function renderSquareDomainChips() {
-  const filterDiv = document.getElementById('square-filters');
-  const existingChips = filterDiv.querySelectorAll('.filter-chip[data-filter-domain]');
-  existingChips.forEach(c => c.remove());
-  const allBtn = filterDiv.querySelector('.filter-chip[data-filter-domain="all"]');
-  // Re-insert domain chips after "全部"
-  const chips = Object.entries(DOMAINS).map(([k, d]) => {
-    const active = currentSquareDomain === k ? ' active' : '';
-    return `<div class="filter-chip${active}" data-filter-domain="${k}" onclick="filterSquareDomain('${k}', this)">${d.icon} ${d.name.split(' ')[1]}</div>`;
-  }).join('');
-  if (allBtn) {
-    allBtn.insertAdjacentHTML('afterend', chips);
-  }
+/** 渲染侧边栏领域切换下拉框 */
+function renderDomainSwitcher() {
+  const select = document.getElementById('domain-switcher');
+  if (!select) return;
+  select.innerHTML = Object.entries(DOMAINS).map(([key, d]) =>
+    `<option value="${key}"${key === currentDomain ? ' selected' : ''}>${d.name}</option>`
+  ).join('');
 }
 
 function handleChatKeydown(e) {
@@ -3444,28 +3674,32 @@ function renderConvList() {
   if (!container) return;
   document.getElementById('conv-count').textContent = `(${conversations.length})`;
 
-  let html = `<div style="font-size:11px;color:var(--text-muted);padding:8px 0 4px;font-weight:600;">💬 对话历史</div>`;
+  let html = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0 4px;font-weight:600;">💬 对话历史</div>`;
 
-  conversations.slice().sort((a, b) => b.createdAt - a.createdAt).forEach(c => {
-    const active = c.id === activeConvId;
-    const lastMsg = c.messages.length ? c.messages[c.messages.length - 1].content.slice(0, 30) : '';
-    html += `<div class="conv-item ${active ? 'active' : ''}">
-      <div onclick="switchConversation('${c.id}')" style="flex:1;">
-        <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
-          <div style="font-weight:${active?'600':'500'};font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHtml(c.title)}</div>
-          <div style="font-size:10px;color:var(--text-muted);flex-shrink:0;">${timeAgo(c.createdAt)}</div>
+  if (!conversations.length) {
+    html += '<div style="color:var(--text-muted);font-size:12px;padding:20px 8px;text-align:center;line-height:1.6;">还没有对话<br>在 CollabAI 中描述你的需求开始对话吧</div>';
+  } else {
+    conversations.slice().sort((a, b) => b.createdAt - a.createdAt).forEach(c => {
+      const active = c.id === activeConvId;
+      const lastMsg = c.messages.length ? escapeHtml(c.messages[c.messages.length - 1].content.slice(0, 30)) : '';
+      html += `<div class="conv-item ${active ? 'active' : ''}">
+        <div onclick="switchConversation('${c.id}')" style="flex:1;">
+          <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
+            <div style="font-weight:${active?'600':'500'};font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHtml(c.title)}</div>
+            <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${timeAgo(c.createdAt)}</div>
+          </div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lastMsg || '空对话'}</div>
         </div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lastMsg || '空对话'}</div>
-      </div>
-      <span onclick="event.stopPropagation();deleteConv('${c.id}')" style="font-size:11px;color:var(--text-muted);cursor:pointer;padding:2px 6px;flex-shrink:0;opacity:0;" class="conv-del">🗑</span>
-    </div>`;
-  });
+        <span onclick="event.stopPropagation();deleteConv('${c.id}')" style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:2px 6px;flex-shrink:0;opacity:0;" class="conv-del">🗑</span>
+      </div>`;
+    });
+  }
 
   // Requirements section
   const myReqs = REQUIREMENTS.filter(r => r.author && r.author.id === currentUser?.id);
-  html += `<div style="font-size:11px;color:var(--text-muted);padding:12px 0 4px;font-weight:600;">📋 我的需求 (${myReqs.length})</div>`;
+  html += `<div style="font-size:12px;color:var(--text-muted);padding:12px 0 4px;font-weight:600;">📋 我的需求 (${myReqs.length})</div>`;
   if (!myReqs.length) {
-    html += '<div style="color:var(--text-muted);font-size:11px;padding:8px 0;">与 AI 对话后生成的需求会显示在这里</div>';
+    html += '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">与 AI 对话后生成的需求会显示在这里</div>';
   } else {
     myReqs.slice().reverse().forEach(r => {
       const d = DOMAINS[r.domain] || DOMAINS.tech;
@@ -3551,6 +3785,11 @@ async function sendChatMessage() {
   input.value = '';
   input.style.height = 'auto';
 
+  // UX-01: Show sending feedback on send button
+  const sendBtn = document.querySelector('.chat-send-btn');
+  const originalSendHtml = sendBtn ? sendBtn.innerHTML : '';
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.innerHTML = '⏳'; }
+
   let fileIds = [];
   try {
     if (hasPendingFiles) {
@@ -3599,7 +3838,8 @@ async function sendChatMessage() {
         scrollToBottom(container);
       }
     },
-      fileIds
+      fileIds,
+      conv.domain || currentDomain
     );
     typingEl.remove();
     isAiTyping = false;
@@ -3607,17 +3847,29 @@ async function sendChatMessage() {
       patchConversation(conversation);
     } else {
       const c = getActiveConv();
-      if (userMessage && c.messages.length > optimisticIdx && c.messages[optimisticIdx]?.role === 'user') {
-        c.messages[optimisticIdx] = userMessage;
-      } else if (userMessage) {
-        addMsg(userMessage);
+      // V-02: Dedup — check if server-returned userMessage already exists to avoid duplicates
+      if (userMessage) {
+        const dupIdx = c.messages.findIndex(m => m.role === userMessage.role && m.content === userMessage.content);
+        if (dupIdx >= 0) {
+          // Update the existing optimistic message in place
+          c.messages[dupIdx] = { ...c.messages[dupIdx], ...userMessage };
+        } else if (c.messages.length > optimisticIdx && c.messages[optimisticIdx]?.role === 'user') {
+          c.messages[optimisticIdx] = userMessage;
+        } else {
+          addMsg(userMessage);
+        }
       }
-      if (message) addMsg(message);
+      if (message) {
+        const dupIdx2 = c.messages.findIndex(m => m.role === message.role && m.content === message.content);
+        if (dupIdx2 < 0) addMsg(message);
+      }
     }
     if (message?.reqCard) upsertRequirement(message.reqCard);
     await refreshRequirements();
     renderChatHistory();
     renderConvList();
+    // UX-01: Restore send button
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = originalSendHtml; }
   } catch (e) {
     typingEl.remove();
     isAiTyping = false;
@@ -3626,6 +3878,8 @@ async function sendChatMessage() {
       c.messages.splice(optimisticIdx, 1);
       renderChatHistory();
     }
+    // UX-01: Restore send button on error
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = originalSendHtml; }
     showToast(e.message || 'AI 回复失败', 'warning');
   }
 }
@@ -3871,15 +4125,39 @@ async function reviewApp(reqId, appId, status) {
 // ============================================================
 //  MATCH SECTION
 // ============================================================
+
+/** 渲染匹配页面的领域筛选下拉框 */
+function renderMatchDomainFilter() {
+  const select = document.getElementById('match-domain-filter');
+  if (!select) return;
+  select.innerHTML = '<option value="all">全部领域</option>' +
+    Object.entries(DOMAINS).map(([key, d]) =>
+      `<option value="${key}"${matchDomainFilter === key ? ' selected' : ''}>${d.name}</option>`
+    ).join('');
+}
+
+/** 领域筛选变更时刷新匹配列表 */
+function filterMatchByDomain(domainKey) {
+  matchDomainFilter = domainKey;
+  currentMatchReqId = null;
+  lastLoadedMatchReqId = null;
+  renderMatchSection();
+}
+
 function renderMatchSection() {
   const container = document.getElementById('match-req-list');
-  const myReqs = REQUIREMENTS.filter(r => r.author && isReqAuthor(r));
+  let myReqs = REQUIREMENTS.filter(r => r.author && isReqAuthor(r));
+  // Apply domain filter
+  if (matchDomainFilter !== 'all') {
+    myReqs = myReqs.filter(r => r.domain === matchDomainFilter);
+  }
   const openReqs = myReqs.filter(r => r.status === 'open');
   const draftReqs = myReqs.filter(r => r.status === 'draft');
   if (!myReqs.length) {
+    const domainName = matchDomainFilter !== 'all' ? (DOMAINS[matchDomainFilter]?.name || '当前领域') : '';
     container.innerHTML = `<div class="empty-state" style="padding:30px 16px;">
       <div class="icon">📝</div>
-      <h3>暂无需求</h3>
+      <h3>${matchDomainFilter !== 'all' ? `${domainName}暂无需求` : '暂无需求'}</h3>
       <p>先去 AI 对话页面生成一条需求</p>
       <button class="btn btn-primary btn-sm" onclick="newConversation();switchSection('home', document.querySelector('[data-section=home]'));setTimeout(()=>{const el=document.getElementById('chat-input');if(el)el.focus();},200)">去生成需求</button>
     </div>`;
@@ -4015,6 +4293,8 @@ function renderMatchCard(u, req) {
 let matchMode = 'reqs';
 /** 匹配面板渲染代次，用于丢弃模式切换后的过期异步结果 */
 let matchPanelGen = 0;
+/** 匹配页面领域筛选 */
+let matchDomainFilter = 'all';
 
 /** 反向匹配：用当前用户技能匹配广场需求（API）*/
 async function reverseMatch(limit) {
@@ -4041,7 +4321,7 @@ function renderMatchCardForReq(r) {
     <div class="user-match-bio">${escapeHtml(r.desc.slice(0, 80))}${r.desc.length > 80 ? '...' : ''}</div>
     <div class="user-match-skills">${renderBadges(r.skills, 4)}</div>
     <div class="user-match-footer">
-      <div><div class="collab-score-label">发布者</div><div class="collab-score-val">${escapeHtml(r.author.name)}</div></div>
+      <div><div class="collab-score-label">发布者</div><div class="collab-score-val">${escapeHtml((r.author || {}).name || '未知用户')}</div></div>
       <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();applyReq('${r.id}')">申请参与</button>
     </div>
   </div>`;
@@ -4123,7 +4403,7 @@ async function renderProfileRecs(profileContentEl) {
       <div class="rec-item-score ${cls}">${r.userMatchPct}%</div>
       <div class="rec-item-body">
         <div class="rec-item-title">${escapeHtml(r.title)}</div>
-        <div class="rec-item-meta">${d.icon} ${d.name.split(' ')[1]} · ${escapeHtml(r.author.name)} · ${r.time}</div>
+        <div class="rec-item-meta">${d.icon} ${d.name.split(' ')[1]} · ${escapeHtml((r.author || {}).name || '未知用户')} · ${r.time}</div>
       </div>
       <div class="rec-item-arrow"></div>
     </div>`;
@@ -4192,6 +4472,16 @@ async function confirmInvite(uid, reqId) {
 // ============================================================
 function renderGroupsList() {
   const container = document.getElementById('group-list-items');
+  if (!GROUPS.length) {
+    // UX-02: Empty state with CTA guidance
+    container.innerHTML = `<div class="empty-state" style="padding:30px 16px;">
+      <div class="icon">👥</div>
+      <h3>暂无协作群组</h3>
+      <p>通过智能匹配发现协作者，或发布需求后邀请伙伴加入</p>
+      <button class="btn btn-primary btn-sm" onclick="switchSection('match', document.querySelector('[data-section=match]'))">🔍 去智能匹配</button>
+    </div>`;
+    return;
+  }
   container.innerHTML = GROUPS.map(g => {
     const msgs = g.messages||[];
     const lastMsg = msgs[msgs.length - 1];
@@ -4242,7 +4532,7 @@ function openGroup(gid) {
         <div class="member-name">${escapeHtml(m.name)}${m.id === currentUser.id ? ' <span style="font-size:10px;color:var(--accent-purple);">(我)</span>' : ''}</div>
         <div class="member-role">${escapeHtml(m.position || '成员')}</div>
       </div>
-      <div class="member-status ${m.online ? 'online' : 'offline'}" style="margin-left:auto;"></div>
+      <div class="member-status ${m.online ? 'online' : 'offline'}" title="${m.online ? '在线' : '离线'}" style="margin-left:auto;"></div>
     </div>
   `).join('');
 }
@@ -4260,12 +4550,14 @@ function renderGroupMessage(msg) {
   const isSelf = (msg.user && msg.user.id === currentUser?.id) || msg.self;
   const rowCls = isSelf ? 'self' : 'other';
   const bubbleContent = msg.type === 'file'
-    ? `<div class="file-bubble" onclick="downloadGroupFile('${escapeHtml(msg.fileUrl || msg.content)}','${escapeHtml(msg.fileName)}')">
+    ? `<div class="file-bubble" data-file-url="${escapeHtml(msg.fileUrl || msg.content)}" data-file-name="${escapeHtml(msg.fileName)}" onclick="downloadGroupFileFromAttr(this)">
         <div class="file-icon">📄</div>
         <div class="file-info-name">${escapeHtml(msg.fileName)}</div>
         <div class="file-info-size">${msg.fileSize || ''}</div>
       </div>`
     : `<div class="group-msg-bubble">${escapeHtml(msg.content)}</div>`;
+
+  const copyBtn = msg.type === 'text' ? `<button onclick="event.stopPropagation();copyText('${escapeAttr(msg.content)}')">📋 复制</button>` : '';
 
   return `
     <div class="group-msg-row ${rowCls}">
@@ -4274,6 +4566,7 @@ function renderGroupMessage(msg) {
         ${!isSelf ? `<div class="group-msg-sender">${escapeHtml(msg.user.name)}</div>` : ''}
         ${bubbleContent}
         <div class="group-msg-time">${msg.time}</div>
+        <div class="group-msg-actions">${copyBtn}</div>
       </div>
     </div>`;
 }
@@ -4305,6 +4598,21 @@ async function sendGroupMessage() {
   } catch (e) {
     showToast(e.message || '发送失败', 'warning');
   }
+}
+
+function toggleGroupMembers() {
+  const panel = document.querySelector('.group-members-panel');
+  const backdrop = document.querySelector('.group-members-backdrop');
+  if (!panel || !backdrop) return;
+  panel.classList.toggle('mobile-open');
+  backdrop.classList.toggle('show');
+}
+
+function closeGroupMembers() {
+  const panel = document.querySelector('.group-members-panel');
+  const backdrop = document.querySelector('.group-members-backdrop');
+  if (panel) panel.classList.remove('mobile-open');
+  if (backdrop) backdrop.classList.remove('show');
 }
 
 function formatFileSize(bytes) {
@@ -4341,7 +4649,29 @@ function sendFileMessage() {
 //  SQUARE SECTION
 // ============================================================
 let currentSquareDomain = 'all';
-let currentSquareScene = 'side-project';
+let currentSquareScene = 'all';
+let currentSquareSearch = '';
+
+/** 从领域配置读取场景标签 */
+function getSquareSceneTags() {
+  const domain = DOMAINS[currentSquareDomain] || DOMAINS.tech;
+  return domain.sceneTags || ['项目需求', '开源协作'];
+}
+
+/** 场景匹配：检查需求标题/描述/技能中是否包含场景关键词 */
+function matchReqScene(r, sceneTag) {
+  if (sceneTag === 'all') return true;
+  const text = `${r.title || ''} ${r.desc || ''} ${(r.skills || []).join(' ')}`.toLowerCase();
+  return text.includes(sceneTag.toLowerCase());
+}
+
+/** 搜索匹配：按标题、描述、技能标签检索 */
+function matchReqSearch(r, query) {
+  if (!query.trim()) return true;
+  const q = query.toLowerCase();
+  const text = `${r.title || ''} ${r.desc || ''} ${(r.skills || []).join(' ')} ${r.author?.name || ''}`.toLowerCase();
+  return text.includes(q);
+}
 
 /** 推断需求场景（Phase 2a 启发式；Phase 2b 用 req.sceneTag） */
 function inferReqScene(r) {
@@ -4351,49 +4681,97 @@ function inferReqScene(r) {
   return 'side-project';
 }
 
-async function filterSquareScene(scene, el) {
+// M-03: Global requestId counter to prevent race conditions in async filters
+let _filterRequestId = 0;
+
+/** 渲染领域下拉框 */
+function renderSquareDomainSelect() {
+  const select = document.getElementById('square-domain-select');
+  if (!select) return;
+  select.innerHTML = '<option value="all"' + (currentSquareDomain === 'all' ? ' selected' : '') + '>全部领域</option>' +
+    Object.entries(DOMAINS).map(([key, d]) =>
+      `<option value="${key}"${currentSquareDomain === key ? ' selected' : ''}>${d.name}</option>`
+    ).join('');
+}
+
+/** 渲染场景标签行（领域自适应） */
+function renderSquareSceneChips() {
+  const container = document.getElementById('square-scene-chips');
+  if (!container) return;
+  const tags = getSquareSceneTags();
+  container.innerHTML =
+    `<div class="filter-chip${currentSquareScene === 'all' ? ' active' : ''}" data-filter-scene="all" onclick="filterSquareScene('all', this)">全部</div>` +
+    tags.map(t => `<div class="filter-chip${currentSquareScene === t ? ' active' : ''}" data-filter-scene="${t}" onclick="filterSquareScene('${t.replace(/'/g, "\\'")}', this)">${t}</div>`).join('');
+}
+
+/** 场景筛选（本地过滤，不请求 API） */
+function filterSquareScene(scene, el) {
   currentSquareScene = scene;
-  document.querySelectorAll('#square-scene-filters .filter-chip').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
-  try {
-    const filtered = await CollabApi.loadSquareRequirements({ sceneTag: scene, domain: currentSquareDomain });
-    // Merge with mine (keep local mine data)
-    const mine = REQUIREMENTS.filter(r => r.author && r.author.id === currentUser?.id);
-    REQUIREMENTS = [...filtered, ...mine.filter(m => !filtered.find(f => f.id === m.id))];
-  } catch(e) { /* fallback to local filtering */ }
+  document.querySelectorAll('#square-scene-chips .filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
   renderSquare();
 }
 
-async function filterSquareDomain(domain, el) {
+/** 领域筛选 */
+async function filterSquareDomain(domain) {
   currentSquareDomain = domain;
-  document.querySelectorAll('#square-filters .filter-chip[data-filter-domain]').forEach(c => c.classList.remove('active'));
-  el.classList.add('active');
+  currentSquareScene = 'all';
+  currentSquareSearch = '';
+  const searchInput = document.getElementById('square-search-input');
+  if (searchInput) searchInput.value = '';
+  // Update UI
+  renderSquareDomainSelect();
+  renderSquareSceneChips();
+  // Load from API
+  const grid = document.getElementById('square-grid');
+  grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1;"><div class="spinner" style="margin:0 auto 12px;"></div><p>加载中...</p></div>';
+  const requestId = ++_filterRequestId;
   try {
-    const filtered = await CollabApi.loadSquareRequirements({ sceneTag: currentSquareScene, domain });
+    const filtered = await CollabApi.loadSquareRequirements({ domain: domain === 'all' ? undefined : domain });
+    if (requestId !== _filterRequestId) return;
     const mine = REQUIREMENTS.filter(r => r.author && r.author.id === currentUser?.id);
-    REQUIREMENTS = [...filtered, ...mine.filter(m => !filtered.find(f => f.id === m.id))];
-  } catch(e) { /* fallback to local filtering */ }
-  renderSquare();
+    filteredReqs = [...filtered, ...mine.filter(m => !filtered.find(f => f.id === m.id))];
+  } catch(e) { if (requestId === _filterRequestId) filteredReqs = null; }
+  if (requestId === _filterRequestId) renderSquare();
 }
 
+/** 搜索输入（本地过滤，防抖） */
+let _searchTimer = null;
+function onSquareSearch(query) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(() => {
+    currentSquareSearch = query;
+    renderSquare();
+  }, 250);
+}
+
+/** 渲染需求广场 */
 function renderSquare() {
   const grid = document.getElementById('square-grid');
-  let reqs = REQUIREMENTS.filter(r => r.status === 'open' && r.visibility === 'public');
-  if (currentSquareScene !== 'all') {
-    reqs = reqs.filter(r => inferReqScene(r) === currentSquareScene);
-  }
+  const source = filteredReqs || REQUIREMENTS;
+  let reqs = source.filter(r => r.status === 'open' && r.visibility === 'public');
+  // Domain filter
   if (currentSquareDomain !== 'all') {
     reqs = reqs.filter(r => r.domain === currentSquareDomain);
   }
+  // Scene filter
+  if (currentSquareScene !== 'all') {
+    reqs = reqs.filter(r => matchReqScene(r, currentSquareScene));
+  }
+  // Search filter
+  if (currentSquareSearch.trim()) {
+    reqs = reqs.filter(r => matchReqSearch(r, currentSquareSearch));
+  }
   if (!reqs.length) {
-    const hint = currentSquareScene === 'opensource'
-      ? '暂无开源协作招募，试试切换到「项目需求」或发布一条开源需求'
-      : currentSquareScene === 'side-project'
-        ? '暂无项目需求，在 CollabAI 描述你的项目想法并发布到需求广场'
+    const hint = currentSquareSearch.trim()
+      ? `没有找到包含"${currentSquareSearch}"的需求`
+      : currentSquareScene !== 'all'
+        ? `当前领域暂无「${currentSquareScene}」类型的需求，试试发布一条`
         : '换个筛选条件试试';
     grid.innerHTML = `<div class="empty-state" style="grid-column:1/-1;">
-      <div class="icon">${currentSquareScene === 'opensource' ? '🛠' : '🚀'}</div>
-      <h3>暂无匹配项目</h3><p>${hint}</p>
+      <div class="icon">🔍</div>
+      <h3>暂无匹配结果</h3><p>${escapeHtml(hint)}</p>
+      <button class="btn btn-primary btn-sm" onclick="goPublishRequirement()" style="margin-top:12px;">+ 发布需求</button>
     </div>`;
     return;
   }
@@ -4402,10 +4780,8 @@ function renderSquare() {
 
 function renderSquareCard(r) {
   const d = DOMAINS[r.domain] || DOMAINS.tech;
-  const scene = inferReqScene(r);
-  const sceneBadge = scene === 'opensource'
-    ? '<span class="badge badge-blue" style="flex-shrink:0;">开源协作</span>'
-    : '<span class="badge badge-purple" style="flex-shrink:0;">项目需求</span>';
+  const sceneLabel = r.sceneTag || (d.sceneTags ? d.sceneTags[0] : '项目需求');
+  const sceneBadge = `<span class="badge badge-purple" style="flex-shrink:0;">${escapeHtml(sceneLabel)}</span>`;
   const isAuthor = isReqAuthor(r);
   const applied = hasAppliedToReq(r.id);
   let applyBtn = '';
@@ -4426,7 +4802,7 @@ function renderSquareCard(r) {
       <div class="square-card-meta">
         <div class="square-card-author">
           <div class="avatar avatar-sm" style="background:${r.author.avatarColor || 'var(--accent-gradient)'};">${r.author.avatar}</div>
-          ${escapeHtml(r.author.name)} · ${escapeHtml(r.author.position || '')}
+          ${escapeHtml((r.author || {}).name || '未知用户')} · ${escapeHtml(r.author.position || '')}
         </div>
         <div class="square-card-time">${r.time}</div>
       </div>
@@ -4450,10 +4826,13 @@ function renderSquareCard(r) {
 }
 
 function sortSquare(val) {
-  let reqs = REQUIREMENTS.filter(r => r.status === 'open' && r.visibility === 'public');
-  if (currentSquareScene !== 'all') reqs = reqs.filter(r => inferReqScene(r) === currentSquareScene);
+  const source = filteredReqs || REQUIREMENTS;
+  let reqs = source.filter(r => r.status === 'open' && r.visibility === 'public');
   if (currentSquareDomain !== 'all') reqs = reqs.filter(r => r.domain === currentSquareDomain);
-  if (val === 'match') reqs.sort((a, b) => b.matchProgress - a.matchProgress);
+  if (currentSquareScene !== 'all') reqs = reqs.filter(r => matchReqScene(r, currentSquareScene));
+  if (currentSquareSearch.trim()) reqs = reqs.filter(r => matchReqSearch(r, currentSquareSearch));
+  if (val === 'match') reqs.sort((a, b) => (b.matchProgress || 0) - (a.matchProgress || 0));
+  if (val === 'skills') reqs.sort((a, b) => (b.skills?.length || 0) - (a.skills?.length || 0));
   const grid = document.getElementById('square-grid');
   grid.innerHTML = reqs.map(r => renderSquareCard(r)).join('');
 }
@@ -4519,9 +4898,22 @@ function copyApiToken() {
   navigator.clipboard.writeText(currentUser.apiToken).then(() => showToast('已复制到剪贴板')).catch(() => showToast('复制失败', 'warning'));
 }
 
+function copyAgentEndpoint() {
+  const url = location.origin + '/api/integrations/xcd/mcp';
+  navigator.clipboard.writeText(url).then(() => showToast('Endpoint 已复制')).catch(() => showToast('复制失败', 'warning'));
+}
+
+function copyAgentCurl() {
+  if (!currentUser.apiToken) { showToast('请先生成 API Token', 'warning'); return; }
+  const curl = `curl -X POST "${location.origin}/api/integrations/xcd/mcp" \\\\n  -H "Authorization: Bearer ${currentUser.apiToken}" \\\\n  -H "Content-Type: application/json" \\\\n  -d '{"action":"create_portfolio","title":"我的项目","role":"全栈","desc":"项目描述"}'`;
+  navigator.clipboard.writeText(curl).then(() => showToast('curl 命令已复制')).catch(() => showToast('复制失败', 'warning'));
+}
+
 // ============================================================
 //  PROFILE SECTION
 // ============================================================
+let profileEditMode = false;
+
 function renderProfile() {
   if (!currentUser) return;
   const content = document.getElementById('profile-content');
@@ -4543,6 +4935,8 @@ function renderProfile() {
         </div>
       </div>
       <div class="divider"></div>
+      ${profileEditMode ? `
+      <!-- V-04: Edit mode form fields -->
       <div class="profile-field">
         <label>姓名</label>
         <input type="text" id="input-name" value="${escapeHtml(currentUser.name)}" />
@@ -4558,7 +4952,7 @@ function renderProfile() {
       <div class="profile-field">
         <label>可投入时间（每周）</label>
         <select id="input-weekly-hours" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
-          <option value="" ${!currentUser.weeklyHours?'selected':''}>未设置</option>
+          <option value="" ${!currentUser.weeklyHours?'selected':''}>请选择可投入时间</option>
           <option value="≤5h" ${currentUser.weeklyHours==='≤5h'?'selected':''}>≤5小时</option>
           <option value="5-10h" ${currentUser.weeklyHours==='5-10h'?'selected':''}>5-10小时</option>
           <option value="10-20h" ${currentUser.weeklyHours==='10-20h'?'selected':''}>10-20小时</option>
@@ -4568,12 +4962,23 @@ function renderProfile() {
       <div class="profile-field">
         <label>联创意向</label>
         <select id="input-collab-intent" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
-          <option value="" ${!currentUser.collabIntent?'selected':''}>未设置</option>
+          <option value="" ${!currentUser.collabIntent?'selected':''}>请选择联创意向</option>
           <option value="联创" ${currentUser.collabIntent==='联创'?'selected':''}>联创（共同创业）</option>
           <option value="有偿副业" ${currentUser.collabIntent==='有偿副业'?'selected':''}>有偿副业</option>
           <option value="开源贡献" ${currentUser.collabIntent==='开源贡献'?'selected':''}>开源贡献</option>
         </select>
       </div>
+      ` : `
+      <!-- V-04: Read-only display mode -->
+      <div class="profile-field">
+        <label>可投入时间（每周）</label>
+        <div style="font-size:13px;color:var(--text-primary);padding:8px 0;">${currentUser.weeklyHours || '请选择可投入时间'}</div>
+      </div>
+      <div class="profile-field">
+        <label>联创意向</label>
+        <div style="font-size:13px;color:var(--text-primary);padding:8px 0;">${currentUser.collabIntent || '请选择联创意向'}</div>
+      </div>
+      `}
     </div>
 
     <!-- Skills Card -->
@@ -4604,9 +5009,9 @@ function renderProfile() {
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;">📦 资源清单</div>
       <div class="resources-list">
         ${currentUser.resources.map((r, i) => `
-          <div class="resource-item">
-            <div class="resource-item-icon">${r.icon}</div>
-            <div class="resource-item-text">
+          <div class="resource-item" id="res-item-${i}">
+            <div class="resource-item-icon" id="res-icon-${i}" onclick="editResource(${i})" style="cursor:pointer;" title="点击编辑">${r.icon}</div>
+            <div class="resource-item-text" id="res-text-${i}" onclick="editResource(${i})" style="cursor:pointer;" title="点击编辑">
               <div class="name">${escapeHtml(r.name)}</div>
               <div class="desc">${escapeHtml(r.desc)}</div>
             </div>
@@ -4649,6 +5054,26 @@ function renderProfile() {
         <button class="btn btn-primary btn-sm" onclick="generateApiToken()">生成 Token</button>
       `}
     </div>
+
+    <!-- Agent Integration -->
+    <div class="profile-card" style="border-color:rgba(139,92,246,0.3);background:linear-gradient(135deg,rgba(139,92,246,0.05),rgba(59,130,246,0.05));">
+      <div style="font-size:14px;font-weight:600;margin-bottom:8px;">🤖 Agent 接入指引</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">让你的 AI Agent 通过 MCP 直接上传作品、发布需求、参与匹配</div>
+      <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;color:var(--text-secondary);line-height:1.8;word-break:break-all;">
+        <div style="color:var(--text-muted);margin-bottom:4px;"># MCP Endpoint</div>
+        <div style="color:var(--accent-purple);">POST <span id="agent-endpoint-url">${location.origin}/api/integrations/xcd/mcp</span></div>
+        <div style="margin-top:8px;color:var(--text-muted);"># Header</div>
+        <div>Authorization: Bearer <span id="agent-token-ref">${currentUser.apiToken ? currentUser.apiToken.slice(0,8)+'...' : '（先生成 Token）'}</span></div>
+        <div style="margin-top:8px;color:var(--text-muted);"># 上传作品示例</div>
+        <div style="color:var(--text-secondary);">{ "action": "create_portfolio", "title": "项目名", "role": "全栈", "desc": "描述" }</div>
+        <div style="margin-top:6px;color:var(--text-muted);"># 发布需求示例</div>
+        <div style="color:var(--text-secondary);">{ "action": "create_requirement", "title": "需求标题", "desc": "需求描述", "skills": ["React","Node.js"], "domain": "tech" }</div>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:8px;">
+        <button class="btn btn-primary btn-sm" onclick="copyAgentEndpoint()">📋 复制 Endpoint</button>
+        ${currentUser.apiToken ? `<button class="btn btn-secondary btn-sm" onclick="copyAgentCurl()">📋 复制 curl 示例</button>` : ''}
+      </div>
+    </div>
   `;
   // After rendering profile cards, add reverse match recommendations
   setTimeout(() => renderProfileRecs(content), 100);
@@ -4656,7 +5081,10 @@ function renderProfile() {
 
 function renderSkillTags() {
   return currentUser.skills.map((s, i) =>
-    `<span class="skill-tag-item badge ${pickBadgeColor(s)}">${escapeHtml(s)}<span class="skill-tag-remove" onclick="removeSkill(${i})">×</span></span>`
+    `<span class="skill-tag-item badge ${pickBadgeColor(s)}" id="skill-tag-${i}">
+      <span class="skill-tag-text" id="skill-text-${i}" onclick="editSkill(${i})" title="点击编辑">${escapeHtml(s)}</span>
+      <span class="skill-tag-remove" onclick="removeSkill(${i})">×</span>
+    </span>`
   ).join('') + `
     <div class="skill-add-input">
       <input type="text" id="new-skill-input" placeholder="添加技能…" maxlength="20"
@@ -4667,6 +5095,35 @@ function renderSkillTags() {
 
 function removeSkill(idx) {
   currentUser.skills.splice(idx, 1);
+  document.getElementById('skills-wrap').innerHTML = renderSkillTags();
+}
+
+function editSkill(idx) {
+  const textEl = document.getElementById('skill-text-' + idx);
+  if (!textEl) return;
+  const currentVal = currentUser.skills[idx];
+  textEl.innerHTML = `<input id="skill-edit-input-${idx}" value="${escapeHtml(currentVal)}" maxlength="20"
+    style="width:80px;background:transparent;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:12px;color:inherit;"
+    onblur="saveSkill(${idx})"
+    onkeydown="if(event.key==='Enter'){saveSkill(${idx})};if(event.key==='Escape'){renderSkillTagsInPlace()}">`;
+  const input = document.getElementById('skill-edit-input-' + idx);
+  if (input) { input.focus(); input.select(); }
+}
+
+function saveSkill(idx) {
+  const input = document.getElementById('skill-edit-input-' + idx);
+  const val = (input?.value || '').trim();
+  if (!val) { renderSkillTagsInPlace(); return; }
+  if (currentUser.skills.filter((_,i) => i !== idx).includes(val)) {
+    showToast('技能已存在', 'warning');
+    renderSkillTagsInPlace();
+    return;
+  }
+  currentUser.skills[idx] = val;
+  renderSkillTagsInPlace();
+}
+
+function renderSkillTagsInPlace() {
   document.getElementById('skills-wrap').innerHTML = renderSkillTags();
 }
 
@@ -4681,6 +5138,7 @@ function addSkill() {
 }
 
 function removeResource(idx) {
+  if (!confirm('确定移除该资源？')) return;
   currentUser.resources.splice(idx, 1);
   renderProfile();
 }
@@ -4689,9 +5147,50 @@ function addResource() {
   currentUser.resources.push({ icon: '📦', name: '新资源', desc: '点击编辑描述' });
   renderProfile();
   showToast('已添加资源，请编辑内容', 'info');
+  // 自动进入编辑模式
+  setTimeout(() => editResource(currentUser.resources.length - 1), 100);
+}
+
+function editResource(idx) {
+  const r = currentUser.resources[idx];
+  if (!r) return;
+  const item = document.getElementById('res-item-' + idx);
+  const iconEl = document.getElementById('res-icon-' + idx);
+  const textEl = document.getElementById('res-text-' + idx);
+  if (!item || !iconEl || !textEl) return;
+  item.classList.add('editing');
+  iconEl.innerHTML = `<input id="res-edit-icon-${idx}" value="${escapeHtml(r.icon)}" style="width:28px;text-align:center;border:1px solid var(--border);border-radius:4px;font-size:16px;padding:2px;" maxlength="2">`;
+  textEl.innerHTML = `
+    <input id="res-edit-name-${idx}" value="${escapeHtml(r.name)}" placeholder="资源名称" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:12px;margin-bottom:4px;" maxlength="20">
+    <input id="res-edit-desc-${idx}" value="${escapeHtml(r.desc)}" placeholder="描述" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:11px;" maxlength="40">
+    <div style="margin-top:4px;display:flex;gap:4px;">
+      <button class="btn btn-primary btn-xs" onclick="event.stopPropagation();saveResource(${idx})">保存</button>
+      <button class="btn btn-ghost btn-xs" onclick="event.stopPropagation();renderProfile()">取消</button>
+    </div>`;
+  document.getElementById('res-edit-name-' + idx)?.focus();
+}
+
+function saveResource(idx) {
+  const name = document.getElementById('res-edit-name-' + idx)?.value?.trim();
+  const desc = document.getElementById('res-edit-desc-' + idx)?.value?.trim();
+  const icon = document.getElementById('res-edit-icon-' + idx)?.value?.trim();
+  if (!name) { showToast('资源名称不能为空', 'warning'); return; }
+  currentUser.resources[idx].name = name;
+  currentUser.resources[idx].desc = desc || '';
+  currentUser.resources[idx].icon = icon || '📦';
+  renderProfile();
+  showToast('资源已更新', 'success');
 }
 
 function renderPortfolioGrid(items) {
+  if (!items || !items.length) {
+    // UX-02: Empty portfolio with CTA
+    return `<div class="portfolio-grid" style="display:flex;flex-direction:column;align-items:center;padding:24px 16px;gap:12px;">
+      <div style="font-size:48px;">📁</div>
+      <div style="font-size:13px;color:var(--text-muted);text-align:center;">展示你的项目作品，让伙伴更快了解你的实力<br>提高匹配成功率</div>
+      <div class="port-add-btn" onclick="showPortfolioForm()">＋ 添加第一个作品</div>
+    </div>`;
+  }
   const cards = items.map(p => `
     <div class="port-card" onclick="event.stopPropagation();editPortfolioItemById('${p.id}')">
       <div class="port-card-header" style="background:${p.color || 'var(--accent-gradient)'};">📁</div>
@@ -4769,7 +5268,7 @@ async function submitPortfolio() {
     editingPortfolioId = null;
     closeModal('modal-portfolio');
     renderProfile();
-    showToast('作品已保孀', 'success');
+    showToast('作品已保存', 'success');
   } catch(e) { showToast(e.message || '保存失败', 'warning'); }
 }
 
@@ -4837,10 +5336,20 @@ async function saveProfile() {
     }
     if (pos) document.getElementById('display-pos').textContent = pos;
     if (bio) document.getElementById('display-bio').textContent = bio;
-    showToast('✅个人资料已保孀', 'success');
+    showToast('✅个人资料已保存', 'success');
+    toggleProfileEdit(false);
   } catch (e) {
     showToast(e.message || '保存失败', 'warning');
   }
+}
+
+// V-04: Toggle profile edit mode
+function toggleProfileEdit(editing) {
+  profileEditMode = editing;
+  document.getElementById('edit-profile-btn').style.display = editing ? 'none' : '';
+  document.getElementById('save-profile-btn').style.display = editing ? '' : 'none';
+  document.getElementById('cancel-edit-btn').style.display = editing ? '' : 'none';
+  renderProfile();
 }
 
 async function aiEnhanceProfile() {

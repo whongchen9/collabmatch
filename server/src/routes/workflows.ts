@@ -51,7 +51,7 @@ router.post('/run', requireAuth, async (req: AuthRequest, res, next) => {
       conv.messages[conv.messages.length - 1]?.content ||
       '';
 
-    const messages = [];
+    const messages: import('../services/skillRunner.js').SkillRunResult[] = [];
     const completedSteps: string[] = [];
 
     try {

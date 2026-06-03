@@ -3,17 +3,19 @@ import { asOne } from '../db/helpers.js';
 import { usePostgres } from '../db/driver.js';
 import { Requirement, type ReqVisibility } from '../models/Requirement.js';
 import { Application } from '../models/Application.js';
+import { Group } from '../models/Group.js';
 import { populateReqAuthor, toRequirementJson } from '../utils/serialize.js';
 import { requireAuth, optionalAuth, type AuthRequest } from '../middleware/auth.js';
 import { canViewRequirement } from '../utils/requirementAccess.js';
 import { User } from '../models/User.js';
 import { toApplicationJson } from '../utils/applicationSerialize.js';
+import { validate } from '../middleware/validate.js';
 
 const router = Router();
 
 router.get('/', async (req, res, next) => {
   try {
-    const { domain, visibility, sceneTag, weeklyHours, lookingFor } = req.query;
+    const { domain, visibility, sceneTag, weeklyHours, lookingFor, page, pageSize } = req.query;
     const filter: Record<string, unknown> = { status: 'open' };
     if (domain) filter.domain = domain;
     if (visibility) filter.visibility = visibility;
@@ -22,9 +24,22 @@ router.get('/', async (req, res, next) => {
     if (weeklyHours) filter.weeklyHours = weeklyHours;
     if (lookingFor && typeof lookingFor === 'string') filter.lookingFor = { $in: lookingFor.split(',') };
 
-    const reqs = await Requirement.find(filter).sort({ createdAt: -1 }).limit(50);
+    // M-02: Pagination support (default page=1, pageSize=20, max 50)
+    const pageNum = Math.max(1, parseInt(String(page), 10) || 1);
+    const pageSizeNum = Math.min(50, Math.max(1, parseInt(String(pageSize), 10) || 20));
+    const total = await Requirement.countDocuments(filter);
+    const reqs = await Requirement.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * pageSizeNum)
+      .limit(pageSizeNum);
     const list = await populateReqAuthor(reqs);
-    res.json(list);
+    res.json({
+      items: list,
+      total,
+      page: pageNum,
+      pageSize: pageSizeNum,
+      totalPages: Math.ceil(total / pageSizeNum),
+    });
   } catch (e) {
     next(e);
   }
@@ -75,7 +90,10 @@ const CREATABLE_FIELDS = [
   'sceneTag', 'projectStage', 'weeklyHours', 'collabMode', 'lookingFor', 'remoteOk',
 ] as const;
 
-router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
+router.post('/', requireAuth, validate({
+  title: { required: true, type: 'string', maxLength: 200 },
+  desc: { type: 'string', maxLength: 5000 },
+}), async (req: AuthRequest, res, next) => {
   try {
     const body = req.body as Record<string, unknown>;
     const payload: Record<string, unknown> = { author: req.user!._id };
@@ -165,7 +183,9 @@ router.delete('/:id', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(404).json({ error: '需求不存在或无权限' });
       return;
     }
+    // M-05: Clean up associated groups and applications
     await Application.deleteMany({ requirementId: deleted._id });
+    await Group.deleteMany({ reqId: deleted._id });
     res.json({ success: true });
   } catch (e) {
     next(e);
@@ -200,7 +220,7 @@ router.put('/:id', requireAuth, async (req: AuthRequest, res, next) => {
     }
     const fields = [
       'title', 'status', 'visibility', 'domain', 'skills', 'keywords',
-      'background', 'goal', 'timeline', 'outcome', 'desc', 'matchProgress',
+      'background', 'goal', 'timeline', 'outcome', 'desc',
       'fulfillmentType',
       'sceneTag', 'projectStage', 'weeklyHours', 'collabMode', 'lookingFor', 'remoteOk',
     ] as const;

@@ -13,7 +13,8 @@ export function parseDataUrl(input: string): { mime: string; buffer: Buffer } | 
   }
   try {
     return { mime: 'application/octet-stream', buffer: Buffer.from(input, 'base64') };
-  } catch {
+  } catch (e) {
+    console.error('[fileStorage] parseDataUrl base64 decode failed:', (e as Error).message);
     return null;
   }
 }

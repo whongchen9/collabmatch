@@ -28,7 +28,7 @@ router.post('/', requireAuth, async (req: AuthRequest, res, next) => {
       return;
     }
 
-    const normalized = [];
+    const normalized: { skillId?: string; action?: string; title: string; icon: string }[] = [];
     for (const step of steps) {
       const action = step.action as string | undefined;
       if (action === 'match_forward' || action === 'match_reverse') {

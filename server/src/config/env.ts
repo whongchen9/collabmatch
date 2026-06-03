@@ -17,6 +17,8 @@ export const env = {
   /** Coze 部署时平台注入的 Supabase/PostgreSQL 连接串 */
   databaseUrl: envStr('DATABASE_URL', ''),
   pgSsl: process.env.PG_SSL !== 'false',
+  /** 生产环境默认验证 SSL 证书；Coze/Supabase 等平台若需关闭可设为 false */
+  pgSslRejectUnauthorized: process.env.PG_SSL_REJECT_UNAUTHORIZED !== 'false',
   useMemoryDb: process.env.USE_MEMORY_DB === 'true',
   mongoUri: envStr('MONGODB_URI', 'mongodb://127.0.0.1:27017/collabmatch'),
   jwtSecret: envStr('JWT_SECRET', 'collabmatch-dev-secret'),
@@ -93,9 +95,9 @@ export function useProductionAuth(): boolean {
 export function assertProductionSecrets(): void {
   if (env.nodeEnv !== 'production') return;
   if (env.jwtSecret === 'collabmatch-dev-secret' || env.jwtSecret.length < 16) {
-    console.warn('[warn] 生产环境请设置足够长的 JWT_SECRET');
+    throw new Error('[error] 生产环境必须设置足够长的 JWT_SECRET（≥16 字符），不能使用默认值');
   }
   if (useProductionAuth() && !hasTencentSms()) {
-    console.warn('[warn] AUTH_MODE=production 但未配置腾讯云短信');
+    throw new Error('[error] AUTH_MODE=production 但未配置腾讯云短信（TENCENT_SMS_*）');
   }
 }
