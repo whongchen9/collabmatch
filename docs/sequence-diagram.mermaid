@@ -1,0 +1,15 @@
+sequenceDiagram
+    participant API as api-bridge.js
+    participant DOM as index.html (render)
+    participant User as User Input
+
+    Note over API: escapeHtml() 升级<br/>新增 ' → &#39;
+
+    User->>DOM: 发送消息 / 创建群组
+    DOM->>API: 调用 escapeHtml(userInput)
+    API-->>DOM: 返回转义后的安全字符串
+    DOM->>DOM: textContent 赋值 或<br/>安全 innerHTML
+    Note over DOM: C-02/C-03/C-04 修复点<br/>不再直接拼接 innerHTML
+
+    User->>DOM: 点击快捷操作 chip
+    DOM->>DOM: 事件委托处理<br/>(不再用 onclick 属性注入)

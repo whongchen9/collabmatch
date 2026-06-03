@@ -1,0 +1,50 @@
+classDiagram
+    class SecurityUtils {
+        +escapeHtml(str: string): string
+        +sanitizeUrl(url: string): string
+    }
+
+    class ValidationMiddleware {
+        +validate(schema: JoiSchema): RequestHandler
+        +validateBody(schema: JoiSchema): RequestHandler
+        +validateQuery(schema: JoiSchema): RequestHandler
+    }
+
+    class RateLimitMiddleware {
+        +authLimiter: RateLimitInstance
+        +generalLimiter: RateLimitInstance
+    }
+
+    class ErrorMiddleware {
+        +handler(err: Error, req: Request, res: Response, next: NextFunction): void
+        -formatDevError(err: Error): object
+        -formatProdError(err: Error): object
+    }
+
+    class CorsConfig {
+        +ALLOWED_ORIGINS: string[]
+        +corsOptions: CorsOptions
+    }
+
+    class UserSerializer {
+        +toUserJson(user: User): UserDTO
+        -excludeFields: string[]
+    }
+
+    class MessageModel {
+        +content: string
+        +author: User
+        +timestamp: Date
+        +maxMessages: number
+    }
+
+    class AuthService {
+        +sendVerificationCode(phone: string): Promise~void~
+        +verifyCode(phone: string, code: string): Promise~boolean~
+    }
+
+    SecurityUtils --> UserSerializer : escapeHtml used in
+    ValidationMiddleware --> ErrorMiddleware : validation errors
+    RateLimitMiddleware --> AuthService : protects sendCode
+    CorsConfig --> SecurityUtils : origin validation
+    UserSerializer --> MessageModel : author serialization
