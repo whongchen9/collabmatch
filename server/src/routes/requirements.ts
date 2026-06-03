@@ -13,11 +13,14 @@ const router = Router();
 
 router.get('/', async (req, res, next) => {
   try {
-    const { domain, visibility } = req.query;
+    const { domain, visibility, sceneTag, weeklyHours, lookingFor } = req.query;
     const filter: Record<string, unknown> = { status: 'open' };
     if (domain) filter.domain = domain;
     if (visibility) filter.visibility = visibility;
     else filter.visibility = 'public';
+    if (sceneTag) filter.sceneTag = sceneTag;
+    if (weeklyHours) filter.weeklyHours = weeklyHours;
+    if (lookingFor && typeof lookingFor === 'string') filter.lookingFor = { $in: lookingFor.split(',') };
 
     const reqs = await Requirement.find(filter).sort({ createdAt: -1 }).limit(50);
     const list = await populateReqAuthor(reqs);

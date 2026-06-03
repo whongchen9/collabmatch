@@ -3820,6 +3820,7 @@ function openReqDetail(reqId) {
         ${req.status === 'open' && req.visibility !== 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${req.id}','public')">🌍 升级为公开</button>` : ''}
         ${req.status === 'open' && req.visibility === 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${req.id}','match_only')">🔒 改为仅匹配</button>` : ''}
         ${req.status === 'open' ? `<button class="btn btn-secondary btn-sm" onclick="goToMatch('${req.id}');closeModal('modal-req-detail')">🔍 智能匹配</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editMyRequirement('${req.id}')">✏️ 编辑</button>
         <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();deleteMyRequirement('${req.id}')" style="color:var(--danger);margin-left:auto;">🗑 删除</button>
       ` : `
         ${canApply ? `<button class="btn btn-primary btn-sm" onclick="closeModal('modal-req-detail');applyReq('${req.id}')">📨 申请参与</button>` : ''}
@@ -4350,17 +4351,28 @@ function inferReqScene(r) {
   return 'side-project';
 }
 
-function filterSquareScene(scene, el) {
+async function filterSquareScene(scene, el) {
   currentSquareScene = scene;
   document.querySelectorAll('#square-scene-filters .filter-chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  try {
+    const filtered = await CollabApi.loadSquareRequirements({ sceneTag: scene, domain: currentSquareDomain });
+    // Merge with mine (keep local mine data)
+    const mine = REQUIREMENTS.filter(r => r.author && r.author.id === currentUser?.id);
+    REQUIREMENTS = [...filtered, ...mine.filter(m => !filtered.find(f => f.id === m.id))];
+  } catch(e) { /* fallback to local filtering */ }
   renderSquare();
 }
 
-function filterSquareDomain(domain, el) {
+async function filterSquareDomain(domain, el) {
   currentSquareDomain = domain;
   document.querySelectorAll('#square-filters .filter-chip[data-filter-domain]').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+  try {
+    const filtered = await CollabApi.loadSquareRequirements({ sceneTag: currentSquareScene, domain });
+    const mine = REQUIREMENTS.filter(r => r.author && r.author.id === currentUser?.id);
+    REQUIREMENTS = [...filtered, ...mine.filter(m => !filtered.find(f => f.id === m.id))];
+  } catch(e) { /* fallback to local filtering */ }
   renderSquare();
 }
 
@@ -4901,6 +4913,47 @@ async function deleteMyRequirement(reqId) {
     showToast('需求已删除', 'success');
   } catch (e) {
     showToast(e.message || '删除失败', 'warning');
+  }
+}
+
+function editMyRequirement(reqId) {
+  const req = REQUIREMENTS.find(r => r.id === reqId);
+  if (!req) return;
+  const body = document.getElementById('modal-req-body');
+  body.innerHTML = `
+    <div style="font-size:12px;color:var(--accent-purple);margin-bottom:12px;font-weight:600;">✏️ 编辑需求</div>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">标题</label>
+    <input id="edit-req-title" value="${escapeHtml(req.title)}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:10px;" />
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">项目背景</label>
+    <textarea id="edit-req-bg" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;margin-bottom:10px;">${escapeHtml(req.background)}</textarea>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">项目目标</label>
+    <textarea id="edit-req-goal" rows="2" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;margin-bottom:10px;">${escapeHtml(req.goal)}</textarea>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">详细描述</label>
+    <textarea id="edit-req-desc" rows="3" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;margin-bottom:10px;">${escapeHtml(req.desc)}</textarea>
+    <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">所需技能（逗号分隔）</label>
+    <input id="edit-req-skills" value="${escapeHtml((req.skills||[]).join(', '))}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:14px;" />
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-primary btn-sm" onclick="saveReqEdit('${reqId}')">💾 保存</button>
+      <button class="btn btn-ghost btn-sm" onclick="openReqDetail('${reqId}')">取消</button>
+    </div>
+  `;
+}
+
+async function saveReqEdit(reqId) {
+  const title = document.getElementById('edit-req-title')?.value?.trim();
+  const background = document.getElementById('edit-req-bg')?.value?.trim();
+  const goal = document.getElementById('edit-req-goal')?.value?.trim();
+  const desc = document.getElementById('edit-req-desc')?.value?.trim();
+  const skillsStr = document.getElementById('edit-req-skills')?.value?.trim();
+  const skills = skillsStr ? skillsStr.split(/[,，]/).map(s => s.trim()).filter(Boolean) : [];
+  try {
+    const updated = await CollabApi.updateRequirement(reqId, { title, background, goal, desc, skills });
+    const idx = REQUIREMENTS.findIndex(r => r.id === reqId);
+    if (idx >= 0) REQUIREMENTS[idx] = { ...REQUIREMENTS[idx], ...updated };
+    showToast('需求已更新', 'success');
+    openReqDetail(reqId);
+  } catch (e) {
+    showToast(e.message || '保存失败', 'warning');
   }
 }
 

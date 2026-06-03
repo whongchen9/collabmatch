@@ -219,6 +219,16 @@
     return mergeRequirements([pub, mine]);
   }
 
+  async function loadSquareRequirements(filters = {}) {
+    const params = new URLSearchParams();
+    if (filters.sceneTag && filters.sceneTag !== 'all') params.set('sceneTag', filters.sceneTag);
+    if (filters.domain && filters.domain !== 'all') params.set('domain', filters.domain);
+    if (filters.weeklyHours) params.set('weeklyHours', filters.weeklyHours);
+    if (filters.lookingFor) params.set('lookingFor', filters.lookingFor);
+    const qs = params.toString();
+    return api(`/requirements${qs ? '?' + qs : ''}`, { auth: false }).catch(() => []);
+  }
+
   async function loadConversations() {
     return api('/conversations');
   }
@@ -511,6 +521,7 @@
     uploadFile,
     uploadFileForChat,
     loadRequirements,
+    loadSquareRequirements,
     loadConversations,
     loadGroups,
     createConversation,
