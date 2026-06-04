@@ -85,7 +85,7 @@ router.get('/mine', requireAuth, async (req: AuthRequest, res, next) => {
 
 const CREATABLE_FIELDS = [
   'title', 'status', 'visibility', 'domain', 'skills', 'keywords',
-  'background', 'goal', 'timeline', 'outcome', 'desc', 'matchProgress',
+  'background', 'goal', 'timeline', 'outcome', 'desc',
   'fulfillmentType',
   'sceneTag', 'projectStage', 'weeklyHours', 'collabMode', 'lookingFor', 'remoteOk',
 ] as const;

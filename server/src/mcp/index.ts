@@ -128,10 +128,14 @@ async function handleSearchRequirements(
 
   const filter: Record<string, unknown> = { status: 'open', visibility: 'public' };
   if (domain) filter.domain = String(domain);
-  if (keyword) filter.$or = [
-    { title: { $regex: String(keyword), $options: 'i' } },
-    { desc: { $regex: String(keyword), $options: 'i' } },
-  ];
+  if (keyword) {
+    // SEC-03: Escape regex special characters to prevent ReDoS
+    const escaped = String(keyword).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    filter.$or = [
+      { title: { $regex: escaped, $options: 'i' } },
+      { desc: { $regex: escaped, $options: 'i' } },
+    ];
+  }
   if (skills) {
     const skillList = Array.isArray(skills) ? skills : String(skills).split(',').map(s => s.trim());
     filter.skills = { $in: skillList };

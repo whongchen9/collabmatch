@@ -190,7 +190,13 @@ router.patch('/requirements/:reqId/fulfillment', requireAuth, async (req: AuthRe
 });
 
 function verifyWebhookSignature(rawBody: string, signature: string | undefined): boolean {
-  if (!env.xcdWebhookSecret) return env.nodeEnv !== 'production';
+  if (!env.xcdWebhookSecret) {
+    // SEC-06: 生产环境未配置 Webhook Secret 时拒绝所有请求
+    if (env.nodeEnv === 'production') return false;
+    // 开发/测试环境未配置时也拒绝，避免意外绕过
+    console.warn('[xcd] Webhook Secret 未配置，拒绝所有 webhook 请求');
+    return false;
+  }
   if (!signature) return false;
   const expected = crypto
     .createHmac('sha256', env.xcdWebhookSecret)

@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import express from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
 import api from './routes/index.js';
 import { notFound, errorHandler } from './middleware/error.js';
 
@@ -36,6 +37,7 @@ app.use(
     credentials: true,
   }),
 );
+app.use(helmet());
 app.use(express.json({ limit: '12mb' }));
 
 app.use('/api', api);
