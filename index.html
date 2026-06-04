@@ -1976,7 +1976,14 @@
   </div><!-- end #main-content -->
 </div><!-- end #app -->
 
-<script>window.COLLABMATCH_API='https://cloudbase-d6g8yog0ub3e56efe-1427257718.ap-shanghai.app.tcloudbase.com/collabmatch/api';</script>
+<script>
+  // CloudBase 静态托管环境下，API 在 HTTP 访问服务域名而非静态托管域名
+  // 本地开发使用相对路径 /api，无需覆盖
+  if (location.hostname.includes('tcloudbaseapp.com')) {
+    var envId = location.hostname.split('.')[0];
+    window.COLLABMATCH_API = 'https://' + envId + '.ap-shanghai.app.tcloudbase.com/collabmatch/api';
+  }
+</script>
 <script src="api-bridge.js"></script>
 <script>
 // ============================================================
