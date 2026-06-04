@@ -7,6 +7,8 @@ import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 
 const router = Router();
 
+const MATCH_LIMIT = 50; // FUNC-04: 限制匹配查询数量，防止全量加载
+
 router.get('/forward', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const requirementId = (req.query.requirementId ?? req.query.reqId) as string;
@@ -23,7 +25,7 @@ router.get('/forward', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(403).json({ error: '仅需求发布者可查看匹配推荐' });
       return;
     }
-    const users = await User.find({ _id: { $ne: reqDoc.author } });
+    const users = await User.find({ _id: { $ne: reqDoc.author } }).limit(MATCH_LIMIT);
     const scored = scoreUsersForRequirement(reqDoc, users);
     res.json(
       scored.map(({ user, matchPct }) => ({
@@ -43,7 +45,7 @@ router.get('/reverse', requireAuth, async (req: AuthRequest, res, next) => {
       status: 'open',
       visibility: { $ne: 'invite_only' },
       author: { $ne: req.user!._id },
-    });
+    }).limit(MATCH_LIMIT);
     const scored = scoreRequirementsForUser(req.user!, reqs, limit);
     const populated = await populateReqAuthor(scored.map((s) => s.requirement));
     res.json(

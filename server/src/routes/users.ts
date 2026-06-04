@@ -220,6 +220,8 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+const VALID_DOMAINS = ['tech', 'design', 'content', 'education', 'business', 'food', 'service'];
+
 router.put('/me', requireAuth, validate({
   name: { type: 'string', maxLength: 50 },
   bio: { type: 'string', maxLength: 2000 },
@@ -231,7 +233,13 @@ router.put('/me', requireAuth, validate({
     if (avatarColor !== undefined) req.user!.avatarColor = avatarColor;
     if (position !== undefined) req.user!.position = position;
     if (bio !== undefined) req.user!.bio = bio;
-    if (domain !== undefined) req.user!.domain = domain;
+    if (domain !== undefined) {
+      if (domain && !VALID_DOMAINS.includes(domain)) {
+        res.status(400).json({ error: `domain 必须为 ${VALID_DOMAINS.join(', ')} 之一` });
+        return;
+      }
+      req.user!.domain = domain;
+    }
     if (weeklyHours !== undefined) req.user!.weeklyHours = weeklyHours;
     if (collabIntent !== undefined) req.user!.collabIntent = collabIntent;
     if (interestedStages !== undefined) req.user!.interestedStages = interestedStages;

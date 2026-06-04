@@ -9,17 +9,34 @@ import { sendLoginSms, verifyLoginCode, normalizePhone } from '../services/sms.j
 
 const router = Router();
 
-// Rate limiting: in-memory Map, 60s window per phone
+// Rate limiting: in-memory Map, 60s window per phone / 5s per IP
 // 注意：此实现仅适用于单实例部署。多实例/生产环境建议使用 Redis 等外部存储。
 const rateLimitMap = new Map<string, number>();
 const RATE_LIMIT_MS = 60_000;
+const IP_RATE_LIMIT_MS = 5_000; // SEC-09: IP 级限流，5秒内同一 IP 只能尝试一次登录
 
-function checkRateLimit(key: string): boolean {
+// SEC-15: 定期清理过期条目，防止内存泄漏
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, ts] of rateLimitMap) {
+    if (now - ts > Math.max(RATE_LIMIT_MS, IP_RATE_LIMIT_MS) * 2) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 120_000).unref(); // 每 2 分钟清理一次
+
+function checkRateLimit(key: string, windowMs = RATE_LIMIT_MS): boolean {
   const now = Date.now();
   const last = rateLimitMap.get(key);
-  if (last && now - last < RATE_LIMIT_MS) return false;
+  if (last && now - last < windowMs) return false;
   rateLimitMap.set(key, now);
   return true;
+}
+
+function getClientIp(req: import('express').Request): string {
+  return (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim()
+    || req.socket.remoteAddress
+    || '0.0.0.0';
 }
 
 router.get('/config', (_req, res) => {
@@ -28,7 +45,7 @@ router.get('/config', (_req, res) => {
     authMode: env.authMode,
     smsEnabled: useProductionAuth(),
     devLoginAvailable,
-    devAuthCode: devLoginAvailable ? env.devAuthCode : undefined,
+    // SEC-10: 不再通过 API 响应泄露 devAuthCode
   });
 });
 
@@ -37,6 +54,12 @@ router.post('/sms/send', async (req, res, next) => {
     const { phone } = req.body as { phone?: string };
     if (!phone) {
       res.status(400).json({ error: '需要 phone' });
+      return;
+    }
+    // SEC-09: IP 级限流
+    const clientIp = getClientIp(req);
+    if (!checkRateLimit(`ip:${clientIp}`, IP_RATE_LIMIT_MS)) {
+      res.status(429).json({ error: '操作过于频繁，请稍后再试' });
       return;
     }
     // Rate limit: 60s per phone number
@@ -51,9 +74,7 @@ router.post('/sms/send', async (req, res, next) => {
       expiresIn,
       message: '验证码已发送',
     };
-    if (!useProductionAuth()) {
-      payload.hint = `开发模式验证码：${env.devAuthCode}`;
-    }
+    // SEC-10: 开发模式不再通过 API 返回验证码
     res.json(payload);
   } catch (e) {
     next(e);
@@ -65,6 +86,12 @@ router.post('/login', async (req, res, next) => {
     const { phone, code } = req.body as { phone?: string; code?: string };
     if (!phone || !code) {
       res.status(400).json({ error: '需要 phone 和 code' });
+      return;
+    }
+    // SEC-09: IP 级全局限流，5秒内同一 IP 只能尝试一次登录
+    const clientIp = getClientIp(req);
+    if (!checkRateLimit(`ip:${clientIp}`, IP_RATE_LIMIT_MS)) {
+      res.status(429).json({ error: '操作过于频繁，请稍后再试' });
       return;
     }
     // Rate limit: 60s per phone number
@@ -100,14 +127,14 @@ router.post('/login', async (req, res, next) => {
     await user.save();
 
     const token = signToken(String(user._id));
-    res.json({ token, user: toUserJson(user, { includePrivatePortfolio: true, includePhone: true }) });
+    res.json({ token, user: toUserJson(user, { includePrivatePortfolio: true }) });
   } catch (e) {
     next(e);
   }
 });
 
 router.get('/me', requireAuth, (req: AuthRequest, res) => {
-  res.json({ user: toUserJson(req.user!, { includePrivatePortfolio: true, includePhone: true }) });
+  res.json({ user: toUserJson(req.user!, { includePrivatePortfolio: true }) });
 });
 
 export default router;

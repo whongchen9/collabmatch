@@ -249,7 +249,8 @@ router.post('/:id/messages', requireAuth, async (req: AuthRequest, res, next) =>
 
     const msg = {
       user: req.user!._id,
-      type: (type || 'text') as 'text' | 'file',
+      // SEC-12: 服务端强制覆盖消息 type，仅允许 'text' | 'file'，禁止客户端伪造 system
+      type: (type === 'file' ? 'file' : 'text') as 'text' | 'file',
       content: msgContent,
       fileName,
       fileSize,
@@ -334,12 +335,18 @@ router.post('/:id/leave', requireAuth, async (req: AuthRequest, res, next) => {
   }
 });
 
-// M-04: Remove a member from a group
+// M-04: Remove a member from a group (only group creator)
 router.post('/:id/remove/:userId', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const group = await Group.findById(req.params.id);
     if (!group || !group.members.some((m: Types.ObjectId) => String(m) === String(req.user!._id))) {
       res.status(404).json({ error: '群组不存在或无权限' });
+      return;
+    }
+    // SEC-11: 仅群创建者（第一个成员）可移除其他成员
+    const creatorId = String(group.members[0]);
+    if (String(req.user!._id) !== creatorId) {
+      res.status(403).json({ error: '仅群创建者可移除成员' });
       return;
     }
     const targetId = req.params.userId;
