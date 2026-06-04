@@ -2502,7 +2502,7 @@ function pickBadgeColor(str) {
 
 function renderBadges(skills, max = 99) {
   return skills.slice(0, max).map(s =>
-    `<span class="badge ${pickBadgeColor(s)}">${s}</span>`
+    `<span class="badge ${pickBadgeColor(s)}">${escapeHtml(s)}</span>`
   ).join('');
 }
 
