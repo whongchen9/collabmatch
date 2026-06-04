@@ -4,7 +4,7 @@ const db = app.database();
 const jwt = require('jsonwebtoken');
 const $ = db.command;
 const JWT_SECRET = process.env.JWT_SECRET || 'c7f3a8e2b1d4f6a9c3e5b7d9f1a2c4e6a8b0d2f4a6c8e0b3d5f7a9c1e3b5d7f9';
-const DEV_AUTH_CODE = process.env.DEV_AUTH_CODE || Math.random().toString(36).slice(2, 8);
+const DEV_AUTH_CODE = process.env.DEV_AUTH_CODE || 'xsx7ii';
 
 function auth(h) { const t = (h||'').replace('Bearer ',''); if(!t) return null; try { return jwt.verify(t,JWT_SECRET); } catch(e) { return null; } }
 function err(msg, code) { return { _status: code||400, error: msg }; }
@@ -24,8 +24,8 @@ function r(m,p,h) { R[m+':'+p]=h; }
 const G=(p,h)=>r('GET',p,h); const P=(p,h)=>r('POST',p,h); const U=(p,h)=>r('PUT',p,h); const D=(p,h)=>r('DELETE',p,h);
 
 // ─── Health ─────────────────────────
-G('/health', ()=>({ok:true}));
-G('/api/health', ()=>({ok:true}));
+G('/health', ()=>({ok:true,version:'v3-fix',path:'/'}));
+G('/api/health', ()=>({ok:true,version:'v3-fix',path:'/api'}));
 const DOMAINS={tech:{key:'tech',name:'💻 技术开发',icon:'💻',color:'#8b5cf6',sceneTags:['项目需求','开源协作'],skills:['React','Vue','Node.js','Python','Go','TypeScript','Java','Docker','Kubernetes','AI/ML','NLP','后端开发','前端开发','全栈开发','区块链','推荐算法','算法'],templates:[{label:'Side Project',text:'我想做一个 AI 工具 Side Project，缺一位会 React 的全栈开发者，每周可投入 10 小时'},{label:'开源协作',text:'我有一个开源项目，需要前端贡献者和文档维护者'},{label:'SaaS 合伙',text:'已有 MVP idea，寻找技术合伙人一起做 B2B SaaS'}],chatIntro:'描述你的 Side Project 或开源计划，AI 帮你整理需求并匹配合适的工程师'},design:{key:'design',name:'🎨 创意设计',icon:'🎨',color:'#f59e0b',sceneTags:['品牌设计','插画合作','UI/UX'],skills:['Figma','UI设计','UX研究','品牌视觉','插画','动画','3D','Framer','设计系统'],templates:[{label:'品牌设计',text:'寻找设计师一起做一套品牌 VI 系统'},{label:'插画合作',text:'找插画师合作出版绘本项目'},{label:'设计系统',text:'需要 UI 设计师共建组件库设计规范'}],chatIntro:'描述你的创意项目，AI 帮你整理需求并匹配设计师、插画师等创意人才'},content:{key:'content',name:'📝 内容创作',icon:'📝',color:'#22c55e',sceneTags:['播客制作','视频创作','专栏合作'],skills:['写作','视频剪辑','播客','自媒体运营','编辑','新媒体','摄影','内容策划'],templates:[{label:'播客制作',text:'想找一个搭档一起做科技类播客节目'},{label:'视频创作',text:'组建视频创作团队做知识类短视频'},{label:'专栏合作',text:'寻找作者合作撰写专栏或电子书'}],chatIntro:'描述你的内容创作方向，AI 帮你整理需求并匹配创作者、编辑、运营伙伴'},education:{key:'education',name:'🎓 教育培训',icon:'🎓',color:'#3b82f6',sceneTags:['课程共创','教育工具','知识社区'],skills:['课程设计','教学设计','知识付费','培训','教育科技','教研','辅导'],templates:[{label:'课程共创',text:'寻找学科专家一起开发在线课程'},{label:'教育工具',text:'需要教育行业经验的产品经理合作'},{label:'知识社区',text:'想组建教育知识分享社区团队'}],chatIntro:'描述你的教育项目或教学需求，AI 帮你整理并匹配教育行业伙伴'},business:{key:'business',name:'📈 商业合作',icon:'📈',color:'#ef4444',sceneTags:['技术合伙','运营合伙','融资合作'],skills:['市场营销','BD','融资','数据分析','运营','产品管理','PRD撰写','商业模式','供应链'],templates:[{label:'技术合伙',text:'有产品 idea，寻找技术合伙人一起创业，每周可投入 10-15 小时'},{label:'运营合伙',text:'Side Project 已有 MVP，需要运营合伙人一起做增长'},{label:'商业合伙',text:'项目已有原型，寻找商业合伙人负责市场和融资'}],chatIntro:'描述你的创业 Side Project，AI 帮你整理需求并匹配技术或商业伙伴'},food:{key:'food',name:'🧋 餐饮美食',icon:'🧋',color:'#f97316',sceneTags:['找商家','拼单组队','新品推广','美食探店'],skills:['奶茶','咖啡','甜品','烘焙','火锅','日料','小吃','中餐','西餐','轻食','素食','调酒','私房菜','外卖运营','食品安全'],templates:[{label:'找奶茶店',text:'我想找一家能做无糖燕麦奶+黑糖珍珠的奶茶店，离我近的'},{label:'找顾客',text:'本店推出新品"桂花酒酿奶茶"，寻找喜欢尝鲜的顾客'},{label:'拼单组队',text:'想组办公室奶茶拼单，5杯起送，求拼友'}],chatIntro:'描述你的口味偏好或饮食需求，AI 帮你匹配商家、拼单伙伴或推荐新店'},service:{key:'service',name:'🏠 本地服务',icon:'🏠',color:'#14b8a6',sceneTags:['找服务','提供服务','急需帮忙'],skills:['家政保洁','搬家','维修','装修','美容美发','健身私教','宠物寄养','摄影跟拍','补习辅导','月嫂','家电清洗','二手回收'],templates:[{label:'找服务',text:'我需要一个靠谱的家政阿姨，每周打扫一次'},{label:'提供服务',text:'我是专业摄影师，可接婚礼跟拍、写真约拍'},{label:'找人帮忙',text:'周末需要搬家帮手，有偿'}],chatIntro:'描述你需要什么本地服务或你能提供什么技能，AI 帮你精准匹配'}};
 
 const SKILLS={generate_prd:{id:'generate_prd',icon:'📋',name:'生成需求文档',desktop:'将用户的描述整理为结构化需求文档',instruct:'请把用户刚才描述的内容整理成结构化需求文档。输出格式：标题、项目背景、核心目标、所需技能、预期时间线、预期成果。',category:'official',author:'CollabAI',tags:['文档','需求'],installs:12580,version:'1.3',isInstallable:!0},diagnose:{id:'diagnose',icon:'🎯',name:'诊断需求',desktop:'从市场/技术/资源三维度分析可行性',instruct:'请从市场可行性、技术难度、资源需求三个维度诊断用户刚才描述的需求，指出潜在风险和被忽略的关键点，给出务实建议。',category:'official',author:'CollabAI',tags:['诊断','分析'],installs:9820,version:'1.2',isInstallable:!0},optimize:{id:'optimize',icon:'✨',name:'优化描述',desktop:'让需求描述更吸引协作者',instruct:'请优化用户刚才的需求描述，使其更吸引潜在协作者。突出：项目亮点、为什么值得参与、合作能获得什么。保持简洁有力。',category:'official',author:'CollabAI',tags:['优化','文案'],installs:8640,version:'1.1',isInstallable:!0},estimate:{id:'estimate',icon:'⏱️',name:'估算周期',desktop:'给项目阶段划分和时间估算',instruct:'请根据用户描述的项目需求，给出分阶段的周期估算。拆成 MVP/核心功能/上线/迭代四个阶段，每个阶段给时间范围和关键交付物。',category:'official',author:'CollabAI',tags:['周期','规划'],installs:7200,version:'1.0',isInstallable:!0},invite:{id:'invite',icon:'📨',name:'生成邀请文案',desktop:'为匹配到的协作者生成个性化邀请',instruct:'请基于当前需求和匹配到的协作者信息，生成一段自然、真诚的协作邀请文案。包含：项目简介、为什么选对方、合作模式建议。',category:'official',author:'CollabAI',tags:['邀请','协作'],installs:6100,version:'1.0',isInstallable:!0},summary:{id:'summary',icon:'📊',name:'协作周报',desktop:'自动总结群组近期讨论内容',instruct:'请总结当前群组最近的讨论要点。按以下结构：本周进展、关键决策、待解决问题、下周计划。如果讨论内容不足，告知无法总结。',category:'official',author:'CollabAI',tags:['周报','总结'],installs:5400,version:'1.0',isInstallable:!0},generate_ui:{id:'generate_ui',icon:'🖼️',name:'生成 UI 原型',desktop:'根据描述生成可交互的产品界面原型',instruct:'请根据用户描述的产品需求，输出 UI 原型方案：页面结构、核心组件、交互流程、设计建议（配色与布局）。用 Markdown 分节描述，便于设计师落地。',category:'official',author:'CollabAI',tags:['原型','UI','设计'],installs:4300,version:'1.0',isInstallable:!0},swot:{id:'swot',icon:'🔍',name:'SWOT 分析',desktop:'竞品 SWOT 分析矩阵',instruct:'请对用户描述的项目做 SWOT 分析，按优势、劣势、机会、威胁四象限输出，每条 2-4 点，并给出 1-2 条战略建议。',category:'community',author:'策略大师',tags:['分析','竞品','商业'],installs:3200,version:'1.0',isInstallable:!0},roadmap:{id:'roadmap',icon:'🗺️',name:'产品路线图',desktop:'生成分阶段产品路线图',instruct:'请根据用户需求生成分阶段产品路线图：里程碑、时间范围、关键交付物、依赖关系。用表格或列表呈现。',category:'community',author:'PM助手',tags:['规划','产品','路线图'],installs:1800,version:'1.0',isInstallable:!0}};
@@ -175,12 +175,19 @@ exports.main = async (event) => {
   }
 
   const method = event.httpMethod||'GET';
-  const path = event.path||'/';
+  let path = event.path||'/';
+
+  // Find matching route — try exact match first
+  let handler = R[method+':'+path];
+  // HTTP 访问服务可能会截掉 /api 前缀，尝试补回
+  if(!handler && !path.startsWith('/api')) {
+    path = '/api' + path;
+    handler = R[method+':'+path];
+  }
   const body = event.body?(typeof event.body==='string'?JSON.parse(event.body):event.body):{};
   const params = {};
 
-  // Find matching route
-  let handler = R[method+':'+path];
+  // Fallback: parameterized matching
   if(!handler) {
     const parts = path.split('/').filter(Boolean);
     for(const [k,h] of Object.entries(R)) {

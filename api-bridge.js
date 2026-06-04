@@ -10,6 +10,11 @@
     if (isLocal) {
       return `http://127.0.0.1:3001/api`;
     }
+    // CloudBase HTTP 访问服务（静态托管和云接入域名不同）
+    if (host.includes('tcloudbaseapp.com')) {
+      const envId = host.split('.')[0];
+      return `https://${envId}.ap-shanghai.app.tcloudbase.com/api`;
+    }
     return `${location.origin}/api`;
   }
 

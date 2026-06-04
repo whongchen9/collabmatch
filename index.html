@@ -1416,7 +1416,7 @@
   <div class="login-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h2 style="margin:0;">CollabMatch</h2>
-      <button id="login-close-btn" class="btn btn-ghost btn-xs" onclick="closeLogin()" style="display:none;" title="关闭">✕</button>
+      
     </div>
     <p id="login-subtitle">说一个想法，找到志同道合的伙伴</p>
     <label for="login-phone">手机号</label>
@@ -1976,6 +1976,7 @@
   </div><!-- end #main-content -->
 </div><!-- end #app -->
 
+<script>window.COLLABMATCH_API='https://cloudbase-d6g8yog0ub3e56efe-1427257718.ap-shanghai.app.tcloudbase.com/collabmatch/api';</script>
 <script src="api-bridge.js"></script>
 <script>
 // ============================================================
@@ -2225,18 +2226,11 @@ function syncSidebarUser() {
 
 let loginSmsCooldown = 0;
 let loginSmsTimer = null;
-let hasAttemptedLogin = false; // V-05: Track if login was previously attempted
+
 
 function showLogin() {
   document.getElementById('login-overlay').classList.remove('hidden');
-  // V-05: Show close button only if not first login attempt
-  document.getElementById('login-close-btn').style.display = hasAttemptedLogin ? '' : 'none';
   initLoginAuth();
-}
-
-// V-05: Close login overlay without logging in
-function closeLogin() {
-  document.getElementById('login-overlay').classList.add('hidden');
 }
 
 async function initLoginAuth() {
@@ -2322,8 +2316,6 @@ async function doLogin() {
   } catch (e) {
     setAppLoading(false);
     errEl.textContent = e.message || '登录失败（开发环境验证码一般为 123456）';
-    hasAttemptedLogin = true; // V-05: Enable close button on next login prompt
-    document.getElementById('login-close-btn').style.display = '';
     btn.disabled = false;
     btn.textContent = '登录';
     return;
