@@ -1416,7 +1416,7 @@
   <div class="login-box">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h2 style="margin:0;">CollabMatch</h2>
-      
+      <button id="login-close-btn" class="btn btn-ghost btn-xs" onclick="closeLogin()" style="display:none;" title="关闭">✕</button>
     </div>
     <p id="login-subtitle">说一个想法，找到志同道合的伙伴</p>
     <label for="login-phone">手机号</label>
@@ -1701,6 +1701,10 @@
         <span class="nav-icon">⚡</span>
         <span class="nav-label">技能市场</span>
       </div>
+      <div class="nav-item" onclick="openWorkflowFromSidebar()">
+        <span class="nav-icon">🔄</span>
+        <span class="nav-label">工作流</span>
+      </div>
 
     </div>
 
@@ -1767,10 +1771,11 @@
         </div>
       </div>
 
-      <!-- Right: Conversations -->
+      <!-- Right: Conversations + Workflows -->
       <div class="chat-side-panel">
         <div style="display:flex;border-bottom:1px solid var(--border);">
-          <div class="side-tab active">💬 对话</div>
+          <div class="side-tab active" onclick="switchSideTab('conv',this)">💬 对话</div>
+          <div class="side-tab" onclick="switchSideTab('workflow',this)">🔄 流程</div>
         </div>
         <div id="side-conv" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
           <div class="side-panel-header" style="border-bottom:1px solid var(--border);">
@@ -1778,6 +1783,16 @@
             <span style="margin-left:auto;font-size:12px;color:var(--accent-purple);cursor:pointer;" onclick="newConversation()">＋ 新对话</span>
           </div>
           <div class="side-panel-body" id="conv-req-list"></div>
+        </div>
+        <div id="side-workflow" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+          <div style="padding:8px 12px;display:flex;justify-content:flex-end;">
+            <span style="font-size:11px;color:var(--accent-purple);cursor:pointer;" onclick="createSkillViaChat()">💬 AI 创建</span>
+          </div>
+          <div class="side-panel-body" id="workflow-list"></div>
+        </div>
+        <div class="mobile-bar" id="mobile-bar">
+          <div class="mobile-bar-item active" data-mobile-tab="conv" onclick="switchSideTab('conv',document.querySelector('.side-tab:first-child'),this)">💬 对话</div>
+          <div class="mobile-bar-item" data-mobile-tab="workflow" onclick="switchSideTab('workflow',document.querySelector('.side-tab:nth-child(2)'),this)">🔄 流程</div>
         </div>
       </div>
     </div>
@@ -2237,6 +2252,7 @@ let loginSmsTimer = null;
 
 function showLogin() {
   document.getElementById('login-overlay').classList.remove('hidden');
+  document.getElementById('login-close-btn').style.display = hasAttemptedLogin ? '' : 'none';
   initLoginAuth();
 }
 
@@ -2309,6 +2325,10 @@ function hideLogin() {
   document.getElementById('login-overlay').classList.add('hidden');
 }
 
+function closeLogin() {
+  document.getElementById('login-overlay').classList.add('hidden');
+}
+
 async function doLogin() {
   const phone = document.getElementById('login-phone').value.trim();
   const code = document.getElementById('login-code').value.trim();
@@ -2323,6 +2343,7 @@ async function doLogin() {
   } catch (e) {
     setAppLoading(false);
     errEl.textContent = e.message || '登录失败（开发环境验证码一般为 123456）';
+    document.getElementById('login-close-btn').style.display = '';
     btn.disabled = false;
     btn.textContent = '登录';
     return;
