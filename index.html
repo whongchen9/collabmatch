@@ -438,16 +438,12 @@
     .message-time { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
     .message-row.user .message-time { text-align: right; }
 
-    /* Message actions · hover to show */
-    .msg-wrapper { position: relative; }
+    /* Message actions · always visible, subtle */
     .msg-actions {
-      position: absolute; top: -8px; right: -8px;
-      display: flex; gap: 2px; padding: 2px 4px;
-      background: var(--bg-card); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); opacity: 0; pointer-events: none;
-      transition: opacity 0.15s; z-index: 10;
+      display: flex; gap: 6px; padding: 2px 0;
+      opacity: 0.45; transition: opacity 0.2s;
     }
-    .message-row:hover .msg-actions { opacity: 1; pointer-events: auto; }
+    .msg-wrapper:hover .msg-actions { opacity: 1; }
     .msg-action-btn {
       padding: 4px 6px; font-size: 12px; color: var(--text-muted);
       cursor: pointer; border-radius: var(--radius-sm);
@@ -766,9 +762,9 @@
     .group-msg-time { font-size: 11px; color: var(--text-muted); margin-top: 3px; }
     .group-msg-row.self .group-msg-time { text-align: right; }
     .group-msg-actions {
-      display: none; gap: 4px; margin-top: 4px;
+      display: flex; gap: 4px; margin-top: 4px; opacity: 0.45; transition: opacity 0.2s;
     }
-    .group-msg-row:hover .group-msg-actions { display: flex; }
+    .group-msg-row:hover .group-msg-actions { opacity: 1; }
     .group-msg-actions button {
       font-size: 11px; padding: 2px 8px; border: 1px solid var(--border);
       border-radius: 10px; background: var(--bg-card); color: var(--text-muted);
