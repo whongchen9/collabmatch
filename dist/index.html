@@ -4507,9 +4507,9 @@ function renderGroupsList() {
     const lastMsg = msgs[msgs.length - 1];
     return `
       <div class="group-list-item ${activeGroupId === g.id ? 'active' : ''}" id="group-item-${g.id}" onclick="openGroup('${g.id}')">
-        <div class="group-list-avatar" style="background:${g.avatarColor};">${g.emoji}</div>
+        <div class="group-list-avatar" style="background:${g.avatarColor || 'linear-gradient(135deg,#8b5cf6,#3b82f6)'};">${g.emoji || '👥'}</div>
         <div class="group-list-info">
-          <div class="group-list-name">${escapeHtml(g.name)}</div>
+          <div class="group-list-name">${escapeHtml(g.name || g.title || '协作群组')}</div>
           <div class="group-list-last">${lastMsg ? (lastMsg.type==='file' ? '📎 ' + lastMsg.fileName : escapeHtml(lastMsg.content.slice(0,24))) : '暂无消息'}</div>
         </div>
       </div>`;
