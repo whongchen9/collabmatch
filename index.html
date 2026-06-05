@@ -1660,11 +1660,6 @@
       <div class="sidebar-logo-title">CollabMatch</div>
       <div class="sidebar-logo-sub" id="sidebar-logo-sub">协作需求匹配</div>
     </div>
-    <!-- Domain Switcher -->
-    <div style="padding:6px 10px;">
-      <select id="domain-switcher" aria-label="选择领域" onchange="switchDomain(this.value)" style="width:100%;padding:7px 10px;border-radius:8px;font-size:13px;cursor:pointer;background:var(--bg-tertiary);border:1px solid var(--border);color:var(--text-primary);appearance:none;-webkit-appearance:none;text-align:center;text-align-last:center;">
-      </select>
-    </div>
     <div class="sidebar-nav">
       <div class="nav-item active" data-section="home" onclick="switchSection('home', this)">
         <span class="nav-icon">🏠</span>
@@ -2065,26 +2060,6 @@ const DOMAINS = {
     ],
     chatIntro: '描述你的创业 Side Project，AI 帮你整理需求并匹配技术或商业伙伴'
   },
-  food: { name: '🧋 餐饮美食', icon: '🧋', color: '#f97316',
-    sceneTags: ['找商家', '拼单组队', '新品推广', '美食探店'],
-    skills: ['奶茶','咖啡','甜品','烘焙','火锅','日料','小吃','中餐','西餐','轻食','素食','调酒','私房菜','外卖运营','食品安全'],
-    templates: [
-      ['找奶茶店', '我想找一家能做无糖燕麦奶+黑糖珍珠的奶茶店，离我近的'],
-      ['找顾客', '本店推出新品"桂花酒酿奶茶"，寻找喜欢尝鲜的顾客'],
-      ['拼单组队', '想组办公室奶茶拼单，5杯起送，求拼友'],
-    ],
-    chatIntro: '描述你的口味偏好或饮食需求，AI 帮你匹配商家、拼单伙伴或推荐新店'
-  },
-  service: { name: '🏠 本地服务', icon: '🏠', color: '#14b8a6',
-    sceneTags: ['找服务', '提供服务', '急需帮忙'],
-    skills: ['家政保洁','搬家','维修','装修','美容美发','健身私教','宠物寄养','摄影跟拍','补习辅导','月嫂','家电清洗','二手回收'],
-    templates: [
-      ['找服务', '我需要一个靠谱的家政阿姨，每周打扫一次'],
-      ['提供服务', '我是专业摄影师，可接婚礼跟拍、写真约拍'],
-      ['找人帮忙', '周末需要搬家帮手，有偿'],
-    ],
-    chatIntro: '描述你需要什么本地服务或你能提供什么技能，AI 帮你精准匹配'
-  },
 };
 
 /** 当前领域（全局状态） */
@@ -2110,8 +2085,6 @@ const DOMAIN_SKILL_MAP = {
   content:   ['generate_prd','diagnose','optimize','invite','generate_ui'],
   education: ['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],
   business:  ['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],
-  food:      ['diagnose','optimize','invite','summary'],
-  service:   ['diagnose','optimize','invite','summary'],
 };
 
 /** 预设工作流模板*/
@@ -2361,7 +2334,6 @@ async function doLogin() {
 
 function renderAllSections() {
   renderDomainTabs();
-  renderDomainSwitcher();
   renderQuickActions();
   document.getElementById('chat-intro-text').textContent = (DOMAINS[currentDomain] || DOMAINS.tech).chatIntro;
   // Update match page domain-adaptive text
@@ -3348,9 +3320,6 @@ function switchDomain(domainKey, el) {
   const domain = DOMAINS[domainKey];
   const sub = document.getElementById('sidebar-logo-sub');
   if (sub) sub.textContent = getDomainSubtitle(domainKey);
-  // Update sidebar switcher
-  const switcher = document.getElementById('domain-switcher');
-  if (switcher) switcher.value = domainKey;
   // Update chat intro
   document.getElementById('chat-intro-text').textContent = domain.chatIntro;
   // Update match page domain-adaptive text
@@ -3371,8 +3340,6 @@ function getDomainSubtitle(domainKey) {
     content: '内容创作匹配',
     education: '教育协作匹配',
     business: '商业合作匹配',
-    food: '餐饮美食匹配',
-    service: '本地服务匹配',
   };
   return map[domainKey] || '协作需求匹配';
 }
@@ -3385,8 +3352,6 @@ function getDomainMatchDesc(domainKey) {
     content: '根据创作方向与内容类型，推荐最合拍的创作者',
     education: '根据教学方向与课程需求，推荐最适配的教育伙伴',
     business: '根据商业模式与合作意向，推荐最合适的商业合伙人',
-    food: '根据口味偏好与饮食需求，推荐最匹配的商家与拼单伙伴',
-    service: '根据服务类型与需求描述，推荐最靠谱的本地服务提供者',
   };
   return map[domainKey] || '根据技能与需求，推荐最合适的协作者';
 }
@@ -3399,8 +3364,6 @@ function getDomainMatchModeLabel(domainKey) {
     content: '我有选题，找创作者',
     education: '我有课程，找伙伴',
     business: '我有项目，找合伙人',
-    food: '我想吃喝，找搭子',
-    service: '我需要服务，找人',
   };
   return map[domainKey] || '我有需求，找伙伴';
 }
@@ -3502,15 +3465,6 @@ function renderDomainTabs() {
   const container = document.getElementById('domain-tabs');
   container.innerHTML = Object.entries(DOMAINS).map(([key, d]) =>
     `<div class="domain-tab${key === currentDomain ? ' active' : ''}" data-domain="${key}" onclick="switchDomain('${key}', this)">${d.name}</div>`
-  ).join('');
-}
-
-/** 渲染侧边栏领域切换下拉框 */
-function renderDomainSwitcher() {
-  const select = document.getElementById('domain-switcher');
-  if (!select) return;
-  select.innerHTML = Object.entries(DOMAINS).map(([key, d]) =>
-    `<option value="${key}"${key === currentDomain ? ' selected' : ''}>${d.name}</option>`
   ).join('');
 }
 
