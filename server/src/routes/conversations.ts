@@ -15,13 +15,15 @@ const MAX_MESSAGES = 500;
 
 const router = Router();
 
-export async function enrichConversation(conv: import('../models/Conversation.js').IConversation) {
+export async function enrichConversation(conv: import('../models/Conversation.js').IConversation, cardMap?: Map<string, unknown>) {
   const reqIds = conv.messages.filter((m) => m.reqCard).map((m) => m.reqCard!);
-  const rawReqs = reqIds.length ? await Requirement.find({ _id: { $in: reqIds } }) : [];
-  const reqs = await populateReqAuthor(rawReqs);
-  const cardMap = new Map<string, unknown>();
-  for (const r of reqs) {
-    cardMap.set(r.id, r);
+  if (!cardMap) {
+    const rawReqs = reqIds.length ? await Requirement.find({ _id: { $in: reqIds } }) : [];
+    const reqs = await populateReqAuthor(rawReqs);
+    cardMap = new Map<string, unknown>();
+    for (const r of reqs) {
+      cardMap.set(r.id, r);
+    }
   }
   return toConversationJson(conv, cardMap);
 }
@@ -29,7 +31,15 @@ export async function enrichConversation(conv: import('../models/Conversation.js
 router.get('/', requireAuth, async (req: AuthRequest, res, next) => {
   try {
     const list = await Conversation.find({ userId: req.user!._id }).sort({ updatedAt: -1 });
-    const out = await Promise.all(list.map(enrichConversation));
+    // ARCH-01: 批量预加载所有 reqCard ID，避免 N+1 查询
+    const allReqIds = [...new Set(list.flatMap((c) =>
+      c.messages.filter((m) => m.reqCard).map((m) => m.reqCard!)
+    ))];
+    const rawReqs = allReqIds.length ? await Requirement.find({ _id: { $in: allReqIds } }) : [];
+    const reqs = await populateReqAuthor(rawReqs);
+    const sharedCardMap = new Map<string, unknown>();
+    for (const r of reqs) sharedCardMap.set(r.id, r);
+    const out = list.map((c) => toConversationJson(c, sharedCardMap));
     res.json(out);
   } catch (e) {
     next(e);

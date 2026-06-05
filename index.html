@@ -1679,7 +1679,7 @@
     <div class="sidebar-nav">
       <div class="nav-item active" data-section="home" onclick="switchSection('home', this)">
         <span class="nav-icon">🏠</span>
-        <span class="nav-label">CollabAI</span>
+        <span class="nav-label">首页</span>
       </div>
       <div class="nav-item" data-section="match" onclick="switchSection('match', this)">
         <span class="nav-icon">🔍</span>
@@ -5169,7 +5169,7 @@ function editResource(idx) {
   document.getElementById('res-edit-name-' + idx)?.focus();
 }
 
-function saveResource(idx) {
+async function saveResource(idx) {
   const name = document.getElementById('res-edit-name-' + idx)?.value?.trim();
   const desc = document.getElementById('res-edit-desc-' + idx)?.value?.trim();
   const icon = document.getElementById('res-edit-icon-' + idx)?.value?.trim();
@@ -5177,8 +5177,15 @@ function saveResource(idx) {
   currentUser.resources[idx].name = name;
   currentUser.resources[idx].desc = desc || '';
   currentUser.resources[idx].icon = icon || '📦';
+  try {
+    // FUNC-01: 持久化资源编辑到服务器
+    currentUser = await CollabApi.saveUserResources(currentUser.resources);
+    syncSidebarUser();
+    showToast('资源已更新', 'success');
+  } catch (e) {
+    showToast(e.message || '保存失败', 'warning');
+  }
   renderProfile();
-  showToast('资源已更新', 'success');
 }
 
 function renderPortfolioGrid(items) {

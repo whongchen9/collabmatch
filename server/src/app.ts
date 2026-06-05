@@ -37,12 +37,42 @@ app.use(
     credentials: true,
   }),
 );
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        // index.html 大量使用内联 <script> 和 onclick 属性，需要放行
+        'script-src': ["'self'", "'unsafe-inline'"],
+        'script-src-attr': ["'unsafe-inline'"],
+      },
+    },
+  }),
+);
 app.use(express.json({ limit: '12mb' }));
+
+// SEC-13: 仅允许访问前端白名单文件，防止暴露 server/、node_modules/ 等目录
+const ALLOWED_STATIC_FILES = new Set([
+  'index.html',
+  'api-bridge.js',
+  'favicon.ico',
+]);
 
 app.use('/api', api);
 
-app.use(express.static(projectRoot));
+// 静态文件：仅允许白名单中的文件 + dist/ 目录
+app.use(express.static(projectRoot, {
+  setHeaders(res, filePath) {
+    const relative = path.relative(projectRoot, filePath).replace(/\\/g, '/');
+    // 允许 dist/ 目录下的所有文件
+    if (relative.startsWith('dist/')) return;
+    // 允许白名单中的根目录文件
+    const filename = path.basename(filePath);
+    if (!ALLOWED_STATIC_FILES.has(filename)) {
+      res.status(403).end();
+    }
+  },
+}));
 app.get('/', (_req, res) => {
   res.sendFile(path.join(projectRoot, 'index.html'));
 });

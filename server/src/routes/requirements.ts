@@ -102,7 +102,26 @@ router.post('/', requireAuth, validate({
     }
     payload.keywords = payload.keywords ?? payload.skills ?? [];
     payload.status = payload.status ?? 'draft';
+    // FUNC-03: 关键字段校验
+    if (!payload.title || typeof payload.title !== 'string' || !payload.title.trim()) {
+      res.status(400).json({ error: 'title 为必填字段' });
+      return;
+    }
+    const VALID_DOMAINS = ['tech', 'design', 'content', 'education', 'business', 'food', 'service'];
+    if (payload.domain && !VALID_DOMAINS.includes(payload.domain as string)) {
+      res.status(400).json({ error: 'domain 无效' });
+      return;
+    }
+    const VALID_VISIBILITY = ['public', 'match_only', 'invite_only'];
+    if (payload.visibility && !VALID_VISIBILITY.includes(payload.visibility as string)) {
+      res.status(400).json({ error: 'visibility 无效' });
+      return;
+    }
     const reqDoc = asOne(await Requirement.create(payload));
+    if (!reqDoc) {
+      res.status(500).json({ error: '需求创建失败' });
+      return;
+    }
     res.status(201).json({ requirement: toRequirementJson(reqDoc, req.user!) });
   } catch (e) {
     next(e);
