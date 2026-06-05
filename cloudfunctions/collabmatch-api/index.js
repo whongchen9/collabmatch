@@ -105,7 +105,46 @@ P('/api/ai/chat', async(p,b,q)=>{
   const msgs=c.data[0].messages||[];
   const userMsg={role:'user',content:msg,time:new Date().toISOString()};
   msgs.push(userMsg);
-  const reply='收到你的消息。关于「'+msg.slice(0,30)+'」，我来帮你分析…\n\n根据你的描述，这是一个有潜力的方向。我建议先明确核心需求，然后在需求广场匹配合适的协作者。\n\n你可以试试点击右上角的 ⚡ 技能面板，使用「生成需求文档」或「诊断需求」来进一步梳理想法。';
+  // ── Hermes Agent 接入 ─────────────────
+  // 环境变量：HERMES_AGENT_URL=http://你的服务器IP:8642
+  // 可选：HERMES_API_KEY=你的密钥（默认 change-me-local-dev）
+  let reply = '';
+  const hermesUrl = (process.env.HERMES_AGENT_URL||'').replace(/\/+$/,'');
+  if (hermesUrl) {
+    try {
+      const hermesRes = await fetch(hermesUrl+'/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + (process.env.HERMES_API_KEY||'change-me-local-dev'),
+        },
+        body: JSON.stringify({
+          model: 'hermes-agent',
+          messages: [
+            {role:'system', content:'你是 CollabMatch 的 AI 助手 CollabAI。\n职责：1) 帮助用户梳理协作需求 2) 推荐合适的技能标签 3) 引导用户完善项目描述 4) 必要时建议用户去需求广场匹配协作者。\n要求：回答简洁有用，中文回复，不超过300字。'},
+            {role:'user', content: msg}
+          ],
+          stream: false,
+          max_tokens: 800
+        }),
+      });
+      if (!hermesRes.ok) {
+        const errText = await hermesRes.text().catch(()=>'');
+        console.error('[Hermes] HTTP'+hermesRes.status+':', errText.slice(0,200));
+        reply = '[AI 服务暂时不可用（错误码 '+hermesRes.status+'），请稍后重试。你也可以直接去需求广场浏览已发布的需求。]';
+      } else {
+        const d = await hermesRes.json();
+        reply = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'[AI 没有返回有效回复，能换个方式描述你的问题吗？]';
+      }
+    } catch(e) {
+      console.error('[Hermes]', e.message);
+      if (e.name==='AbortError' || String(e).includes('timeout')) reply = '[AI 响应超时，请稍后重试，或尝试更简洁地描述你的问题。]';
+      else if (String(e).includes('ENOTFOUND')||String(e).includes('ECONNREFUSED')) reply = '[无法连接 AI 服务，请确认 Hermes Agent 是否正常运行，并检查云函数环境变量 HERMES_AGENT_URL 是否配置正确。]';
+      else reply = '[AI 服务出错：'+e.message.slice(0,80)+']';
+    }
+  } else {
+    reply = '欢迎使用 CollabMatch AI 助手！\n\n（当前为离线模式，管理员请在云函数环境变量中配置 HERMES_AGENT_URL 以启用 AI 对话功能。）\n\n你可以继续和我对话（离线模式仅返回提示），或者直接去需求广场浏览已发布的协作需求。';
+  }
   const aiMsg={role:'ai',content:reply,time:new Date().toISOString()};
   msgs.push(aiMsg);
   await db.collection('conversations').doc(convId).update({messages:msgs,updatedAt:Date.now()});
