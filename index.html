@@ -2176,15 +2176,19 @@ let activeConvId = null;
 let MY_APPLIED_REQ_IDS = new Set();
 
 async function loadAppData() {
-  REQUIREMENTS = await CollabApi.loadRequirements();
-  conversations = await CollabApi.loadConversations();
-  GROUPS = await CollabApi.loadGroups();
+  try { REQUIREMENTS = await CollabApi.loadRequirements(); } catch (e) { console.warn('[requirements] 加载失败', e.message); REQUIREMENTS = []; }
+  try { conversations = await CollabApi.loadConversations(); } catch (e) { console.warn('[conversations] 加载失败', e.message); conversations = []; }
+  try { GROUPS = await CollabApi.loadGroups(); } catch (e) { console.warn('[groups] 加载失败', e.message); GROUPS = []; }
   if (conversations.length) {
     activeConvId = conversations[0].id;
   } else {
-    const conv = await CollabApi.createConversation(currentDomain);
-    conversations = [conv];
-    activeConvId = conv.id;
+    try {
+      const conv = await CollabApi.createConversation(currentDomain);
+      conversations = [conv];
+      activeConvId = conv.id;
+    } catch (e) {
+      console.warn('[conversations] 创建对话失败', e.message);
+    }
   }
   try {
     const ids = await CollabApi.fetchInstalledSkillIds();
