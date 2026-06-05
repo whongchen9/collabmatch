@@ -221,6 +221,8 @@ router.get('/:id', async (req, res, next) => {
 });
 
 const VALID_DOMAINS = ['tech', 'design', 'content', 'education', 'business', 'food', 'service'];
+const VALID_WEEKLY_HOURS = ['1-5', '5-10', '10-20', '20+', '灵活'];
+const VALID_COLLAB_INTENTS = ['find_project', 'find_partner', 'open_to_work', 'exploring'];
 
 router.put('/me', requireAuth, validate({
   name: { type: 'string', maxLength: 50 },
@@ -230,7 +232,11 @@ router.put('/me', requireAuth, validate({
     const { name, avatar, avatarColor, position, bio, domain, weeklyHours, collabIntent, interestedStages } = req.body;
     if (name !== undefined) req.user!.name = name;
     if (avatar !== undefined) req.user!.avatar = avatar;
-    if (avatarColor !== undefined) req.user!.avatarColor = avatarColor;
+    if (avatarColor !== undefined) {
+      if (!avatarColor || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(avatarColor) || /^linear-gradient\(/.test(avatarColor)) {
+        req.user!.avatarColor = avatarColor;
+      }
+    }
     if (position !== undefined) req.user!.position = position;
     if (bio !== undefined) req.user!.bio = bio;
     if (domain !== undefined) {
@@ -240,8 +246,16 @@ router.put('/me', requireAuth, validate({
       }
       req.user!.domain = domain;
     }
-    if (weeklyHours !== undefined) req.user!.weeklyHours = weeklyHours;
-    if (collabIntent !== undefined) req.user!.collabIntent = collabIntent;
+    if (weeklyHours !== undefined) {
+      if (!weeklyHours || VALID_WEEKLY_HOURS.includes(weeklyHours)) {
+        req.user!.weeklyHours = weeklyHours;
+      }
+    }
+    if (collabIntent !== undefined) {
+      if (!collabIntent || VALID_COLLAB_INTENTS.includes(collabIntent)) {
+        req.user!.collabIntent = collabIntent;
+      }
+    }
     if (interestedStages !== undefined) req.user!.interestedStages = interestedStages;
     await req.user!.save();
     res.json({ user: toUserJson(req.user!, { includePrivatePortfolio: true }) });
