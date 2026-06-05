@@ -131,7 +131,8 @@
   function mergeRequirements(lists) {
     const map = new Map();
     for (const list of lists) {
-      for (const r of list || []) map.set(r.id, r);
+      const items = Array.isArray(list) ? list : [];
+      for (const r of items) map.set(r.id, r);
     }
     return [...map.values()];
   }
@@ -239,7 +240,7 @@
   async function loadRequirements() {
     const [pubRaw, mineRaw] = await Promise.all([
       api('/requirements', { auth: false }).catch(() => ({ items: [] })),
-      api('/requirements/mine'),
+      api('/requirements/mine').catch(() => ({ items: [] })),
     ]);
     // Handle paginated response format { items, total, ... }
     const pub = Array.isArray(pubRaw) ? pubRaw : (pubRaw.items || []);
@@ -524,14 +525,6 @@
     return data.conversation;
   }
 
-  async function createGroupManual(name, reqId, memberIds) {
-    const data = await api('/groups/create', {
-      method: 'POST',
-      body: { name, reqId, memberIds },
-    });
-    return data.group;
-  }
-
   async function createGroupMeeting(groupId) {
     const data = await api(`/groups/${groupId}/meeting`, { method: 'POST' });
     return data;
@@ -609,7 +602,6 @@
     resolveFileUrl,
     uploadChatAttachment,
     forwardMessage,
-    createGroupManual,
     createGroupMeeting,
     pingPresence,
     mergeRequirements,

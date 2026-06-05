@@ -525,14 +525,6 @@
     return data.conversation;
   }
 
-  async function createGroupManual(name, reqId, memberIds) {
-    const data = await api('/groups/create', {
-      method: 'POST',
-      body: { name, reqId, memberIds },
-    });
-    return data.group;
-  }
-
   async function createGroupMeeting(groupId) {
     const data = await api(`/groups/${groupId}/meeting`, { method: 'POST' });
     return data;
@@ -610,7 +602,6 @@
     resolveFileUrl,
     uploadChatAttachment,
     forwardMessage,
-    createGroupManual,
     createGroupMeeting,
     pingPresence,
     mergeRequirements,

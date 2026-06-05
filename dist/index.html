@@ -1652,17 +1652,6 @@
   </div>
 </div>
 
-<!-- Create Group Modal -->
-<div class="modal-overlay" id="modal-group-create">
-  <div class="modal-box" style="max-width:420px;">
-    <div class="modal-header">
-      <span class="modal-title">创建群组</span>
-      <button class="modal-close" aria-label="关闭" onclick="closeModal('modal-group-create')"></button>
-    </div>
-    <div id="modal-group-create-body" style="padding:16px;"></div>
-  </div>
-</div>
-
 <!-- ===== APP SHELL ===== -->
 <div id="app">
   <!-- SIDEBAR -->
@@ -1853,7 +1842,6 @@
         <div class="groups-list-panel">
           <div class="groups-list-header">
             <h2>协作群组</h2>
-            <button class="btn btn-secondary btn-xs" onclick="createGroupFromSidebar()">+ 创建</button>
           </div>
           <div class="group-list-items" id="group-list-items">
             <!-- JS render -->
@@ -1864,7 +1852,7 @@
           <div class="empty-group-state" id="empty-group-hint">
             <div class="empty-icon">👥</div>
             <h3 style="color:var(--text-secondary);">选择一个群组开始聊天</h3>
-            <p>在左侧列表中选择群组，或通过智能匹配创建新群</p>
+            <p>在左侧列表中选择群组，匹配成功后系统会自动创建协作群</p>
           </div>
 
           <!-- Group Chat (hidden by default, shown when group selected) -->
@@ -2176,15 +2164,19 @@ let activeConvId = null;
 let MY_APPLIED_REQ_IDS = new Set();
 
 async function loadAppData() {
-  REQUIREMENTS = await CollabApi.loadRequirements();
-  conversations = await CollabApi.loadConversations();
-  GROUPS = await CollabApi.loadGroups();
+  try { REQUIREMENTS = await CollabApi.loadRequirements(); } catch (e) { console.warn('[requirements] 加载失败', e.message); REQUIREMENTS = []; }
+  try { conversations = await CollabApi.loadConversations(); } catch (e) { console.warn('[conversations] 加载失败', e.message); conversations = []; }
+  try { GROUPS = await CollabApi.loadGroups(); } catch (e) { console.warn('[groups] 加载失败', e.message); GROUPS = []; }
   if (conversations.length) {
     activeConvId = conversations[0].id;
   } else {
-    const conv = await CollabApi.createConversation(currentDomain);
-    conversations = [conv];
-    activeConvId = conv.id;
+    try {
+      const conv = await CollabApi.createConversation(currentDomain);
+      conversations = [conv];
+      activeConvId = conv.id;
+    } catch (e) {
+      console.warn('[conversations] 创建对话失败', e.message);
+    }
   }
   try {
     const ids = await CollabApi.fetchInstalledSkillIds();
@@ -4497,7 +4489,7 @@ function renderGroupsList() {
     container.innerHTML = `<div class="empty-state" style="padding:30px 16px;">
       <div class="icon">👥</div>
       <h3>暂无协作群组</h3>
-      <p>通过智能匹配发现协作者，或发布需求后邀请伙伴加入</p>
+      <p>匹配成功后系统会自动创建协作群，去发布需求或智能匹配吧</p>
       <button class="btn btn-primary btn-sm" onclick="switchSection('match', document.querySelector('[data-section=match]'))">🔍 去智能匹配</button>
     </div>`;
     return;
@@ -5558,26 +5550,6 @@ async function downloadGroupFile(fileUrl, fileName) {
   } catch (e) {
     showToast(e.message || '下载失败', 'warning');
   }
-}
-
-async function createGroupFromSidebar() {
-  document.getElementById('modal-group-create-body').innerHTML = `
-    <input id="new-group-name" placeholder="群组名称" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:12px;">
-    <button class="btn btn-primary" style="width:100%;" onclick="confirmCreateGroup()">创建</button>
-  `;
-  openModal('modal-group-create');
-}
-async function confirmCreateGroup() {
-  const name = document.getElementById('new-group-name').value.trim();
-  if (!name) { showToast('请输入群组名称','warning'); return; }
-  try {
-    const group = await CollabApi.createGroupManual(name);
-    GROUPS.unshift(group);
-    closeModal('modal-group-create');
-    renderGroupsList();
-    openGroup(group.id);
-    showToast('群组已创建','success');
-  } catch(e) { showToast(e.message||'创建失败','warning'); }
 }
 
 async function startGroupMeeting() {
