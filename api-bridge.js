@@ -48,35 +48,55 @@
     else localStorage.removeItem(TOKEN_KEY);
   }
 
+  /** 全局 loading 计数器 */
+  let loadingCount = 0;
+  function showLoading() {
+    loadingCount++;
+    if (loadingCount === 1 && typeof global.setAppLoading === 'function') {
+      global.setAppLoading(true);
+    }
+  }
+  function hideLoading() {
+    if (loadingCount > 0) loadingCount--;
+    if (loadingCount === 0 && typeof global.setAppLoading === 'function') {
+      global.setAppLoading(false);
+    }
+  }
+
   async function api(path, options = {}) {
     const { method = 'GET', body, auth = true } = options;
     const headers = { 'Content-Type': 'application/json' };
     if (auth && getToken()) headers.Authorization = `Bearer ${getToken()}`;
+    showLoading();
     let res;
     try {
-      res = await fetch(`${API_BASE}${path}`, {
-        method,
-        headers,
-        body: body !== undefined ? JSON.stringify(body) : undefined,
-      });
-    } catch (err) {
-      throw wrapFetchError(err);
-    }
-    const text = await res.text();
-    let data;
-    try {
-      data = text ? JSON.parse(text) : {};
-    } catch {
-      throw new Error(text || res.statusText);
-    }
-    if (!res.ok) {
-      if (res.status === 401 && auth !== false) {
-        handleUnauthorized(auth);
-        throw new Error(data.error || '登录已过期，请重新登录');
+      try {
+        res = await fetch(`${API_BASE}${path}`, {
+          method,
+          headers,
+          body: body !== undefined ? JSON.stringify(body) : undefined,
+        });
+      } catch (err) {
+        throw wrapFetchError(err);
       }
-      throw new Error(data.error || `请求失败 ${res.status}`);
+      const text = await res.text();
+      let data;
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        throw new Error(text || res.statusText);
+      }
+      if (!res.ok) {
+        if (res.status === 401 && auth !== false) {
+          handleUnauthorized(auth);
+          throw new Error(data.error || '登录已过期，请重新登录');
+        }
+        throw new Error(data.error || `请求失败 ${res.status}`);
+      }
+      return data;
+    } finally {
+      hideLoading();
     }
-    return data;
   }
 
   function wrapFetchError(err) {
