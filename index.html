@@ -12,11 +12,8 @@
     /* ===== CSS RESET & BASE ===== */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body { height: 100%; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif; background: var(--bg-primary); color: var(--text-primary); overflow: hidden; }
-    a { color: var(--accent-purple); text-decoration: none; }
-    ::-webkit-scrollbar { width: 5px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
-    :focus-visible { outline: 2px solid var(--accent-purple); outline-offset: 0; border-radius: var(--radius-sm); }
+    a { color: var(--accent); text-decoration: none; }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 0; border-radius: var(--radius-sm); }
     .btn:focus-visible { outline-offset: 1px; }
 
     /* ===== CSS VARIABLES ===== */
@@ -31,22 +28,20 @@
       --text-primary: #e8ecf4;
       --text-secondary: #9aa0b8;
       --text-muted: #5c627a;
-      --accent-purple: #a78bfa;
-      --accent-cyan: #22d3ee;
-      --accent-gradient: linear-gradient(135deg, #a78bfa, #22d3ee);
-      --accent-gradient-soft: linear-gradient(135deg, rgba(167,139,250,0.12), rgba(34,211,238,0.12));
-      --success: #22c55e;
-      --warning: #f59e0b;
-      --danger: #ef4444;
-      --accent-pink: #f472b6;
-      --accent-orange: #fb923c;
+      --accent: #8b7bf7;
+      --accent-soft: rgba(139,123,247,0.12);
+      --accent-hover: #9d8ff9;
+      --success: #6bcf8e;
+      --warning: #d4a843;
+      --danger: #e07a7a;
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 14px;
       --radius-xl: 20px;
       --shadow: 0 4px 24px rgba(0,0,0,0.5);
       --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
-      --shadow-glow: 0 0 20px rgba(167,139,250,0.15);
+      --shadow-lg: 0 8px 40px rgba(0,0,0,0.6);
+      --shadow-glow: 0 0 20px rgba(139,123,247,0.12);
       --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
@@ -79,10 +74,8 @@
     .sidebar-logo-title {
       font-size: 18px;
       font-weight: 700;
-      background: var(--accent-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      color: var(--text-primary);
+      letter-spacing: -0.02em;
     }
     .sidebar-logo-sub {
       font-size: 12px;
@@ -110,7 +103,7 @@
       user-select: none;
     }
     .nav-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .nav-item.active { background: var(--accent-gradient-soft); color: var(--text-primary); }
+    .nav-item.active { background: var(--accent-soft); color: var(--text-primary); }
     .nav-item.active .nav-icon { filter: none; }
     .nav-icon { width: 18px; height: 18px; flex-shrink: 0; stroke-width: 1.8; }
     .nav-label { font-weight: 500; }
@@ -133,7 +126,7 @@
       transition: var(--transition);
     }
     .nav-group-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .nav-group-item.active { background: rgba(167,139,250,0.12); color: var(--accent-purple); }
+    .nav-group-item.active { background: rgba(139,123,247,0.12); color: var(--accent); }
     .group-avatar-mini {
       width: 22px; height: 22px; border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
@@ -162,7 +155,7 @@
     .uc-switch input { display: none; }
     .uc-slider { position: absolute; inset: 0; background: var(--bg-tertiary); border-radius: 24px; transition: var(--transition); cursor: pointer; }
     .uc-slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: var(--transition); }
-    .uc-switch input:checked + .uc-slider { background: var(--accent-purple); }
+    .uc-switch input:checked + .uc-slider { background: var(--accent); }
     .uc-switch input:checked + .uc-slider::before { transform: translateX(20px); }
     .user-avatar {
       width: 32px; height: 32px; border-radius: 50%;
@@ -180,8 +173,8 @@
       display: flex;
       flex-direction: column;
     }
-    .section { display: none; height: 100%; flex-direction: column; }
-    .section.active { display: flex; }
+    .section { display: none; height: 100%; flex-direction: column; overflow-y: auto; }
+    .section.active { display: flex; animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 
     /* ===== SECTION HEADER ===== */
     .section-header {
@@ -199,9 +192,6 @@
     .section-header p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 
     /* ===== PAGE TRANSITIONS ===== */
-    .section.active {
-      animation: pageEnter 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-    }
     @keyframes pageEnter {
       from { opacity: 0; transform: translateY(8px); }
       to   { opacity: 1; transform: translateY(0); }
@@ -223,18 +213,18 @@
       font-size: 13px; font-weight: 500; cursor: pointer;
       border: none; transition: var(--transition); white-space: nowrap;
     }
-    .btn-primary { background: var(--accent-gradient); color: #fff; }
-    .btn-primary:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(167,139,250,0.35); }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: var(--accent-hover); box-shadow: 0 2px 12px rgba(139,123,247,0.25); }
     .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border-light); }
     .btn-secondary:hover { background: var(--bg-hover); border-color: var(--border-light); }
     .btn-ghost { background: transparent; color: var(--text-secondary); border: 1px solid var(--border); }
     .btn-ghost:hover { background: var(--bg-hover); color: var(--text-primary); }
     .btn-sm { padding: 5px 10px; font-size: 12px; }
     .btn-xs { padding: 3px 8px; font-size: 11px; }
-    .btn-danger { background: rgba(239,68,68,0.15); color: var(--danger); border: 1px solid rgba(239,68,68,0.3); }
-    .btn-danger:hover { background: rgba(239,68,68,0.25); }
-    .btn-success { background: rgba(34,197,94,0.15); color: var(--success); border: 1px solid rgba(34,197,94,0.3); }
-    .btn-success:hover { background: rgba(34,197,94,0.25); }
+    .btn-danger { background: rgba(224,122,122,0.15); color: var(--danger); border: 1px solid rgba(224,122,122,0.3); }
+    .btn-danger:hover { background: rgba(224,122,122,0.25); }
+    .btn-success { background: rgba(74,222,128,0.12); color: var(--success); border: 1px solid rgba(74,222,128,0.25); }
+    .btn-success:hover { background: rgba(74,222,128,0.20); }
     .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
     .btn:active { transform: none !important; }
 
@@ -244,13 +234,13 @@
       padding: 3px 10px; border-radius: 20px;
       font-size: 12px; font-weight: 500; white-space: nowrap;
     }
-    .badge-purple { background: rgba(167,139,250,0.18); color: var(--accent-purple); }
-    .badge-blue { background: rgba(59,130,246,0.18); color: var(--accent-cyan); }
-    .badge-green { background: rgba(34,197,94,0.18); color: var(--success); }
-    .badge-yellow { background: rgba(245,158,11,0.18); color: var(--warning); }
-    .badge-pink { background: rgba(236,72,153,0.18); color: var(--accent-pink); }
-    .badge-cyan { background: rgba(6,182,212,0.18); color: var(--accent-cyan); }
-    .badge-orange { background: rgba(249,115,22,0.18); color: var(--accent-orange); }
+    .badge-purple { background: var(--accent-soft); color: var(--accent); }
+    .badge-blue { background: var(--accent-soft); color: var(--accent); }
+    .badge-green { background: rgba(74,222,128,0.12); color: var(--success); }
+    .badge-yellow { background: rgba(251,191,36,0.12); color: var(--warning); }
+    .badge-pink { background: var(--accent-soft); color: var(--accent); }
+    .badge-cyan { background: var(--accent-soft); color: var(--accent); }
+    .badge-orange { background: var(--accent-soft); color: var(--accent); }
     .badge-gray { background: rgba(156,163,175,0.15); color: var(--text-muted); }
 
     /* ===== CARD ===== */
@@ -264,7 +254,7 @@
       box-shadow: 0 4px 24px rgba(0,0,0,0.2);
       transition: var(--transition);
     }
-    .card:hover { border-color: rgba(167,139,250,0.25); box-shadow: 0 8px 32px rgba(167,139,250,0.15); }
+    .card:hover { border-color: rgba(139,123,247,0.25); box-shadow: 0 8px 32px rgba(139,123,247,0.15); }
 
     /* ===== PROGRESS BAR ===== */
     .progress-bar {
@@ -272,14 +262,14 @@
     }
     .progress-fill {
       height: 100%; border-radius: 4px;
-      background: var(--accent-gradient);
+      background: var(--accent);
       transition: width 0.6s ease;
     }
 
     /* ===== AVATAR ===== */
     .avatar {
       display: flex; align-items: center; justify-content: center;
-      font-weight: 700; border-radius: 50%; flex-shrink: 0;
+      font-weight: 700; border-radius: 50%; flex-shrink: 0; overflow: hidden;
     }
     .avatar-sm { width: 32px; height: 32px; font-size: 13px; }
     .avatar-md { width: 40px; height: 40px; font-size: 16px; }
@@ -297,13 +287,13 @@
       transition: border-color 0.2s, box-shadow 0.2s;
       outline: none;
     }
-    input:focus, textarea:focus, select:focus { border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
+    input:focus, textarea:focus, select:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,123,247,0.12); }
     input::placeholder, textarea::placeholder { color: var(--text-muted); }
 
     /* ===== LOADING SPINNER ===== */
     .spinner {
-      width: 16px; height: 16px; border: 2px solid rgba(167,139,250,0.3);
-      border-top-color: var(--accent-purple); border-radius: 50%;
+      width: 16px; height: 16px; border: 2px solid rgba(139,123,247,0.3);
+      border-top-color: var(--accent); border-radius: 50%;
       animation: spin 0.8s linear infinite; display: inline-block;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -335,7 +325,7 @@
       animation: slideInRight 0.3s ease, fadeOut 0.3s ease 2.7s forwards;
     }
     .toast.success { border-left: 3px solid var(--success); color: var(--success); }
-    .toast.info { border-left: 3px solid var(--accent-purple); color: var(--accent-purple); }
+    .toast.info { border-left: 3px solid var(--accent); color: var(--accent); }
     .toast.warning { border-left: 3px solid var(--warning); color: var(--warning); }
     @keyframes slideInRight { from { transform: translateX(60px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     @keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
@@ -408,13 +398,13 @@
       border: 1px solid transparent;
     }
     .domain-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .domain-tab.active { background: var(--accent-gradient-soft); color: var(--text-primary); border-color: var(--accent-purple); }
+    .domain-tab.active { background: var(--accent-soft); color: var(--text-primary); border-color: var(--accent); }
 
     .chat-header-left { display: flex; align-items: center; gap: 10px; }
     .ai-indicator {
       width: 8px; height: 8px; border-radius: 50%;
       background: var(--success);
-      box-shadow: 0 0 6px rgba(34,197,94,0.5);
+      box-shadow: 0 0 6px rgba(107,207,142,0.5);
       animation: pulse 2s ease infinite;
     }
     @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.6; transform: scale(0.8); } }
@@ -470,12 +460,6 @@
       opacity: 0.45; transition: opacity 0.2s;
     }
     .msg-wrapper:hover .msg-actions { opacity: 1; }
-    .msg-action-btn {
-      padding: 4px 6px; font-size: 12px; color: var(--text-muted);
-      cursor: pointer; border-radius: var(--radius-sm);
-      transition: var(--transition);
-    }
-    .msg-action-btn:hover { color: var(--text-primary); background: var(--bg-hover); }
 
     /* Reply quote bar */
     .reply-bar {
@@ -496,7 +480,7 @@
       font-size: 11px; font-weight: 700; flex-shrink: 0;
     }
     .reply-bar-body { flex: 1; min-width: 0; }
-    .reply-bar-header { font-size: 11px; color: var(--accent-purple); font-weight: 600; margin-bottom: 2px; }
+    .reply-bar-header { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 2px; }
     .reply-bar-text {
       color: var(--text-secondary); font-size: 12px; line-height: 1.4;
       overflow: hidden; display: -webkit-box;
@@ -528,14 +512,10 @@
     .kb-ai-loading i {
       animation: spin 1s linear infinite;
     }
-    @keyframes spin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
 
     /* Inline reply quote block (inside message bubble) */
     .msg-quote-block {
-      border-left: 3px solid var(--accent-purple);
+      border-left: 3px solid var(--accent);
       background: rgba(167, 139, 250, 0.06);
       border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
       padding: 10px 14px;
@@ -546,13 +526,13 @@
       max-width: 100%;
     }
     .msg-quote-block:hover {
-      border-left-color: var(--accent-cyan);
+      border-left-color: var(--accent);
       background: rgba(167, 139, 250, 0.12);
     }
     .msg-quote-header {
       display: flex; align-items: center; gap: 6px;
       margin-bottom: 4px;
-      color: var(--accent-purple);
+      color: var(--accent);
       font-weight: 600;
       font-size: 11px;
     }
@@ -586,7 +566,7 @@
       border-radius: var(--radius-md); padding: 14px; margin-top: 10px;
       cursor: pointer; transition: var(--transition);
     }
-    .req-card-preview:hover { border-color: var(--accent-purple); }
+    .req-card-preview:hover { border-color: var(--accent); }
     .req-card-title { font-weight: 600; font-size: 14px; color: var(--text-primary); margin-bottom: 6px; }
     .req-card-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
     .req-card-actions { display: flex; gap: 8px; margin-top: 10px; }
@@ -630,12 +610,12 @@
       background: rgba(22, 27, 46, 0.6);
     }
     .chat-input-box:focus-within {
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 0 3px rgba(167,139,250,0.12), 0 0 24px rgba(167,139,250,0.06);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139,123,247,0.12), 0 0 24px rgba(139,123,247,0.06);
     }
     .chat-input-box.drag-over {
-      border-color: var(--accent-purple);
-      box-shadow: 0 0 0 2px rgba(167,139,250,0.15);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(139,123,247,0.15);
     }
     /* Tools row · always visible at bottom */
     .chat-input-tools {
@@ -661,7 +641,7 @@
     .chat-file-chip {
       display: inline-flex; align-items: center; gap: 6px;
       max-width: 220px; padding: 4px 8px 4px 6px;
-      background: rgba(167,139,250,0.12); border: 1px solid rgba(167,139,250,0.35);
+      background: rgba(139,123,247,0.12); border: 1px solid rgba(139,123,247,0.35);
       border-radius: 8px; font-size: 12px; color: var(--text-primary);
     }
     .chat-file-chip-thumb {
@@ -678,15 +658,15 @@
     .msg-attachment-chip {
       display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px;
       background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px;
-      font-size: 11px; cursor: pointer; color: var(--accent-purple);
+      font-size: 11px; cursor: pointer; color: var(--accent);
     }
-    .msg-attachment-chip:hover { border-color: var(--accent-purple); }
+    .msg-attachment-chip:hover { border-color: var(--accent); }
     .chat-input-row {
       display: flex; align-items: flex-end; gap: 10px;
     }
     .chat-send-btn {
       width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
-      background: var(--accent-gradient); border: none; cursor: pointer;
+      background: var(--accent); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: var(--transition); margin-bottom: 4px;
     }
@@ -707,7 +687,7 @@
       font-size: 13px; color: var(--text-secondary); cursor: pointer;
       transition: var(--transition);
     }
-    .quick-chip:hover { border-color: var(--accent-purple); color: var(--accent-purple); background: rgba(167,139,250,0.08); }
+    .quick-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(139,123,247,0.08); }
 
     /* Right panel */
     .chat-side-panel {
@@ -726,7 +706,7 @@
       border-radius: var(--radius-md); padding: 12px; margin-bottom: 8px;
       cursor: pointer; transition: var(--transition);
     }
-    .mini-req-card:hover { border-color: var(--accent-purple); box-shadow: 0 4px 16px rgba(167,139,250,0.1); }
+    .mini-req-card:hover { border-color: var(--accent); box-shadow: 0 4px 16px rgba(139,123,247,0.1); }
     .mini-req-card-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .mini-req-card-sub { font-size: 12px; color: var(--text-muted); }
     .mini-req-card-tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
@@ -738,7 +718,7 @@
       background: var(--bg-tertiary);
     }
     .conv-item:hover { background: var(--bg-hover); }
-    .conv-item.active { background: var(--accent-gradient-soft); border-left-color: var(--accent-purple); }
+    .conv-item.active { background: var(--accent-soft); border-left-color: var(--accent); }
     .conv-item:hover .conv-del { opacity: 1 !important; }
 
     /* ========================================
@@ -763,7 +743,7 @@
       cursor: pointer; transition: var(--transition); background: var(--bg-card);
     }
     .match-req-item:hover { border-color: var(--border-light); }
-    .match-req-item.selected { border-color: var(--accent-purple); background: rgba(167,139,250,0.07); }
+    .match-req-item.selected { border-color: var(--accent); background: rgba(139,123,247,0.07); }
     .match-req-item-title { font-size: 13px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .match-req-item-sub { font-size: 12px; color: var(--text-muted); }
     .match-right { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -777,7 +757,7 @@
       border-radius: var(--radius-lg); padding: 18px;
       transition: var(--transition); cursor: default;
     }
-    .user-match-card:hover { border-color: var(--accent-purple); box-shadow: 0 12px 36px rgba(167,139,250,0.2); }
+    .user-match-card:hover { border-color: var(--accent); box-shadow: 0 12px 36px rgba(139,123,247,0.2); }
     .user-match-top { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
     .user-match-info h3 { font-size: 14px; font-weight: 600; color: var(--text-primary); }
     .user-match-info p { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
@@ -787,9 +767,9 @@
       border: 2px solid;
       font-size: 13px; font-weight: 700; flex-shrink: 0; margin-left: auto;
     }
-    .match-score.low { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(34,211,238,0.1); }
-    .match-score.mid { border-color: var(--warning); color: var(--warning); background: rgba(245,158,11,0.1); }
-    .match-score.high { border-color: var(--success); color: var(--success); background: rgba(34,197,94,0.1); }
+    .match-score.low { border-color: var(--accent); color: var(--accent); background: rgba(34,211,238,0.1); }
+    .match-score.mid { border-color: var(--warning); color: var(--warning); background: rgba(212,168,67,0.1); }
+    .match-score.high { border-color: var(--success); color: var(--success); background: rgba(107,207,142,0.1); }
     .user-match-bio { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-bottom: 10px; }
     .user-match-skills { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
     .user-match-footer { display: flex; align-items: center; justify-content: space-between; }
@@ -817,7 +797,7 @@
       cursor: pointer; transition: var(--transition);
     }
     .group-list-item:hover { background: var(--bg-hover); }
-    .group-list-item.active { background: rgba(167,139,250,0.1); }
+    .group-list-item.active { background: rgba(139,123,247,0.1); }
     .group-list-avatar { width: 40px; height: 40px; border-radius: var(--radius-md); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; flex-shrink: 0; }
     .group-list-info { flex: 1; min-width: 0; }
     .group-list-name { font-size: 13px; font-weight: 600; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -886,7 +866,7 @@
       border-radius: 4px var(--radius-lg) var(--radius-lg) var(--radius-lg);
     }
     .group-msg-row.self .group-msg-bubble {
-      background: var(--accent-gradient); color: #fff;
+      background: var(--accent); color: #fff;
       border-radius: var(--radius-lg) 4px var(--radius-lg) var(--radius-lg);
       text-align: left;
     }
@@ -911,7 +891,7 @@
       background: var(--bg-tertiary); border: 1px solid var(--border-light);
       cursor: pointer; transition: var(--transition); margin-top: 4px;
     }
-    .file-bubble:hover { border-color: var(--accent-cyan); }
+    .file-bubble:hover { border-color: var(--accent); }
     .file-icon { font-size: 22px; }
     .file-info-name { font-size: 13px; font-weight: 600; color: var(--text-primary); }
     .file-info-size { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
@@ -929,7 +909,7 @@
       display: flex; align-items: flex-end; gap: 10px;
       transition: border-color 0.2s;
     }
-    .group-input-box:focus-within { border-color: var(--accent-purple); }
+    .group-input-box:focus-within { border-color: var(--accent); }
     .group-textarea {
       flex: 1; min-width: 0;
       background: none; border: none; resize: none;
@@ -940,7 +920,7 @@
     }
     .group-send-btn {
       width: 30px; height: 30px; border-radius: 50%;
-      background: var(--accent-gradient); border: none; cursor: pointer;
+      background: var(--accent); border: none; cursor: pointer;
       display: flex; align-items: center; justify-content: center;
       transition: var(--transition); flex-shrink: 0;
     }
@@ -987,7 +967,7 @@
       transition: var(--transition);
     }
     .square-search::placeholder { color: var(--text-muted); }
-    .square-search:focus { border-color: var(--accent-purple); box-shadow: 0 0 0 3px rgba(167,139,250,0.12); }
+    .square-search:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(139,123,247,0.12); }
     .square-search-wrap { position: relative; }
     .square-search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 15px; color: var(--text-muted); pointer-events: none; }
     .square-scene-row {
@@ -1001,7 +981,7 @@
       background: var(--bg-tertiary); border: 1px solid var(--border);
       color: var(--text-primary); font-size: 13px; cursor: pointer; outline: none;
     }
-    .square-domain-select:focus { border-color: var(--accent-purple); }
+    .square-domain-select:focus { border-color: var(--accent); }
     .square-sort-select {
       padding: 7px 12px; border-radius: 20px;
       background: var(--bg-tertiary); border: 1px solid var(--border);
@@ -1014,7 +994,7 @@
       transition: var(--transition);
     }
     .filter-chip:hover { border-color: var(--border-light); color: var(--text-primary); }
-    .filter-chip.active { background: rgba(167,139,250,0.15); border-color: var(--accent-purple); color: var(--accent-purple); }
+    .filter-chip.active { background: rgba(139,123,247,0.15); border-color: var(--accent); color: var(--accent); }
     .square-grid {
       display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
     }
@@ -1026,7 +1006,7 @@
       border-radius: var(--radius-lg); padding: 18px;
       transition: var(--transition); cursor: pointer;
     }
-    .square-req-card:hover { border-color: var(--accent-purple); box-shadow: 0 12px 36px rgba(167,139,250,0.2); }
+    .square-req-card:hover { border-color: var(--accent); box-shadow: 0 12px 36px rgba(139,123,247,0.2); }
     .square-card-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 10px; }
     .square-card-title { font-size: 14px; font-weight: 600; color: var(--text-primary); line-height: 1.4; flex: 1; margin-right: 10px; }
     .square-card-body { font-size: 13px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 12px; }
@@ -1075,7 +1055,7 @@
       padding: 5px 14px; border-radius: 16px; font-size: 12px; cursor: pointer; user-select: none;
       color: var(--text-secondary); transition: var(--transition); white-space: nowrap;
     }
-    .match-mode-opt.active { background: var(--accent-gradient-soft); color: var(--text-primary); }
+    .match-mode-opt.active { background: var(--accent-soft); color: var(--text-primary); }
     .match-mode-opt:hover:not(.active) { color: var(--text-primary); }
 
     /* Visibility modal options */
@@ -1086,7 +1066,7 @@
     .vis-option:hover { background: var(--bg-hover); border-color: var(--border-light); }
     .vis-option.vis-public:hover { border-color: var(--success); }
     .vis-option.vis-private:hover { border-color: var(--warning); }
-    .vis-option.vis-invite:hover { border-color: var(--accent-purple); }
+    .vis-option.vis-invite:hover { border-color: var(--accent); }
     .vis-option-icon { font-size: 28px; flex-shrink: 0; width: 40px; text-align: center; }
     .vis-option-name { font-size: 14px; font-weight: 600; }
     .vis-option-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; line-height: 1.4; }
@@ -1096,9 +1076,9 @@
       display: inline-flex; align-items: center; gap: 2px; font-size: 10px; padding: 1px 6px;
       border-radius: 10px; margin-left: 4px;
     }
-    .vis-badge-public { background: rgba(34,197,94,0.15); color: var(--success); }
-    .vis-badge-private { background: rgba(245,158,11,0.15); color: var(--warning); }
-    .vis-badge-invite { background: rgba(167,139,250,0.15); color: var(--accent-purple); }
+    .vis-badge-public { background: rgba(107,207,142,0.15); color: var(--success); }
+    .vis-badge-private { background: rgba(212,168,67,0.15); color: var(--warning); }
+    .vis-badge-invite { background: rgba(139,123,247,0.15); color: var(--accent); }
     .profile-card {
       background: rgba(26, 31, 53, 0.5);
       backdrop-filter: blur(20px);
@@ -1112,7 +1092,7 @@
     .profile-avatar-edit {
       position: absolute; bottom: 0; right: 0;
       width: 22px; height: 22px; border-radius: 50%;
-      background: var(--accent-gradient); border: 2px solid var(--bg-card);
+      background: var(--accent); border: 2px solid var(--bg-card);
       display: flex; align-items: center; justify-content: center;
       cursor: pointer; font-size: 10px;
     }
@@ -1164,28 +1144,28 @@
       background: var(--bg-tertiary); border-radius: var(--radius-lg);
       overflow: hidden; cursor: pointer; transition: var(--transition); border: 1px solid var(--border);
     }
-    .port-card:hover { border-color: var(--accent-purple); box-shadow: 0 12px 36px rgba(167,139,250,0.2); }
+    .port-card:hover { border-color: var(--accent); box-shadow: 0 12px 36px rgba(139,123,247,0.2); }
     .port-card-header { height: 64px; display: flex; align-items: center; justify-content: center; font-size: 28px; }
     .port-card-body { padding: 12px; }
     .port-card-title { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
-    .port-card-role { font-size: 12px; color: var(--accent-purple); font-weight: 500; margin-bottom: 6px; }
+    .port-card-role { font-size: 12px; color: var(--accent); font-weight: 500; margin-bottom: 6px; }
     .port-card-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5;
       display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
     .port-card-meta { font-size: 12px; color: var(--text-muted); margin-top: 6px; }
     .port-card-vis { font-size: 10px; padding: 1px 6px; border-radius: 8px; }
-    .port-card-vis.pub { background: rgba(34,197,94,0.15); color: var(--success); }
-    .port-card-vis.pri { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .port-card-vis.pub { background: rgba(107,207,142,0.15); color: var(--success); }
+    .port-card-vis.pri { background: rgba(212,168,67,0.15); color: var(--warning); }
     .port-add-btn {
       display: flex; align-items: center; justify-content: center; gap: 6px; padding: 14px;
       border: 1px dashed var(--border); border-radius: var(--radius-md);
       cursor: pointer; color: var(--text-muted); font-size: 13px; transition: var(--transition);
     }
-    .port-add-btn:hover { border-color: var(--accent-purple); color: var(--text-primary); background: var(--bg-hover); }
-    .port-indicator { font-size: 11px; color: var(--accent-purple); margin-top: 6px; }
+    .port-add-btn:hover { border-color: var(--accent); color: var(--text-primary); background: var(--bg-hover); }
+    .port-indicator { font-size: 11px; color: var(--accent); margin-top: 6px; }
 
     .skill-banner {
       border-radius: 16px; padding: 24px;
-      background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(99,102,241,0.2), rgba(67,56,202,0.2));
+      background: linear-gradient(135deg, rgba(139,123,247,0.15), rgba(108,92,231,0.10));
       display: flex; align-items: center; justify-content: space-between;
       cursor: pointer; transition: var(--transition);
     }
@@ -1195,7 +1175,7 @@
     .skill-banner-text p { color: var(--text-secondary); }
     .skill-banner-tag {
       font-size: 11px; padding: 4px 10px; border-radius: 12px;
-      background: rgba(255,255,255,0.12); color: var(--accent-purple);
+      background: rgba(255,255,255,0.12); color: var(--accent);
     }
     .skill-banner-img { font-size: 56px; flex-shrink: 0; }
 
@@ -1205,7 +1185,7 @@
       color: var(--text-muted); border-bottom: 2px solid transparent; transition: var(--transition);
     }
     .side-tab:hover { color: var(--text-primary); }
-    .side-tab.active { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent-purple); }
+    .side-tab.active { color: var(--text-primary); font-weight: 600; border-bottom-color: var(--accent); }
 
     /* Mobile conversation bar · hidden on desktop, fixed at bottom on narrow screens */
     .mobile-bar {
@@ -1403,9 +1383,7 @@
       border-radius: var(--radius-md); border: 1px solid var(--border);
       background: var(--bg-tertiary); color: var(--text-primary);
     }
-    .login-code-row { display: flex; gap: 8px; margin-bottom: 14px; }
-    .login-code-row input { flex: 1; margin-bottom: 0; }
-    .login-code-row .btn { flex-shrink: 0; white-space: nowrap; }
+    .login-code-row { display: none; }
     .login-hint { font-size: 12px; color: var(--text-muted); margin: -6px 0 14px; min-height: 18px; }
     .login-error { color: var(--danger); font-size: 12px; min-height: 18px; margin-top: 8px; }
 
@@ -1423,7 +1401,7 @@
       border: 1px solid var(--border); border-radius: var(--radius-sm);
       cursor: pointer;
     }
-    .sidebar-logout:hover { color: var(--danger); border-color: rgba(239,68,68,0.4); }
+    .sidebar-logout:hover { color: var(--danger); border-color: rgba(224,122,122,0.4); }
     .pending-badge {
       display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 6px;
       font-size: 10px; font-weight: 700; line-height: 18px; text-align: center;
@@ -1460,7 +1438,7 @@
       user-select: none;
     }
     .kb-tab:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .kb-tab.active { background: var(--accent-gradient-soft); color: var(--accent-purple); }
+    .kb-tab.active { background: var(--accent-soft); color: var(--accent); }
 
     /* Kanban */
     .kb-kanban { display: flex; gap: 16px; padding: 20px; flex: 1; overflow-x: auto; overflow-y: hidden; }
@@ -1493,7 +1471,7 @@
     .kb-card-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; }
     .kb-card-tag {
       font-size: 10px; padding: 2px 7px; border-radius: 10px;
-      background: rgba(167,139,250,0.15); color: var(--accent-purple);
+      background: rgba(139,123,247,0.15); color: var(--accent);
     }
     .kb-card-meta {
       display: flex; align-items: center; justify-content: space-between;
@@ -1518,7 +1496,7 @@
       transition: var(--transition); text-align: center; flex-shrink: 0;
     }
     .kb-add-card-btn:hover { color: var(--text-secondary); border-color: rgba(255,255,255,0.15); background: rgba(255,255,255,0.02); }
-    .kb-column-drop-zone { border: 2px dashed var(--accent-purple) !important; background: rgba(167,139,250,0.06) !important; }
+    .kb-column-drop-zone { border: 2px dashed var(--accent) !important; background: rgba(139,123,247,0.06) !important; }
 
     /* Doc Editor */
     .kb-doc-editor { display: flex; flex: 1; overflow: hidden; }
@@ -1529,7 +1507,7 @@
       margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .kb-doc-list-item:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .kb-doc-list-item.active { background: var(--accent-gradient-soft); color: var(--accent-purple); }
+    .kb-doc-list-item.active { background: var(--accent-soft); color: var(--accent); }
     .kb-doc-toolbar {
       display: flex; align-items: center; gap: 8px; padding: 10px 16px;
       border-bottom: 1px solid var(--border); flex-shrink: 0;
@@ -1551,18 +1529,18 @@
     .kb-doc-preview ul, .kb-doc-preview ol { margin: 0 0 8px; padding-left: 20px; }
     .kb-doc-preview li { margin: 2px 0; }
     .kb-doc-preview code {
-      background: rgba(167,139,250,0.15); padding: 1px 5px; border-radius: 3px;
-      font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--accent-cyan);
+      background: rgba(139,123,247,0.15); padding: 1px 5px; border-radius: 3px;
+      font-size: 13px; font-family: 'SF Mono', 'Fira Code', monospace; color: var(--accent);
     }
     .kb-doc-preview pre {
       background: rgba(0,0,0,0.3); border: 1px solid var(--border); border-radius: var(--radius-md);
       padding: 14px 16px; overflow-x: auto; margin: 0 0 12px;
     }
     .kb-doc-preview pre code { background: none; padding: 0; color: var(--text-primary); }
-    .kb-doc-preview a { color: var(--accent-purple); }
+    .kb-doc-preview a { color: var(--accent); }
     .kb-doc-preview blockquote {
-      border-left: 3px solid var(--accent-purple); padding: 4px 14px; margin: 0 0 8px;
-      color: var(--text-secondary); background: rgba(167,139,250,0.05);
+      border-left: 3px solid var(--accent); padding: 4px 14px; margin: 0 0 8px;
+      color: var(--text-secondary); background: rgba(139,123,247,0.05);
     }
     .kb-doc-preview strong { font-weight: 600; color: var(--text-primary); }
 
@@ -1579,7 +1557,7 @@
     .kb-draft-title { font-size: 14px; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
     .kb-draft-preview { font-size: 12px; color: var(--text-secondary); line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .kb-draft-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; display: flex; gap: 12px; }
-    .kb-draft-source { font-size: 11px; color: var(--accent-purple); }
+    .kb-draft-source { font-size: 11px; color: var(--accent); }
     .kb-draft-actions { display: flex; gap: 6px; flex-shrink: 0; }
     .kb-draft-action-btn {
       padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border);
@@ -1587,7 +1565,7 @@
       transition: var(--transition);
     }
     .kb-draft-action-btn:hover { background: var(--bg-hover); color: var(--text-primary); }
-    .kb-draft-action-btn.primary:hover { border-color: var(--accent-purple); color: var(--accent-purple); }
+    .kb-draft-action-btn.primary:hover { border-color: var(--accent); color: var(--accent); }
 
     /* Empty State */
     .kb-empty {
@@ -1608,13 +1586,13 @@
       transition: var(--transition); width: 100%;
     }
     .kb-modal-body input:focus, .kb-modal-body textarea:focus, .kb-modal-body select:focus {
-      outline: none; border-color: var(--accent-purple);
+      outline: none; border-color: var(--accent);
     }
     .kb-modal-body textarea { resize: vertical; min-height: 100px; }
     .kb-modal-tags { display: flex; flex-wrap: wrap; gap: 6px; }
     .kb-modal-tag {
       display: flex; align-items: center; gap: 4px; padding: 4px 10px;
-      border-radius: 12px; background: rgba(167,139,250,0.15); color: var(--accent-purple);
+      border-radius: 12px; background: rgba(139,123,247,0.15); color: var(--accent);
       font-size: 12px; line-height: 1.4;
     }
     .kb-modal-tag-remove { cursor: pointer; font-size: 14px; line-height: 1; display: inline-flex; align-items: center; }
@@ -1633,12 +1611,12 @@
       background: rgba(255,255,255,0.01);
     }
     .kb-upload-zone:hover {
-      border-color: var(--accent-purple); color: var(--accent-purple);
-      background: rgba(167,139,250,0.04);
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(139,123,247,0.04);
     }
     .kb-upload-zone.drag-over {
-      border-color: var(--accent-purple); color: var(--accent-purple);
-      background: rgba(167,139,250,0.08);
+      border-color: var(--accent); color: var(--accent);
+      background: rgba(139,123,247,0.08);
     }
 
     .kb-link-modal {
@@ -1665,7 +1643,7 @@
       transition: var(--transition); box-sizing: border-box;
     }
     .kb-link-input:focus {
-      outline: none; border-color: var(--accent-purple);
+      outline: none; border-color: var(--accent);
     }
     .kb-link-input + .kb-link-input { margin-top: 12px; }
 
@@ -1675,7 +1653,7 @@
       width: 24px; height: 24px; border-radius: 4px; cursor: pointer;
       color: var(--text-muted); transition: var(--transition); flex-shrink: 0;
     }
-    .msg-action-btn:hover { color: var(--accent-purple); background: rgba(167,139,250,0.1); }
+    .msg-action-btn:hover { color: var(--accent); background: rgba(139,123,247,0.1); }
 
     /* KB responsive */
     @media (max-width: 768px) {
@@ -1685,12 +1663,18 @@
       .kb-doc-editor { flex-direction: column; }
       #kb-doc-body { flex-direction: column !important; }
       .kb-doc-textarea { border-right: none; border-bottom: 1px solid var(--border); }
+      #app-footer { font-size: 10px; padding: 6px 10px; gap: 8px; }
+    }
+
+    /* ===== REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
     }
 
     /* ===== PROTOTYPE SECTION ===== */
     .prototype-preview { border-radius: var(--radius-md); overflow: hidden; }
     .prototype-placeholder { transition: all 0.3s ease; }
-    .prototype-placeholder:hover { border-color: var(--accent-purple); color: var(--text-secondary); }
+    .prototype-placeholder:hover { border-color: var(--accent); color: var(--text-secondary); }
   </style>
 </head>
 <body>
@@ -1705,28 +1689,59 @@
 
 <!-- ===== LOGIN ===== -->
 <div id="login-overlay" class="login-overlay">
-  <div class="login-box">
+  <div class="login-box" style="width:400px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
       <h2 style="margin:0;">CollabMatch</h2>
-      <button id="login-close-btn" class="btn btn-ghost btn-xs" onclick="closeLogin()" style="display:none;" title="关闭"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+      <button id="login-close-btn" class="btn btn-ghost btn-xs" onclick="hideLogin()" style="display:none;" title="关闭"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
     </div>
     <p id="login-subtitle">说一个想法，找到志同道合的伙伴</p>
-    <label for="login-phone">手机号</label>
-    <input type="tel" id="login-phone" aria-label="手机号" value="13800000000" maxlength="11" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <label for="login-code">验证码</label>
-    <div class="login-code-row">
-      <input type="text" id="login-code" aria-label="验证码" value="123456" maxlength="6" placeholder="6 位验证码" />
-      <button type="button" class="btn btn-ghost" id="login-sms-btn" onclick="sendLoginSms()">获取验证码</button>
+    <!-- How it works -->
+    <div style="display:flex;gap:12px;margin-bottom:20px;">
+      <div style="flex:1;text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:var(--radius-md);">
+        <div style="font-size:20px;margin-bottom:4px;"><i data-lucide="message-circle" style="width:20px;height:20px;color:var(--accent);"></i></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-primary);">描述想法</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">AI 帮你整理需求</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:var(--radius-md);">
+        <div style="font-size:20px;margin-bottom:4px;"><i data-lucide="sparkles" style="width:20px;height:20px;color:var(--accent);"></i></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-primary);">智能匹配</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">找到合适协作者</div>
+      </div>
+      <div style="flex:1;text-align:center;padding:10px 6px;background:var(--bg-tertiary);border-radius:var(--radius-md);">
+        <div style="font-size:20px;margin-bottom:4px;"><i data-lucide="users" style="width:20px;height:20px;color:var(--accent);"></i></div>
+        <div style="font-size:11px;font-weight:600;color:var(--text-primary);">组队协作</div>
+        <div style="font-size:10px;color:var(--text-muted);margin-top:2px;">一起把事做成</div>
+      </div>
     </div>
-    <div class="login-hint" id="login-hint"></div>
-    <button class="btn btn-primary" style="width:100%;" id="login-btn" onclick="doLogin()">登录</button>
-    <div class="login-error" id="login-error"></div>
+    <!-- Login Form -->
+    <div id="login-form">
+      <label for="login-email">邮箱</label>
+      <input type="email" id="login-email" aria-label="邮箱" placeholder="请输入邮箱" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <label for="login-password">密码</label>
+      <input type="password" id="login-password" aria-label="密码" placeholder="请输入密码" maxlength="64" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <div class="login-hint" id="login-hint"></div>
+      <button class="btn btn-primary" style="width:100%;" id="login-btn" onclick="doLogin()">登录</button>
+      <div class="login-error" id="login-error"></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-muted);text-align:center;">还没有账号？<a href="#" onclick="event.preventDefault();toggleRegister()" style="color:var(--accent);">注册</a></div>
+    </div>
+    <!-- Register Form -->
+    <div id="register-form" style="display:none;">
+      <label for="register-name">昵称</label>
+      <input type="text" id="register-name" aria-label="昵称" placeholder="请输入昵称" maxlength="32" onkeydown="if(event.key==='Enter')doRegister()"/>
+      <label for="register-email">邮箱</label>
+      <input type="email" id="register-email" aria-label="邮箱" placeholder="请输入邮箱" onkeydown="if(event.key==='Enter')doRegister()"/>
+      <label for="register-password">密码</label>
+      <input type="password" id="register-password" aria-label="密码" placeholder="请输入密码（至少6位）" maxlength="64" onkeydown="if(event.key==='Enter')doRegister()"/>
+      <button class="btn btn-primary" style="width:100%;" id="register-btn" onclick="doRegister()">注册</button>
+      <div class="login-error" id="register-error"></div>
+      <div style="margin-top:10px;font-size:12px;color:var(--text-muted);text-align:center;">已有账号？<a href="#" onclick="event.preventDefault();toggleRegister()" style="color:var(--accent);">登录</a></div>
+    </div>
   </div>
 </div>
 
 <!-- ===== MODALS ===== -->
 <!-- Requirement Detail Modal -->
-<div class="modal-overlay" id="modal-req-detail">
+<div class="modal-overlay" id="modal-req-detail" role="dialog" aria-modal="true" aria-label="需求详情">
   <div class="modal" style="max-width:640px;">
     <div class="modal-header">
       <span class="modal-title" id="modal-req-title">需求详情</span>
@@ -1737,7 +1752,7 @@
 </div>
 
 <!-- Invite Modal -->
-<div class="modal-overlay" id="modal-invite">
+<div class="modal-overlay" id="modal-invite" role="dialog" aria-modal="true" aria-label="邀请协作">
   <div class="modal">
     <div class="modal-header">
       <span class="modal-title">发送协作邀请</span>
@@ -1748,7 +1763,7 @@
 </div>
 
 <!-- Visibility Publish Modal -->
-<div class="modal-overlay" id="modal-visibility">
+<div class="modal-overlay" id="modal-visibility" role="dialog" aria-modal="true" aria-label="发布设置">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">发布需求</span>
@@ -1759,7 +1774,7 @@
 </div>
 
 <!-- Requirement Wizard Modal (3-step) -->
-<div class="modal-overlay" id="modal-req-wizard">
+<div class="modal-overlay" id="modal-req-wizard" role="dialog" aria-modal="true" aria-label="发布需求向导">
   <div class="modal-box" style="max-width:500px;">
     <div class="modal-header">
       <span class="modal-title" id="wiz-title">发布需求 · 第1步</span>
@@ -1769,7 +1784,7 @@
       <!-- Step indicators -->
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
         <div style="display:flex;gap:4px;flex:1;">
-          <div class="wiz-step-dot active" id="wiz-dot-0" style="flex:1;height:3px;border-radius:2px;background:var(--accent-purple);"></div>
+          <div class="wiz-step-dot active" id="wiz-dot-0" style="flex:1;height:3px;border-radius:2px;background:var(--accent);"></div>
           <div class="wiz-step-dot" id="wiz-dot-1" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
           <div class="wiz-step-dot" id="wiz-dot-2" style="flex:1;height:3px;border-radius:2px;background:var(--bg-tertiary);"></div>
         </div>
@@ -1778,19 +1793,13 @@
 
       <!-- Step 1: What's the project? -->
       <div id="wiz-step-0">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">需求领域</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;" id="wiz-domain-chips"></div>
         <div style="font-size:14px;font-weight:600;margin-bottom:12px;">项目是什么？</div>
-        <div style="display:flex;gap:8px;margin-bottom:12px;">
-          <label class="wiz-chip active" onclick="wizPickScene(this,'side-project')" style="flex:1;text-align:center;padding:8px;border:1px solid var(--accent-purple);border-radius:8px;cursor:pointer;font-size:12px;">Side Project 联创</label>
-          <label class="wiz-chip" onclick="wizPickScene(this,'opensource')" style="flex:1;text-align:center;padding:8px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;">开源协作</label>
-        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;" id="wiz-scene-chips"></div>
         <textarea id="wiz-desc" rows="3" placeholder="简述你的项目想法…" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;resize:vertical;margin-bottom:12px;"></textarea>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">项目阶段</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">
-          <span class="wiz-chip active" onclick="wizPickStage(this,'idea')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="lightbulb" style="width:14px;height:14px;vertical-align:middle;"></i> Idea</span>
-          <span class="wiz-chip" onclick="wizPickStage(this,'prototype')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="flask-conical" style="width:14px;height:14px;vertical-align:middle;"></i> Prototype</span>
-          <span class="wiz-chip" onclick="wizPickStage(this,'mvp')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="rocket" style="width:14px;height:14px;vertical-align:middle;"></i> MVP</span>
-          <span class="wiz-chip" onclick="wizPickStage(this,'growth')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i> Growth</span>
-        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;" id="wiz-stage-chips"></div>
       </div>
 
       <!-- Step 2: Who do you need? -->
@@ -1804,7 +1813,7 @@
         <div style="font-size:14px;font-weight:600;margin-bottom:12px;">怎么合作？</div>
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">合作方式</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
-          <span class="wiz-chip active" onclick="wizPickCollab(this,'联创')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="handshake" style="width:14px;height:14px;vertical-align:middle;"></i> 联创</span>
+          <span class="wiz-chip active" onclick="wizPickCollab(this,'联创')" style="padding:5px 12px;border:1px solid var(--accent);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="handshake" style="width:14px;height:14px;vertical-align:middle;"></i> 联创</span>
           <span class="wiz-chip" onclick="wizPickCollab(this,'有偿')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="dollar-sign" style="width:14px;height:14px;vertical-align:middle;"></i> 有偿</span>
           <span class="wiz-chip" onclick="wizPickCollab(this,'股权/分成面议')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="bar-chart" style="width:14px;height:14px;vertical-align:middle;"></i> 股权/分成</span>
           <span class="wiz-chip" onclick="wizPickCollab(this,'开源贡献')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 开源贡献</span>
@@ -1812,13 +1821,21 @@
         <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">每周期望投入</div>
         <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
           <span class="wiz-chip" onclick="wizPickHours(this,'≤5h')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">≤5h</span>
-          <span class="wiz-chip active" onclick="wizPickHours(this,'5-10h')" style="padding:5px 12px;border:1px solid var(--accent-purple);border-radius:16px;cursor:pointer;font-size:12px;">5-10h</span>
+          <span class="wiz-chip active" onclick="wizPickHours(this,'5-10h')" style="padding:5px 12px;border:1px solid var(--accent);border-radius:16px;cursor:pointer;font-size:12px;">5-10h</span>
           <span class="wiz-chip" onclick="wizPickHours(this,'10-20h')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">10-20h</span>
           <span class="wiz-chip" onclick="wizPickHours(this,'20h+')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;">20h+</span>
         </div>
-        <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-secondary);cursor:pointer;">
-          <input type="checkbox" id="wiz-remote" checked style="accent-color:var(--accent-purple);"> 接受远程协作
-        </label>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">协作方式</div>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px;">
+          <span class="wiz-chip active" onclick="wizPickLocation(this,'remote')" style="padding:5px 12px;border:1px solid var(--accent);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 远程协作</span>
+          <span class="wiz-chip" onclick="wizPickLocation(this,'same-city')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:middle;"></i> 同城优先</span>
+          <span class="wiz-chip" onclick="wizPickLocation(this,'onsite')" style="padding:5px 12px;border:1px solid var(--border);border-radius:16px;cursor:pointer;font-size:12px;"><i data-lucide="building" style="width:14px;height:14px;vertical-align:middle;"></i> 必须线下</span>
+        </div>
+        <div id="wiz-city-input" style="display:none;margin-bottom:14px;">
+          <div id="wiz-saved-addresses" style="margin-bottom:8px;"></div>
+          <input id="wiz-city" placeholder="城市，如：北京、上海、深圳" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);margin-bottom:8px;" oninput="wizData.city=this.value">
+          <input id="wiz-address" placeholder="详细地址（选填），如：海淀区中关村创业大街18号" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);" oninput="wizData.address=this.value">
+        </div>
       </div>
 
       <!-- Navigation buttons -->
@@ -1833,7 +1850,7 @@
 </div>
 
 <!-- Portfolio Modal -->
-<div class="modal-overlay" id="modal-portfolio">
+<div class="modal-overlay" id="modal-portfolio" role="dialog" aria-modal="true" aria-label="作品集">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title" id="modal-portfolio-title">添加作品</span>
@@ -1844,7 +1861,7 @@
 </div>
 
 <!-- My Applications Modal -->
-<div class="modal-overlay" id="modal-applications">
+<div class="modal-overlay" id="modal-applications" role="dialog" aria-modal="true" aria-label="申请列表">
   <div class="modal-box" style="max-width:520px;max-height:85vh;">
     <div class="modal-header">
       <span class="modal-title">我的申请</span>
@@ -1855,7 +1872,7 @@
 </div>
 
 <!-- Apply Requirement Modal -->
-<div class="modal-overlay" id="modal-apply">
+<div class="modal-overlay" id="modal-apply" role="dialog" aria-modal="true" aria-label="申请加入">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">申请参与</span>
@@ -1866,7 +1883,7 @@
 </div>
 
 <!-- Forward Message Modal -->
-<div class="modal-overlay" id="modal-forward">
+<div class="modal-overlay" id="modal-forward" role="dialog" aria-modal="true" aria-label="转发消息">
   <div class="modal-box" style="max-width:420px;">
     <div class="modal-header">
       <span class="modal-title">转发到对话</span>
@@ -1913,11 +1930,20 @@
     </div>
 
     <!-- Current User -->
-    <div class="sidebar-user" onclick="switchSection('profile', document.querySelector('[data-section=profile]'))">
-      <div class="avatar avatar-sm" id="sidebar-user-avatar" style="background:linear-gradient(135deg,#a78bfa,#3b82f6);"></div>
+    <div class="sidebar-user" onclick="toggleUserMenu(event)">
+      <div class="avatar avatar-sm" id="sidebar-user-avatar" style="background:var(--bg-tertiary);color:var(--text-secondary);border:1px solid var(--border);"></div>
       <div class="user-info">
         <div class="user-name" id="sidebar-user-name">用户</div>
         <div class="user-status">● 在线</div>
+      </div>
+      <i data-lucide="chevron-up" style="width:14px;height:14px;color:var(--text-muted);margin-left:auto;"></i>
+      <!-- User dropdown menu -->
+      <div class="user-dropdown" id="user-dropdown" style="display:none;">
+        <div class="user-dropdown-item" onclick="event.stopPropagation();switchSection('profile', document.querySelector('[data-section=profile]'));closeUserMenu()"><i data-lucide="user-circle" style="width:14px;height:14px;vertical-align:middle;margin-right:8px;"></i>个人名片</div>
+        <div class="user-dropdown-item" onclick="event.stopPropagation();switchSection('settings', null);closeUserMenu()"><i data-lucide="settings" style="width:14px;height:14px;vertical-align:middle;margin-right:8px;"></i>设置</div>
+        <div class="user-dropdown-item" onclick="event.stopPropagation();window.location.href='mailto:whongchen@coze.email';closeUserMenu()"><i data-lucide="message-square" style="width:14px;height:14px;vertical-align:middle;margin-right:8px;"></i>反馈</div>
+        <div style="height:1px;background:var(--border);margin:4px 8px;"></div>
+        <div class="user-dropdown-item" style="color:var(--danger);" onclick="event.stopPropagation();doLogout();closeUserMenu()"><i data-lucide="log-out" style="width:14px;height:14px;vertical-align:middle;margin-right:8px;"></i>退出登录</div>
       </div>
     </div>
   </nav>
@@ -1960,6 +1986,7 @@
                   </button>
                 </div>
                 <div class="chat-input-tools">
+                  <button class="chat-tool-btn" title="手动填写需求" onclick="goPublishRequirementManual()"><i data-lucide="file-edit" style="width:16px;height:16px;"></i></button>
                   <button class="chat-tool-btn" title="发送文件" onclick="sendChatFile()"><i data-lucide="paperclip" style="width:16px;height:16px;"></i></button>
                   <button class="chat-tool-btn" title="插入 @ 提及" onclick="atMention()"><i data-lucide="at-sign" style="width:16px;height:16px;"></i></button>
                 </div>
@@ -1974,7 +2001,7 @@
         <div id="side-conv" style="display:flex;flex-direction:column;flex:1;overflow:hidden;">
           <div class="side-panel-header" style="border-bottom:1px solid var(--border);">
             <i data-lucide="message-circle" style="width:14px;height:14px;margin-right:4px;"></i> 对话与需求 <span id="conv-count" style="font-size:11px;color:var(--text-muted);margin-left:4px;">(1)</span>
-            <span style="margin-left:auto;font-size:12px;color:var(--accent-purple);cursor:pointer;" onclick="newConversation()">＋ 新对话</span>
+            <span style="margin-left:auto;font-size:12px;color:var(--accent);cursor:pointer;" onclick="newConversation()">＋ 新对话</span>
           </div>
           <div class="side-panel-body" id="conv-req-list"></div>
         </div>
@@ -2159,6 +2186,185 @@
     <!-- ===========================
          SECTION: KNOWLEDGE BASE
          =========================== -->
+    <div class="section" id="section-settings">
+      <div style="max-width:560px;margin:0 auto;padding:32px 24px;">
+        <h2 style="font-size:20px;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px;"><i data-lucide="settings" style="width:20px;height:20px;"></i>设置</h2>
+
+        <!-- 匹配偏好 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="sparkles" style="width:15px;height:15px;color:var(--accent);"></i>匹配偏好</div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">默认协作方式</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="settings-location-mode">
+              <div class="wiz-chip active" onclick="setLocationMode('remote',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--accent);background:rgba(139,92,246,0.1);color:var(--accent);"><i data-lucide="globe" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>远程协作</div>
+              <div class="wiz-chip" onclick="setLocationMode('same-city',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-primary);"><i data-lucide="map-pin" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>同城优先</div>
+              <div class="wiz-chip" onclick="setLocationMode('onsite',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-primary);"><i data-lucide="building" style="width:13px;height:13px;vertical-align:middle;margin-right:4px;"></i>必须线下</div>
+            </div>
+            <div id="settings-city-row" style="display:none;margin-top:8px;">
+              <input id="settings-city" placeholder="默认城市" style="padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);width:200px;" oninput="saveSettings()">
+            </div>
+          </div>
+
+          <div style="margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">优先匹配维度</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;" id="settings-match-priority">
+              <div class="wiz-chip active" onclick="setMatchPriority('skill',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--accent);background:rgba(139,92,246,0.1);color:var(--accent);">技能匹配</div>
+              <div class="wiz-chip" onclick="setMatchPriority('domain',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-primary);">领域匹配</div>
+              <div class="wiz-chip" onclick="setMatchPriority('time',this)" style="padding:6px 14px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text-primary);">时间匹配</div>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">接收匹配推荐</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">有新的匹配结果时通知你</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-match-notify" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">自动匹配</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">发布需求后自动开始匹配</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-auto-match" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- 常用地址 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="map-pin" style="width:15px;height:15px;color:var(--accent);"></i>常用地址</div>
+          <div id="settings-addresses-list" style="margin-bottom:12px;"></div>
+          <div style="display:flex;gap:8px;">
+            <input id="settings-new-city" placeholder="城市" style="flex:1;padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
+            <input id="settings-new-address" placeholder="详细地址（选填）" style="flex:2;padding:6px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);">
+            <button class="btn btn-primary btn-sm" onclick="addSavedAddress()">添加</button>
+          </div>
+        </div>
+
+        <!-- 通知 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="bell" style="width:15px;height:15px;color:var(--accent);"></i>通知</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">新消息通知</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">收到新消息时浏览器通知</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-msg-notify" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">协作申请通知</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">有人申请加入你的项目时通知</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-collab-notify" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- 隐私 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="shield" style="width:15px;height:15px;color:var(--accent);"></i>隐私</div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">需求公开可见</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">其他用户可在广场看到你的需求</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-public-reqs" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">展示在线状态</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">其他用户可以看到你是否在线</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-show-online" checked onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;">
+            <div>
+              <div style="font-size:13px;">允许陌生人消息</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">未匹配的用户也可以发起会话</div>
+            </div>
+            <label class="uc-switch"><input type="checkbox" id="settings-allow-stranger-msg" onchange="saveSettings()"><span class="uc-slider"></span></label>
+          </div>
+        </div>
+
+        <!-- AI 模型 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="brain" style="width:15px;height:15px;color:var(--accent);"></i>AI 模型</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">接入你自己的大模型，AI 聊天将使用你配置的模型。留空则使用平台默认模型。</div>
+          <div style="margin-bottom:12px;">
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">模型提供商</div>
+            <select id="settings-llm-provider" onchange="onLlmProviderChange()" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);cursor:pointer;">
+              ${LLM_PROVIDERS.map(p => `<option value="${p.key}">${p.label}</option>`).join('')}
+            </select>
+          </div>
+          <div id="settings-llm-fields" style="display:none;">
+            <div style="margin-bottom:10px;">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">API Key</div>
+              <input id="settings-llm-key" type="password" placeholder="sk-..." style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);" oninput="saveLlmSettings()">
+            </div>
+            <div style="margin-bottom:10px;" id="settings-llm-baseurl-row">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">Base URL</div>
+              <input id="settings-llm-baseurl" placeholder="https://api.openai.com/v1" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);" oninput="saveLlmSettings()">
+            </div>
+            <div style="margin-bottom:10px;" id="settings-llm-model-row">
+              <div style="font-size:13px;color:var(--text-secondary);margin-bottom:6px;">模型名称</div>
+              <input id="settings-llm-model" placeholder="gpt-4o-mini" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--bg-secondary);color:var(--text-primary);" oninput="saveLlmSettings()">
+            </div>
+            <div style="display:flex;gap:8px;">
+              <button class="btn btn-primary btn-sm" onclick="testLlmConnection()">测试连接</button>
+              <span id="settings-llm-status" style="font-size:12px;color:var(--text-muted);align-self:center;"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- API Token -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="key" style="width:15px;height:15px;color:var(--accent);"></i>API Token</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;line-height:1.5;">在 Cursor / Coze 等 Agent 中通过 MCP 接入时提供此 Token</div>
+          <div id="settings-api-token-area"></div>
+        </div>
+
+        <!-- Agent 接入 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;border-color:rgba(139,123,247,0.20);background:linear-gradient(135deg,rgba(139,123,247,0.06),rgba(108,92,231,0.04));">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="bot" style="width:15px;height:15px;color:var(--accent);"></i>Agent 接入</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">让 Cursor、Coze 等 AI Agent 通过 MCP 协议直接操作你的 CollabMatch</div>
+          <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;color:var(--text-secondary);line-height:1.8;word-break:break-all;">
+            <div style="color:var(--text-muted);margin-bottom:4px;"># MCP Endpoint</div>
+            <div style="color:var(--accent);">POST <span id="agent-endpoint-url">${CollabApi.API_BASE}/mcp</span></div>
+            <div style="margin-top:8px;color:var(--text-muted);"># Cursor 配置 (.cursor/mcp.json)</div>
+            <div style="color:var(--text-secondary);white-space:pre-wrap;">{
+  "mcpServers": {
+    "collabmatch": {
+      "url": "${CollabApi.API_BASE}/mcp",
+      "headers": { "Authorization": "Bearer ${currentUser?.apiToken || 'YOUR_TOKEN'}" }
+    }
+  }
+}</div>
+            <div style="margin-top:8px;color:var(--text-muted);"># 可用工具</div>
+            <div style="color:var(--text-secondary);">create_requirement · publish_requirement · search_requirements · find_matches · get_requirement</div>
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;">
+            <button class="btn btn-primary btn-sm" onclick="copyAgentEndpoint()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制 Endpoint</button>
+            <button class="btn btn-secondary btn-sm" onclick="copyAgentCurl()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制 curl 示例</button>
+          </div>
+        </div>
+
+        <!-- 账号 -->
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;margin-bottom:16px;">
+          <div style="font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:6px;"><i data-lucide="user-circle" style="width:15px;height:15px;color:var(--text-secondary);"></i>账号</div>
+          <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;" id="settings-email-display">邮箱：未登录</div>
+          <button class="btn btn-ghost btn-sm" style="color:var(--danger);margin-top:4px;" onclick="doLogout()">退出登录</button>
+        </div>
+
+      </div>
+    </div>
+
     <div class="section" id="section-kb">
       <div class="kb-container">
         <!-- Tabs -->
@@ -2199,6 +2405,11 @@
   </div><!-- end #main-content -->
 </div><!-- end #app -->
 
+<!-- ===== FOOTER ===== -->
+<div id="app-footer" style="position:fixed;bottom:0;right:0;padding:8px 16px;z-index:9998;display:flex;align-items:center;gap:12px;font-size:11px;color:var(--text-muted);background:rgba(10,14,26,0.7);backdrop-filter:blur(8px);border-top-left-radius:var(--radius-md);border:1px solid var(--border);border-right:none;border-bottom:none;">
+  <span>&copy; 2026 CollabMatch</span>
+</div>
+
 <script>
   // CloudBase 静态托管环境下，API 在 HTTP 访问服务域名而非静态托管域名
   // 本地开发使用相对路径 /api，无需覆盖
@@ -2223,20 +2434,21 @@ window.addEventListener('unhandledrejection', e => {
 //  MOCK DATA
 // ============================================================
 const COLORS = {
-  purple: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-  blue: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-  green: 'linear-gradient(135deg, #22c55e, #16a34a)',
-  orange: 'linear-gradient(135deg, #f97316, #ea580c)',
-  pink: 'linear-gradient(135deg, #ec4899, #be185d)',
-  cyan: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+  purple: 'linear-gradient(135deg, #8b7bf7, #6c5ce7)',
+  blue: 'linear-gradient(135deg, #7c8cf7, #5b6ce7)',
+  green: 'linear-gradient(135deg, #6bcf8e, #4ab87a)',
+  orange: 'linear-gradient(135deg, #c4956a, #a87d5c)',
+  pink: 'linear-gradient(135deg, #b07cc7, #9466b0)',
+  cyan: 'linear-gradient(135deg, #6bb8c9, #5a9fb0)',
 };
 
-const BADGE_COLORS = ['badge-purple','badge-blue','badge-green','badge-yellow','badge-pink','badge-cyan','badge-orange'];
+const BADGE_COLORS = ['badge-purple','badge-blue','badge-cyan','badge-green','badge-purple','badge-blue','badge-cyan'];
 
 /** 领域定义 */
 const DOMAINS = {
-  tech: { name: '<i data-lucide="monitor" style="width:14px;height:14px;vertical-align:middle;"></i> 技术开发', icon: '<i data-lucide="monitor" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#8b5cf6',
+  tech: { name: '<i data-lucide="monitor" style="width:14px;height:14px;vertical-align:middle;"></i> 技术开发', icon: '<i data-lucide="monitor" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#8b7bf7',
     sceneTags: ['项目需求', '开源协作'],
+    stages: [{key:'idea',label:'Idea',icon:'lightbulb'},{key:'prototype',label:'Prototype',icon:'flask-conical'},{key:'mvp',label:'MVP',icon:'rocket'},{key:'growth',label:'Growth',icon:'chart-line'}],
     skills: ['React','Vue','Node.js','Python','Go','TypeScript','Java','Docker','Kubernetes','AI/ML','NLP','后端开发','前端开发','全栈开发','区块链','推荐算法','算法'],
     templates: [
       ['Side Project', '我想做一个 AI 工具 Side Project，缺一位会 React 的全栈开发者，每周可投入 10 小时'],
@@ -2245,8 +2457,9 @@ const DOMAINS = {
     ],
     chatIntro: '描述你的 Side Project 或开源计划，AI 帮你整理需求并匹配合适的工程师'
   },
-  design: { name: '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:middle;"></i> 创意设计', icon: '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#f59e0b',
+  design: { name: '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:middle;"></i> 创意设计', icon: '<i data-lucide="palette" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#a78bfa',
     sceneTags: ['品牌设计', '插画合作', 'UI/UX'],
+    stages: [{key:'concept',label:'概念',icon:'lightbulb'},{key:'draft',label:'草图',icon:'pen-line'},{key:'design',label:'设计稿',icon:'palette'},{key:'delivery',label:'交付',icon:'package-check'}],
     skills: ['Figma','UI设计','UX研究','品牌视觉','插画','动画','3D','Framer','设计系统'],
     templates: [
       ['品牌设计', '寻找设计师一起做一套品牌 VI 系统'],
@@ -2255,8 +2468,9 @@ const DOMAINS = {
     ],
     chatIntro: '描述你的创意项目，AI 帮你整理需求并匹配设计师、插画师等创意人才'
   },
-  content: { name: '<i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i> 内容创作', icon: '<i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#22c55e',
+  content: { name: '<i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i> 内容创作', icon: '<i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#7c8cf7',
     sceneTags: ['播客制作', '视频创作', '专栏合作'],
+    stages: [{key:'planning',label:'策划',icon:'lightbulb'},{key:'creating',label:'创作中',icon:'pen-line'},{key:'editing',label:'剪辑/编辑',icon:'scissors'},{key:'published',label:'已发布',icon:'send'}],
     skills: ['写作','视频剪辑','播客','自媒体运营','编辑','新媒体','摄影','内容策划'],
     templates: [
       ['播客制作', '想找一个搭档一起做科技类播客节目'],
@@ -2265,8 +2479,9 @@ const DOMAINS = {
     ],
     chatIntro: '描述你的内容创作方向，AI 帮你整理需求并匹配创作者、编辑、运营伙伴'
   },
-  education: { name: '<i data-lucide="graduation-cap" style="width:14px;height:14px;vertical-align:middle;"></i> 教育培训', icon: '<i data-lucide="graduation-cap" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#3b82f6',
+  education: { name: '<i data-lucide="graduation-cap" style="width:14px;height:14px;vertical-align:middle;"></i> 教育培训', icon: '<i data-lucide="graduation-cap" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#6bb8c9',
     sceneTags: ['课程共创', '教育工具', '知识社区'],
+    stages: [{key:'idea',label:'课程构思',icon:'lightbulb'},{key:'outline',label:'大纲',icon:'list'},{key:'recording',label:'录制/开发',icon:'video'},{key:'live',label:'已上线',icon:'play-circle'}],
     skills: ['课程设计','教学设计','知识付费','培训','教育科技','教研','辅导'],
     templates: [
       ['课程共创', '寻找学科专家一起开发在线课程'],
@@ -2275,8 +2490,9 @@ const DOMAINS = {
     ],
     chatIntro: '描述你的教育项目或教学需求，AI 帮你整理并匹配教育行业伙伴'
   },
-  business: { name: '<i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i> 商业合作', icon: '<i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#ef4444',
+  business: { name: '<i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i> 商业合作', icon: '<i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i>', color: '#b07cc7',
     sceneTags: ['技术合伙', '运营合伙', '融资合作'],
+    stages: [{key:'idea',label:'想法验证',icon:'lightbulb'},{key:'validation',label:'市场验证',icon:'search'},{key:'mvp',label:'MVP',icon:'rocket'},{key:'scaling',label:'扩张',icon:'trending-up'}],
     skills: ['市场营销','BD','融资','数据分析','运营','产品管理','PRD撰写','商业模式','供应链'],
     templates: [
       ['技术合伙', '有产品 idea，寻找技术合伙人一起创业，每周可投入 10-15 小时'],
@@ -2297,7 +2513,7 @@ let currentUser = null;
 const lastMatchUsers = {};
 
 /** 用户库（仅缓存，数据来自匹配 API）*/
-const USERS = [];
+const USERS = []; // populated from lastMatchUsers on demand
 
 /** 需求 / 群组 / 对话（登录后由 API 加载）*/
 let REQUIREMENTS = [];
@@ -2346,14 +2562,21 @@ function syncSidebarUser() {
   const av = document.getElementById('sidebar-user-avatar');
   const nm = document.getElementById('sidebar-user-name');
   if (av) {
-    av.textContent = currentUser.avatar;
-    av.style.background = currentUser.avatarColor;
+    if (currentUser.avatarUrl) {
+      av.textContent = '';
+      av.style.background = 'none';
+      av.style.backgroundImage = `url(${currentUser.avatarUrl})`;
+      av.style.backgroundSize = 'cover';
+      av.style.backgroundPosition = 'center';
+    } else {
+      av.style.backgroundImage = '';
+      av.textContent = currentUser.avatar;
+      av.style.background = currentUser.avatarColor;
+    }
   }
   if (nm) nm.textContent = currentUser.name;
 }
 
-let loginSmsCooldown = 0;
-let loginSmsTimer = null;
 let hasAttemptedLogin = false;
 
 
@@ -2374,16 +2597,12 @@ async function initLoginAuth() {
   }
   try {
     const cfg = await CollabApi.fetchAuthConfig();
-    if (cfg.smsEnabled) {
-      subtitle.textContent = '已启用短信登录，请先获取验证码';
-      hint.textContent = '验证码将发送至您的手机';
-      document.getElementById('login-code').value = '';
-      document.getElementById('login-code').placeholder = '请输入短信验证码';
+    if (cfg.emailAuthEnabled) {
+      subtitle.textContent = '邮箱登录';
+      hint.textContent = '演示账号：yunfan@collabmatch.app / demo123456';
     } else {
-      subtitle.textContent = '开发模式（本地 API）';
-      hint.textContent = cfg.devAuthCode
-        ? `演示验证码：${cfg.devAuthCode}`
-        : '开发环境可使用固定验证码登录';
+      subtitle.textContent = '登录';
+      hint.textContent = '';
     }
   } catch (e) {
     hint.textContent =
@@ -2392,64 +2611,35 @@ async function initLoginAuth() {
   }
 }
 
-async function sendLoginSms() {
-  const phone = document.getElementById('login-phone').value.trim();
-  const errEl = document.getElementById('login-error');
-  const btn = document.getElementById('login-sms-btn');
-  const hint = document.getElementById('login-hint');
-  errEl.textContent = '';
-  if (!/^1\d{10}$/.test(phone)) {
-    errEl.textContent = '请输入 11 位手机号';
-    return;
-  }
-  if (loginSmsCooldown > 0) return;
-  btn.disabled = true;
-  try {
-    const res = await CollabApi.sendSmsCode(phone);
-    if (res.hint) hint.textContent = res.hint;
-    else hint.textContent = res.message || '验证码已发送';
-    showToast(res.message || '验证码已发送', 'success');
-    loginSmsCooldown = 60;
-    btn.textContent = `${loginSmsCooldown}s`;
-    loginSmsTimer = setInterval(() => {
-      loginSmsCooldown -= 1;
-      if (loginSmsCooldown <= 0) {
-        clearInterval(loginSmsTimer);
-        btn.disabled = false;
-        btn.textContent = '获取验证码';
-        return;
-      }
-      btn.textContent = `${loginSmsCooldown}s`;
-    }, 1000);
-  } catch (e) {
-    errEl.textContent = e.message || '发送失败';
-    btn.disabled = false;
-    btn.textContent = '获取验证码';
-  }
+function toggleRegister() {
+  const loginForm = document.getElementById('login-form');
+  const registerForm = document.getElementById('register-form');
+  const isLoginVisible = loginForm.style.display !== 'none';
+  loginForm.style.display = isLoginVisible ? 'none' : '';
+  registerForm.style.display = isLoginVisible ? '' : 'none';
 }
 
 function hideLogin() {
   document.getElementById('login-overlay').classList.add('hidden');
 }
 
-function closeLogin() {
-  document.getElementById('login-overlay').classList.add('hidden');
-}
-
 async function doLogin() {
-  const phone = document.getElementById('login-phone').value.trim();
-  const code = document.getElementById('login-code').value.trim();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
   const errEl = document.getElementById('login-error');
   const btn = document.getElementById('login-btn');
+  if (!email || !password) { errEl.textContent = '请输入邮箱和密码'; return; }
   errEl.textContent = '';
   btn.disabled = true;
   btn.textContent = '登录中…';
   setAppLoading(true, '正在登录…');
   try {
-    currentUser = await CollabApi.login(phone, code);
+    const { token, user } = await CollabApi.emailLogin(email, password);
+    CollabApi.setToken(token);
+    currentUser = user;
   } catch (e) {
     setAppLoading(false);
-    errEl.textContent = e.message || '登录失败（开发环境验证码一般为 123456）';
+    errEl.textContent = e.message || '登录失败';
     document.getElementById('login-close-btn').style.display = '';
     btn.disabled = false;
     btn.textContent = '登录';
@@ -2470,6 +2660,47 @@ async function doLogin() {
     setAppLoading(false);
     btn.disabled = false;
     btn.textContent = '登录';
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('register-name').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+  const errEl = document.getElementById('register-error');
+  if (!name || !email || !password) { errEl.textContent = '请填写所有字段'; return; }
+  if (password.length < 6) { errEl.textContent = '密码至少6位'; return; }
+  errEl.textContent = '';
+  const btn = document.getElementById('register-btn');
+  btn.disabled = true;
+  btn.textContent = '注册中…';
+  setAppLoading(true, '正在注册…');
+  try {
+    const { token, user } = await CollabApi.register(email, password, name);
+    CollabApi.setToken(token);
+    currentUser = user;
+  } catch (e) {
+    setAppLoading(false);
+    errEl.textContent = e.message || '注册失败';
+    btn.disabled = false;
+    btn.textContent = '注册';
+    return;
+  }
+  try {
+    hideLogin();
+    setAppLoading(true, '正在加载数据…');
+    await loadAppData();
+    CollabApi.pingPresence().catch(() => {});
+    syncSidebarUser();
+    renderAllSections();
+    showToast('注册成功', 'success');
+  } catch (e) {
+    showLogin();
+    errEl.textContent = '已注册，但加载数据失败：' + (e.message || '请刷新重试');
+  } finally {
+    setAppLoading(false);
+    btn.disabled = false;
+    btn.textContent = '注册';
   }
 }
 
@@ -2516,8 +2747,13 @@ function setupInputHover() {
 }
 
 async function refreshRequirements() {
-  REQUIREMENTS = await CollabApi.loadRequirements();
-  await refreshMyApplications();
+  try {
+    REQUIREMENTS = await CollabApi.loadRequirements();
+    await refreshMyApplications();
+  } catch (e) {
+    console.error('加载需求失败', e);
+    showToast('需求加载失败，请刷新重试', 'warning');
+  }
 }
 
 function upsertRequirement(req) {
@@ -2539,7 +2775,10 @@ function getActiveConv() {
   if (!conversations.length) return { id: null, title: '新对话', domain: currentDomain, messages: [], createdAt: Date.now() };
   return conversations.find(c => c.id === activeConvId) || conversations[0];
 }
-function addMsg(msg) { getActiveConv().messages.push(msg); }
+function addMsg(msg, convId) {
+  const conv = convId ? conversations.find(c => c.id === convId) : getActiveConv();
+  if (conv) conv.messages.push(msg);
+}
 function convMessages() { return getActiveConv().messages; }
 
 let activeGroupId = null;
@@ -2558,7 +2797,7 @@ function showToast(msg, type = 'info') {
   const container = document.getElementById('toast-container');
   const el = document.createElement('div');
   el.className = `toast ${type}`;
-  el.textContent = msg;
+  el.textContent = msg.replace(/[✅❌⚠️ℹ️❓]/g, '');
   container.appendChild(el);
   setTimeout(() => el.remove(), 3200);
 }
@@ -2571,7 +2810,313 @@ function setAppLoading(on, text) {
   if (label) label.textContent = text || '加载中…';
 }
 
+function toggleUserMenu(e) {
+  e.stopPropagation();
+  const dd = document.getElementById('user-dropdown');
+  const isOpen = dd.style.display !== 'none';
+  dd.style.display = isOpen ? 'none' : 'block';
+  if (!isOpen && window.lucide) lucide.createIcons();
+}
+function closeUserMenu() {
+  document.getElementById('user-dropdown').style.display = 'none';
+}
+
+// ─── Settings ────────────────────────────────────────────────
+const SETTINGS_KEY = 'collabmatch_settings';
+
+const LLM_PROVIDERS = [
+  { key: '', label: '默认（平台提供）', baseUrl: '', model: '' },
+  { key: 'openai', label: 'OpenAI', baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini' },
+  { key: 'deepseek', label: 'DeepSeek', baseUrl: 'https://api.deepseek.com/v1', model: 'deepseek-chat' },
+  { key: 'claude', label: 'Claude (OpenAI兼容)', baseUrl: 'https://api.anthropic.com/v1', model: 'claude-sonnet-4-20250514' },
+  { key: 'qwen', label: '通义千问', baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1', model: 'qwen-plus' },
+  { key: 'glm', label: '智谱 GLM', baseUrl: 'https://open.bigmodel.cn/api/paas/v4', model: 'glm-4-flash' },
+  { key: 'moonshot', label: 'Moonshot', baseUrl: 'https://api.moonshot.cn/v1', model: 'moonshot-v1-8k' },
+  { key: 'custom', label: '自定义', baseUrl: '', model: '' },
+];
+const DEFAULT_SETTINGS = {
+  matchPriority: 'skill',
+  locationMode: 'remote',
+  defaultCity: '',
+  savedAddresses: [],
+  matchNotify: true,
+  autoMatch: true,
+  publicReqs: true,
+  showOnline: true,
+  allowStrangerMsg: false,
+  msgNotify: true,
+  collabNotify: true,
+  llmProvider: '',
+  llmApiKey: '',
+  llmBaseUrl: '',
+  llmModel: '',
+};
+
+function loadSettings() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
+    return { ...DEFAULT_SETTINGS, ...saved };
+  } catch { return { ...DEFAULT_SETTINGS }; }
+}
+
+function saveSettings() {
+  const s = {
+    matchPriority: window._matchPriority || 'skill',
+    locationMode: window._locationMode || 'remote',
+    defaultCity: document.getElementById('settings-city')?.value || '',
+    savedAddresses: window._savedAddresses || [],
+    matchNotify: document.getElementById('settings-match-notify')?.checked ?? true,
+    autoMatch: document.getElementById('settings-auto-match')?.checked ?? true,
+    publicReqs: document.getElementById('settings-public-reqs')?.checked ?? true,
+    showOnline: document.getElementById('settings-show-online')?.checked ?? true,
+    allowStrangerMsg: document.getElementById('settings-allow-stranger-msg')?.checked ?? false,
+    msgNotify: document.getElementById('settings-msg-notify')?.checked ?? true,
+    collabNotify: document.getElementById('settings-collab-notify')?.checked ?? true,
+  };
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+  showToast('设置已保存', 'success');
+}
+
+function onLlmProviderChange() {
+  const provider = document.getElementById('settings-llm-provider')?.value || '';
+  const fields = document.getElementById('settings-llm-fields');
+  const baseUrlRow = document.getElementById('settings-llm-baseurl-row');
+  const modelRow = document.getElementById('settings-llm-model-row');
+  const keyInput = document.getElementById('settings-llm-key');
+  const baseUrlInput = document.getElementById('settings-llm-baseurl');
+  const modelInput = document.getElementById('settings-llm-model');
+
+  if (!provider) {
+    if (fields) fields.style.display = 'none';
+    saveLlmSettings();
+    return;
+  }
+
+  if (fields) fields.style.display = 'block';
+
+  const cfg = LLM_PROVIDERS.find(p => p.key === provider);
+  if (cfg) {
+    if (baseUrlInput) baseUrlInput.value = cfg.baseUrl;
+    if (modelInput) modelInput.value = cfg.model;
+    // Hide base URL / model for preset providers (show for custom)
+    if (baseUrlRow) baseUrlRow.style.display = provider === 'custom' ? 'block' : 'none';
+    if (modelRow) modelRow.style.display = provider === 'custom' ? 'block' : 'none';
+  }
+
+  saveLlmSettings();
+}
+
+function saveLlmSettings() {
+  const s = loadSettings();
+  s.llmProvider = document.getElementById('settings-llm-provider')?.value || '';
+  s.llmApiKey = document.getElementById('settings-llm-key')?.value || '';
+  s.llmBaseUrl = document.getElementById('settings-llm-baseurl')?.value || '';
+  s.llmModel = document.getElementById('settings-llm-model')?.value || '';
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(s));
+}
+
+async function testLlmConnection() {
+  const s = loadSettings();
+  const provider = s.llmProvider;
+  const apiKey = s.llmApiKey;
+  const statusEl = document.getElementById('settings-llm-status');
+
+  if (!provider || !apiKey) {
+    if (statusEl) { statusEl.textContent = '请选择模型并填写 API Key'; statusEl.style.color = 'var(--warning)'; }
+    return;
+  }
+
+  if (statusEl) { statusEl.textContent = '测试中...'; statusEl.style.color = 'var(--text-muted)'; }
+
+  const cfg = LLM_PROVIDERS.find(p => p.key === provider);
+  const baseUrl = s.llmBaseUrl || cfg?.baseUrl || '';
+  const model = s.llmModel || cfg?.model || '';
+
+  if (!baseUrl || !model) {
+    if (statusEl) { statusEl.textContent = '缺少 Base URL 或模型名称'; statusEl.style.color = 'var(--danger)'; }
+    return;
+  }
+
+  try {
+    const res = await fetch(baseUrl + '/chat/completions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey },
+      body: JSON.stringify({ model, messages: [{ role: 'user', content: 'Hi' }], max_tokens: 5 }),
+    });
+    if (res.ok) {
+      if (statusEl) { statusEl.textContent = '连接成功'; statusEl.style.color = 'var(--success)'; }
+    } else {
+      const err = await res.json().catch(() => ({}));
+      if (statusEl) { statusEl.textContent = `失败 (${res.status}): ${(err.error?.message || '').slice(0, 50)}`; statusEl.style.color = 'var(--danger)'; }
+    }
+  } catch (e) {
+    if (statusEl) { statusEl.textContent = '网络错误: ' + e.message.slice(0, 40); statusEl.style.color = 'var(--danger)'; }
+  }
+}
+
+function getLlmConfig() {
+  const s = loadSettings();
+  if (!s.llmProvider || !s.llmApiKey) return null;
+  const cfg = LLM_PROVIDERS.find(p => p.key === s.llmProvider);
+  return {
+    apiKey: s.llmApiKey,
+    baseUrl: s.llmBaseUrl || cfg?.baseUrl || '',
+    model: s.llmModel || cfg?.model || '',
+  };
+}
+
+function addSavedAddress() {
+  const city = document.getElementById('settings-new-city').value.trim();
+  const address = document.getElementById('settings-new-address').value.trim();
+  if (!city) { showToast('请填写城市', 'warning'); return; }
+  if (!window._savedAddresses) window._savedAddresses = [];
+  window._savedAddresses.push({ city, address });
+  document.getElementById('settings-new-city').value = '';
+  document.getElementById('settings-new-address').value = '';
+  saveSettings();
+  renderSavedAddresses();
+}
+
+function removeSavedAddress(idx) {
+  window._savedAddresses.splice(idx, 1);
+  saveSettings();
+  renderSavedAddresses();
+}
+
+function renderSavedAddresses() {
+  const container = document.getElementById('settings-addresses-list');
+  if (!container) return;
+  const addrs = window._savedAddresses || [];
+  if (!addrs.length) {
+    container.innerHTML = '<div style="font-size:12px;color:var(--text-muted);">暂无常用地址，添加后发需求时可快速选择</div>';
+    return;
+  }
+  container.innerHTML = addrs.map((a, i) =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);">
+      <i data-lucide="map-pin" style="width:13px;height:13px;color:var(--accent);flex-shrink:0;"></i>
+      <span style="font-size:13px;flex:1;">${escapeHtml(a.city)}${a.address ? ' · ' + escapeHtml(a.address) : ''}</span>
+      <button class="btn btn-ghost btn-sm" style="padding:2px 6px;color:var(--danger);font-size:11px;" onclick="removeSavedAddress(${i})">删除</button>
+    </div>`
+  ).join('');
+  if (window.lucide) lucide.createIcons();
+}
+
+function setMatchPriority(v, el) {
+  window._matchPriority = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => {
+    c.classList.remove('active');
+    c.style.borderColor = 'var(--border)';
+    c.style.background = 'transparent';
+    c.style.color = 'var(--text-primary)';
+  });
+  el.classList.add('active');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(139,92,246,0.1)';
+  el.style.color = 'var(--accent)';
+  saveSettings();
+}
+
+function setLocationMode(v, el) {
+  window._locationMode = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => {
+    c.classList.remove('active');
+    c.style.borderColor = 'var(--border)';
+    c.style.background = 'transparent';
+    c.style.color = 'var(--text-primary)';
+  });
+  el.classList.add('active');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(139,92,246,0.1)';
+  el.style.color = 'var(--accent)';
+  const cityRow = document.getElementById('settings-city-row');
+  if (cityRow) cityRow.style.display = v === 'remote' ? 'none' : 'block';
+  saveSettings();
+}
+
+function renderSettings() {
+  const s = loadSettings();
+  window._matchPriority = s.matchPriority;
+  window._locationMode = s.locationMode || 'remote';
+  // Update match priority chips
+  const chips = document.querySelectorAll('#settings-match-priority .wiz-chip');
+  const priorityMap = { 0: 'skill', 1: 'domain', 2: 'time' };
+  chips.forEach((c, i) => {
+    const v = priorityMap[i];
+    if (v === s.matchPriority) {
+      c.classList.add('active');
+      c.style.borderColor = 'var(--accent)';
+      c.style.background = 'rgba(139,92,246,0.1)';
+      c.style.color = 'var(--accent)';
+    } else {
+      c.classList.remove('active');
+      c.style.borderColor = 'var(--border)';
+      c.style.background = 'transparent';
+      c.style.color = 'var(--text-primary)';
+    }
+  });
+  // Update location mode chips
+  const locChips = document.querySelectorAll('#settings-location-mode .wiz-chip');
+  const locMap = { 0: 'remote', 1: 'same-city', 2: 'onsite' };
+  locChips.forEach((c, i) => {
+    const v = locMap[i];
+    if (v === s.locationMode) {
+      c.classList.add('active');
+      c.style.borderColor = 'var(--accent)';
+      c.style.background = 'rgba(139,92,246,0.1)';
+      c.style.color = 'var(--accent)';
+    } else {
+      c.classList.remove('active');
+      c.style.borderColor = 'var(--border)';
+      c.style.background = 'transparent';
+      c.style.color = 'var(--text-primary)';
+    }
+  });
+  // Update city row visibility
+  const cityRow = document.getElementById('settings-city-row');
+  if (cityRow) cityRow.style.display = s.locationMode === 'remote' ? 'none' : 'block';
+  const cityInput = document.getElementById('settings-city');
+  if (cityInput) cityInput.value = s.defaultCity || '';
+  // Update toggles
+  const toggleMap = {
+    'settings-match-notify': s.matchNotify,
+    'settings-auto-match': s.autoMatch,
+    'settings-public-reqs': s.publicReqs,
+    'settings-show-online': s.showOnline,
+    'settings-allow-stranger-msg': s.allowStrangerMsg,
+    'settings-msg-notify': s.msgNotify,
+    'settings-collab-notify': s.collabNotify,
+  };
+  for (const [id, val] of Object.entries(toggleMap)) {
+    const el = document.getElementById(id);
+    if (el) el.checked = val;
+  }
+  // Update email display
+  const emailEl = document.getElementById('settings-email-display');
+  if (emailEl) emailEl.textContent = currentUser ? '邮箱：' + (currentUser.email || '未设置') : '未登录';
+  // Load saved addresses
+  window._savedAddresses = s.savedAddresses || [];
+  renderSavedAddresses();
+  // Load LLM settings
+  const llmProvider = document.getElementById('settings-llm-provider');
+  const llmKey = document.getElementById('settings-llm-key');
+  const llmBaseUrl = document.getElementById('settings-llm-baseurl');
+  const llmModel = document.getElementById('settings-llm-model');
+  const llmFields = document.getElementById('settings-llm-fields');
+  if (llmProvider) llmProvider.value = s.llmProvider || '';
+  if (llmKey) llmKey.value = s.llmApiKey || '';
+  if (llmBaseUrl) llmBaseUrl.value = s.llmBaseUrl || '';
+  if (llmModel) llmModel.value = s.llmModel || '';
+  if (llmFields) llmFields.style.display = s.llmProvider ? 'block' : 'none';
+  const baseUrlRow = document.getElementById('settings-llm-baseurl-row');
+  const modelRow = document.getElementById('settings-llm-model-row');
+  if (baseUrlRow) baseUrlRow.style.display = s.llmProvider === 'custom' ? 'block' : 'none';
+  if (modelRow) modelRow.style.display = s.llmProvider === 'custom' ? 'block' : 'none';
+  // Render API Token area
+  renderSettingsApiToken();
+}
+
 function doLogout() {
+  if (window._presenceInterval) { clearInterval(window._presenceInterval); window._presenceInterval = null; }
   CollabApi.setToken(null);
   currentUser = null;
   clearPendingChatFiles();
@@ -2586,9 +3131,12 @@ function doLogout() {
 }
 
 function openModal(id) {
-  var overlay = document.getElementById(id);
+  const overlay = document.getElementById(id);
   overlay.classList.add('open');
-  overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+  if (!overlay._overlayBound) {
+    overlay._overlayBound = true;
+    overlay.addEventListener('click', function(e) { if (e.target === this) this.classList.remove('open'); });
+  }
 }
 function closeModal(id) {
   document.getElementById(id).classList.remove('open');
@@ -2642,9 +3190,46 @@ function scrollToBottom(el) {
 //  NAVIGATION
 // ============================================================
 function goPublishRequirement() {
-  wizStep = 0; wizData = { sceneTag:'side-project', projectStage:'idea', weeklyHours:'5-10h', collabMode:'联创', lookingFor:[], remoteOk:true, desc:'' };
+  // 跳转到 AI 聊天，让用户通过对话描述需求
+  switchSection('home', document.querySelector('[data-section=home]'));
+  setTimeout(() => {
+    const input = document.getElementById('chat-input');
+    if (input) {
+      input.focus();
+      input.placeholder = '告诉我你想做什么项目，AI 帮你整理需求…';
+    }
+  }, 200);
+}
+
+function goPublishRequirementManual() {
+  const s = loadSettings();
+  wizStep = 0; wizData = { sceneTag:'side-project', projectStage:'idea', weeklyHours:'5-10h', collabMode:'联创', locationMode: s.locationMode || 'remote', city: s.defaultCity || '', address:'', lookingFor:[], desc:'' };
   wizShowStep(0);
   openModal('modal-req-wizard');
+  // Render domain chips
+  setTimeout(() => {
+    const container = document.getElementById('wiz-domain-chips');
+    if (container) {
+      container.innerHTML = Object.entries(DOMAINS).map(([key, d]) =>
+        `<span class="wiz-chip${key === currentDomain ? ' active' : ''}" onclick="wizPickDomain(this,'${key}')" style="padding:5px 12px;border:1px solid ${key === currentDomain ? 'var(--accent)' : 'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;${key === currentDomain ? 'background:rgba(139,92,246,0.1);color:var(--accent);' : ''}">${d.name}</span>`
+      ).join('');
+    }
+    // Render scene tags and stages for current domain
+    wizRenderSceneAndStages();
+    // Update wizard location chips to match settings
+    const locChips = document.querySelectorAll('#wiz-step-2 .wiz-chip[onclick*="wizPickLocation"]');
+    locChips.forEach(c => {
+      const match = c.getAttribute('onclick').match(/wizPickLocation\(this,'([^']+)'\)/);
+      if (match && match[1] === wizData.locationMode) {
+        c.click();
+      }
+    });
+    if (wizData.city) {
+      const cityInput = document.getElementById('wiz-city');
+      if (cityInput) cityInput.value = wizData.city;
+    }
+    if (window.lucide) lucide.createIcons();
+  }, 100);
 }
 
 /* ---- Wizard state & helpers ---- */
@@ -2658,7 +3243,7 @@ function wizShowStep(n) {
     const el = document.getElementById('wiz-step-' + i);
     if (el) el.style.display = i === n ? '' : 'none';
     const dot = document.getElementById('wiz-dot-' + i);
-    if (dot) dot.style.background = i <= n ? 'var(--accent-purple)' : 'var(--bg-tertiary)';
+    if (dot) dot.style.background = i <= n ? 'var(--accent)' : 'var(--bg-tertiary)';
   }
   // UX-04: Update step indicator label
   const stepLabel = document.getElementById('wiz-step-label');
@@ -2669,25 +3254,92 @@ function wizShowStep(n) {
   if (n === 1) wizRenderRoles();
 }
 
-function wizPickScene(el, v) {
-  wizData.sceneTag = v;
+function wizPick(el, field, value) {
+  wizData[field] = value;
   el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
-  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+  el.classList.add('active'); el.style.borderColor = 'var(--accent)';
 }
-function wizPickStage(el, v) {
-  wizData.projectStage = v;
-  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
-  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+function wizPickScene(el, v) { wizPick(el, 'sceneTag', v); }
+function wizPickStage(el, v) { wizPick(el, 'projectStage', v); }
+function wizPickCollab(el, v) { wizPick(el, 'collabMode', v); }
+function wizPickHours(el, v) { wizPick(el, 'weeklyHours', v); }
+function wizPickLocation(el, v) {
+  wizPick(el, 'locationMode', v);
+  const cityInput = document.getElementById('wiz-city-input');
+  if (v === 'remote') {
+    cityInput.style.display = 'none';
+    wizData.city = '';
+    wizData.address = '';
+  } else {
+    cityInput.style.display = 'block';
+    renderWizSavedAddresses();
+    document.getElementById('wiz-city').focus();
+  }
 }
-function wizPickCollab(el, v) {
-  wizData.collabMode = v;
-  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
-  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+
+function renderWizSavedAddresses() {
+  const container = document.getElementById('wiz-saved-addresses');
+  if (!container) return;
+  const addrs = window._savedAddresses || loadSettings().savedAddresses || [];
+  if (!addrs.length) { container.innerHTML = ''; return; }
+  container.innerHTML = '<div style="font-size:11px;color:var(--text-muted);margin-bottom:4px;">常用地址</div>' +
+    addrs.map((a, i) =>
+      `<div style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border:1px solid var(--border);border-radius:12px;font-size:12px;cursor:pointer;margin:0 4px 4px 0;transition:var(--transition);" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'" onclick="pickWizAddress(${i})"><i data-lucide="map-pin" style="width:11px;height:11px;"></i>${escapeHtml(a.city)}${a.address ? ' · ' + escapeHtml(a.address) : ''}</div>`
+    ).join('');
+  if (window.lucide) lucide.createIcons();
 }
-function wizPickHours(el, v) {
-  wizData.weeklyHours = v;
-  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => { c.classList.remove('active'); c.style.borderColor = 'var(--border)'; });
-  el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)';
+
+function pickWizAddress(idx) {
+  const addrs = window._savedAddresses || loadSettings().savedAddresses || [];
+  const a = addrs[idx];
+  if (!a) return;
+  wizData.city = a.city;
+  wizData.address = a.address || '';
+  document.getElementById('wiz-city').value = a.city;
+  document.getElementById('wiz-address').value = a.address || '';
+}
+
+function wizPickDomain(el, v) {
+  currentDomain = v;
+  wizData.domain = v;
+  el.parentElement.querySelectorAll('.wiz-chip').forEach(c => {
+    c.classList.remove('active');
+    c.style.borderColor = 'var(--border)';
+    c.style.background = 'transparent';
+    c.style.color = 'var(--text-primary)';
+  });
+  el.classList.add('active');
+  el.style.borderColor = 'var(--accent)';
+  el.style.background = 'rgba(139,92,246,0.1)';
+  el.style.color = 'var(--accent)';
+  // Update scene tags, stages, and roles for new domain
+  wizRenderSceneAndStages();
+  wizRenderRoles();
+}
+
+function wizRenderSceneAndStages() {
+  const domain = DOMAINS[currentDomain];
+  if (!domain) return;
+  // Scene tags
+  const sceneContainer = document.getElementById('wiz-scene-chips');
+  if (sceneContainer) {
+    wizData.sceneTag = domain.sceneTags[0] || '';
+    sceneContainer.innerHTML = domain.sceneTags.map((tag, i) =>
+      `<span class="wiz-chip${i === 0 ? ' active' : ''}" onclick="wizPickScene(this,'${tag}')" style="padding:5px 12px;border:1px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;${i === 0 ? 'background:rgba(139,92,246,0.1);color:var(--accent);' : ''}">${tag}</span>`
+    ).join('');
+  }
+  // Stages
+  const stageContainer = document.getElementById('wiz-stage-chips');
+  if (stageContainer && domain.stages) {
+    wizData.projectStage = domain.stages[0]?.key || '';
+    stageContainer.innerHTML = domain.stages.map((s, i) =>
+      `<span class="wiz-chip${i === 0 ? ' active' : ''}" onclick="wizPickStage(this,'${s.key}')" style="padding:5px 12px;border:1px solid ${i === 0 ? 'var(--accent)' : 'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;${i === 0 ? 'background:rgba(139,92,246,0.1);color:var(--accent);' : ''}"><i data-lucide="${s.icon}" style="width:14px;height:14px;vertical-align:middle;"></i> ${s.label}</span>`
+    ).join('');
+  }
+  // Update textarea placeholder
+  const textarea = document.getElementById('wiz-desc');
+  if (textarea) textarea.placeholder = domain.templates?.[0]?.[1] || '简述你的项目想法…';
+  if (window.lucide) lucide.createIcons();
 }
 
 function wizRenderRoles() {
@@ -2695,14 +3347,14 @@ function wizRenderRoles() {
   if (!c) return;
   c.innerHTML = WIZ_ROLES.map(r => {
     const sel = wizData.lookingFor.includes(r);
-    return `<span class="wiz-chip ${sel?'active':''}" onclick="wizToggleRole(this,'${r}')" style="padding:6px 14px;border:1px solid ${sel?'var(--accent-purple)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;">${r}</span>`;
+    return `<span class="wiz-chip ${sel?'active':''}" onclick="wizToggleRole(this,'${r}')" style="padding:6px 14px;border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;">${r}</span>`;
   }).join('');
 }
 function wizToggleRole(el, role) {
   const arr = wizData.lookingFor;
   const i = arr.indexOf(role);
   if (i >= 0) { arr.splice(i, 1); el.classList.remove('active'); el.style.borderColor = 'var(--border)'; }
-  else { arr.push(role); el.classList.add('active'); el.style.borderColor = 'var(--accent-purple)'; }
+  else { arr.push(role); el.classList.add('active'); el.style.borderColor = 'var(--accent)'; }
 }
 
 function wizPrev() { if (wizStep > 0) wizShowStep(wizStep - 1); }
@@ -2718,6 +3370,11 @@ async function wizNext() {
     wizShowStep(2); return;
   }
   // Step 3: submit
+  if (wizData.locationMode !== 'remote' && !wizData.city?.trim()) {
+    showToast('请填写城市', 'warning');
+    document.getElementById('wiz-city')?.focus();
+    return;
+  }
   wizData.remoteOk = document.getElementById('wiz-remote')?.checked ?? true;
   const btn = document.getElementById('wiz-next');
   btn.disabled = true; btn.textContent = '生成中…';
@@ -2730,8 +3387,11 @@ async function wizNext() {
       projectStage: wizData.projectStage,
       weeklyHours: wizData.weeklyHours,
       collabMode: wizData.collabMode,
+      locationMode: wizData.locationMode || 'remote',
+      city: wizData.city || '',
+      address: wizData.address || '',
       lookingFor: wizData.lookingFor,
-      remoteOk: wizData.remoteOk,
+      remoteOk: wizData.locationMode !== 'onsite',
       status: 'draft',
       skills: wizData.lookingFor,
     });
@@ -2748,10 +3408,6 @@ async function wizNext() {
   }
 }
 
-function switchSideTab(tab, el) {
-  // Side panel now only has conversation tab
-}
-
 function switchSection(sectionId, navEl) {
   // Hide all sections
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -2766,6 +3422,7 @@ function switchSection(sectionId, navEl) {
   if (sectionId === 'square') { renderSquareDomainSelect(); renderSquareSceneChips(); renderSquare(); }
   if (sectionId === 'groups') renderGroupsList();
   if (sectionId === 'profile') renderProfile();
+  if (sectionId === 'settings') renderSettings();
   if (sectionId === 'kb') renderKbSection();
   if (sectionId === 'home') setTimeout(() => scrollToBottom(document.getElementById('chat-messages')), 50);
   // Refresh Lucide icons after dynamic content
@@ -2815,7 +3472,7 @@ function renderChatMessage(msg) {
     return `
       <div class="message-row ai" data-msg-idx="${idx}">
         <div class="msg-avatar">
-          <div class="avatar avatar-sm" style="background:var(--accent-gradient);">AI</div>
+          <div class="avatar avatar-sm" style="background:var(--accent);">AI</div>
         </div>
         <div class="msg-wrapper">
           <div class="msg-actions">
@@ -2831,11 +3488,12 @@ function renderChatMessage(msg) {
       </div>`;
   } else {
     const userAvatar = (msg.user && msg.user.avatar) ? msg.user.avatar : (currentUser?.avatar || '<i data-lucide="user" style="width:14px;height:14px;vertical-align:middle;"></i>');
-    const userAvatarColor = (msg.user && msg.user.avatarColor) ? msg.user.avatarColor : (currentUser?.avatarColor || 'var(--accent-gradient)');
+    const userAvatarColor = (msg.user && msg.user.avatarColor) ? msg.user.avatarColor : (currentUser?.avatarColor || 'var(--accent)');
+    const userAvatarUrl = (msg.user && msg.user.avatarUrl) ? msg.user.avatarUrl : (currentUser?.avatarUrl || '');
     return `
       <div class="message-row user" data-msg-idx="${idx}">
         <div class="msg-avatar">
-          <div class="avatar avatar-sm" style="background:${userAvatarColor};">${userAvatar}</div>
+          <div class="avatar avatar-sm" ${userAvatarUrl ? `style="background:none;background-image:url(${userAvatarUrl});background-size:cover;background-position:center;"` : `style="background:${userAvatarColor};"`}>${userAvatarUrl ? '' : userAvatar}</div>
         </div>
         <div class="msg-wrapper">
           <div class="msg-actions">
@@ -2893,7 +3551,7 @@ function renderProtoCard(code) {
 function copyProtoCode(cardId) {
   const frame = document.getElementById(cardId + '-frame');
   if (!frame) return;
-  navigator.clipboard.writeText(frame.getAttribute('srcdoc') || '').then(() => showToast('✅ 代码已复制', 'success'));
+  navigator.clipboard.writeText(frame.getAttribute('srcdoc') || '').then(() => showToast('代码已复制', 'success')).catch(() => showToast('复制失败', 'warning'));
 }
 
 function toggleProtoFullscreen(cardId) {
@@ -2914,7 +3572,7 @@ function replyTo(idx) {
 function copyMsg(idx) {
   const msg = convMessages()[idx];
   if (!msg) return;
-  navigator.clipboard.writeText(msg.content).then(() => showToast('✅ 已复制', 'success'));
+  navigator.clipboard.writeText(msg.content).then(() => showToast('已复制', 'success')).catch(() => showToast('复制失败', 'warning'));
 }
 function cancelReply() {
   replyingToIdx = -1;
@@ -2940,14 +3598,15 @@ function renderReplyBar() {
   const inputBox = document.querySelector('.chat-input-box');
   if (!inputBox) return;
   const isAI = msg.role === 'ai';
-  const avatarBg = isAI ? 'var(--accent-gradient)' : (currentUser?.avatarColor || 'var(--accent-gradient)');
+  const avatarBg = isAI ? 'var(--accent)' : (currentUser?.avatarColor || 'var(--accent)');
   const avatarText = isAI ? 'AI' : (currentUser?.avatar || 'U');
+  const avatarUrl = isAI ? '' : (currentUser?.avatarUrl || '');
   const roleName = isAI ? 'AI' : (currentUser?.name || '自己');
   const bar = document.createElement('div');
   bar.id = 'reply-bar';
   bar.className = 'reply-bar';
   bar.innerHTML = `
-    <div class="reply-bar-avatar" style="background:${avatarBg};">${escapeHtml(avatarText)}</div>
+    <div class="reply-bar-avatar" ${avatarUrl ? `style="background:none;background-image:url(${avatarUrl});background-size:cover;background-position:center;"` : `style="background:${avatarBg};"`}>${avatarUrl ? '' : escapeHtml(avatarText)}</div>
     <div class="reply-bar-body">
       <div class="reply-bar-header">↩ 回复 ${escapeHtml(roleName)}</div>
       <div class="reply-bar-text">${escapeHtml(msg.content.slice(0, 120))}</div>
@@ -3009,7 +3668,7 @@ function escapeHtml(str) {
 }
 
 function escapeAttr(str) {
-  return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'\\\\');
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\/g,'\\\\');
 }
 
 function handleReqHtmlUpload(input) {
@@ -3096,18 +3755,19 @@ function uploadPrototype(reqId, input) {
   reader.readAsText(file);
 }
 
-function linkPrototype(reqId) {
-  const url = prompt('请输入外部原型 URL：');
+async function linkPrototype(reqId) {
+  const url = prompt('请输入外部原型 URL（需以 http:// 或 https:// 开头）：');
   if (!url) return;
+  if (!/^https?:\/\//i.test(url.trim())) { showToast('请输入有效的 HTTP/HTTPS 链接', 'warning'); return; }
   const req = REQUIREMENTS.find(r => r.id === reqId);
   if (!req) return;
   req.prototype = {
     type: 'link',
     html: '',
-    url: url,
+    url: url.trim(),
     createdAt: new Date().toISOString(),
   };
-  try { CollabApi.updateRequirement(reqId, { prototype: req.prototype }); } catch(e) {}
+  try { await CollabApi.updateRequirement(reqId, { prototype: req.prototype }); } catch(e) { console.error('保存原型链接失败', e); }
   showToast('链接已保存', 'success');
   openReqDetail(reqId);
 }
@@ -3137,12 +3797,15 @@ function regeneratePrototype(reqId) {
 function openPrototypeFullscreen(reqId) {
   const req = REQUIREMENTS.find(r => r.id === reqId);
   if (!req?.prototype) return;
-  const html = req.prototype.type === 'link'
-    ? `<!DOCTYPE html><html><head><meta charset="UTF-8"><meta http-equiv="refresh" content="0;url=${escapeAttr(req.prototype.url)}"></head><body></body></html>`
-    : req.prototype.html;
-  const w = window.open('', '_blank');
-  w.document.write(html);
-  w.document.close();
+  if (req.prototype.type === 'link') {
+    const url = req.prototype.url;
+    if (!/^https?:\/\//i.test(url)) { showToast('不安全的链接地址', 'warning'); return; }
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } else {
+    const w = window.open('', '_blank');
+    w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{margin:0}</style></head><body><iframe srcdoc="${escapeAttr(req.prototype.html)}" style="width:100vw;height:100vh;border:none;" sandbox="allow-scripts"></iframe></body></html>`);
+    w.document.close();
+  }
 }
 
 function editPrototypeSource(reqId) {
@@ -3449,14 +4112,15 @@ function switchConversation(convId) {
 function renderConvList() {
   const container = document.getElementById('conv-req-list');
   if (!container) return;
-  document.getElementById('conv-count').textContent = `(${conversations.length})`;
+  document.getElementById('conv-count').textContent = `(${conversations.filter(c => !c._kbTemp).length})`;
 
   let html = `<div style="font-size:12px;color:var(--text-muted);padding:8px 0 4px;font-weight:600;"><i data-lucide="message-circle" style="width:14px;height:14px;vertical-align:middle;"></i> 对话历史</div>`;
 
-  if (!conversations.length) {
+  const visibleConvs = conversations.filter(c => !c._kbTemp);
+  if (!visibleConvs.length) {
     html += '<div style="color:var(--text-muted);font-size:12px;padding:20px 8px;text-align:center;line-height:1.6;">还没有对话<br>在 CollabAI 中描述你的需求开始对话吧</div>';
   } else {
-    conversations.slice().sort((a, b) => b.createdAt - a.createdAt).forEach(c => {
+    visibleConvs.slice().sort((a, b) => b.createdAt - a.createdAt).forEach(c => {
       const active = c.id === activeConvId;
       const lastMsg = c.messages.length ? escapeHtml(c.messages[c.messages.length - 1].content.slice(0, 30)) : '';
       html += `<div class="conv-item ${active ? 'active' : ''}">
@@ -3484,7 +4148,7 @@ function renderConvList() {
                        r.visibility === 'invite_only' ? '<span class="vis-badge vis-badge-invite"><i data-lucide="lock-keyhole" style="width:14px;height:14px;vertical-align:middle;"></i></span>' : '';
       html += `<div class="mini-req-card" onclick="${r.status==='draft' ? `showToast('请先发布后再匹配/招募','info');` : ''}openReqDetail('${r.id}')">
         <div class="mini-req-card-title">${escapeHtml(r.title)}${visBadge}</div>
-        <div class="mini-req-card-sub">${d.icon} ${d.name.split(' ')[1]} · ${r.status==='draft'?'📝 草稿':r.status==='open'?'🌟 已发布':'<i data-lucide="check-circle" style="width:14px;height:14px;vertical-align:middle;"></i> 已匹配'} · ${r.time}</div>
+        <div class="mini-req-card-sub">${d.icon} ${d.name.split(' ')[1]} · ${r.status==='draft'?'<i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i> 草稿':r.status==='open'?'<i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 已发布':'<i data-lucide="check-circle" style="width:14px;height:14px;vertical-align:middle;"></i> 已匹配'} · ${r.time}</div>
         <div class="mini-req-card-tags">${renderBadges(r.skills, 3)}</div>
       </div>`;
     });
@@ -3493,7 +4157,7 @@ function renderConvList() {
 }
 
 function timeAgo(ts) {
-  const diff = Date.now() - ts;
+  const diff = Math.max(0, Date.now() - ts);
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return '刚刚';
   if (mins < 60) return mins + '分钟前';
@@ -3545,7 +4209,7 @@ async function sendChatMessage() {
     time: formatTime(),
     ...(replyTo ? { replyTo } : {}),
     ...(optimisticAttachments?.length ? { attachments: optimisticAttachments } : {}),
-  });
+  }, convBeforeSend.id);
   input.value = '';
   input.style.height = 'auto';
 
@@ -3579,7 +4243,7 @@ async function sendChatMessage() {
   typingEl.id = 'typing-indicator';
   let streamBubble = null;
   typingEl.innerHTML = `
-    <div class="msg-avatar"><div class="avatar avatar-sm" style="background:var(--accent-gradient);">AI</div></div>
+    <div class="msg-avatar"><div class="avatar avatar-sm" style="background:var(--accent);">AI</div></div>
     <div><div class="message-bubble" id="ai-stream-bubble"><div class="typing-dots">
       <div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div>
     </div></div></div>`;
@@ -3603,7 +4267,8 @@ async function sendChatMessage() {
       }
     },
       fileIds,
-      conv.domain || currentDomain
+      conv.domain || currentDomain,
+      getLlmConfig()
     );
     typingEl.remove();
     isAiTyping = false;
@@ -3621,12 +4286,12 @@ async function sendChatMessage() {
         } else if (c.messages.length > optimisticIdx && c.messages[optimisticIdx]?.role === 'user') {
           c.messages[optimisticIdx] = userMessage;
         } else {
-          addMsg(userMessage);
+          addMsg(userMessage, convBeforeSend.id);
         }
       }
       if (message) {
         const dupIdx2 = c.messages.findIndex(m => m.role === message.role && m.content === message.content);
-        if (dupIdx2 < 0) addMsg(message);
+        if (dupIdx2 < 0) addMsg(message, convBeforeSend.id);
       }
     }
     if (message?.reqCard) upsertRequirement(message.reqCard);
@@ -3822,9 +4487,10 @@ function openReqDetail(reqId) {
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">
       ${req.sceneTag ? `<span class="badge badge-purple">${req.sceneTag === 'opensource' ? '<i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 开源协作' : '<i data-lucide="rocket" style="width:14px;height:14px;vertical-align:middle;"></i> Side Project'}</span>` : ''}
       ${req.projectStage ? `<span class="badge badge-blue">${({idea:'<i data-lucide="lightbulb" style="width:14px;height:14px;vertical-align:middle;"></i> Idea',prototype:'<i data-lucide="flask-conical" style="width:14px;height:14px;vertical-align:middle;"></i> Prototype',mvp:'<i data-lucide="rocket" style="width:14px;height:14px;vertical-align:middle;"></i> MVP',growth:'<i data-lucide="chart-line" style="width:14px;height:14px;vertical-align:middle;"></i> Growth'})[req.projectStage] || req.projectStage}</span>` : ''}
-      ${req.weeklyHours ? `<span class="badge badge-gray">⏱ ${req.weeklyHours}/周</span>` : ''}
+      ${req.weeklyHours ? `<span class="badge badge-gray"><i data-lucide="clock" style="width:14px;height:14px;vertical-align:middle;"></i> ${req.weeklyHours}/周</span>` : ''}
       ${req.collabMode ? `<span class="badge badge-green"><i data-lucide="handshake" style="width:14px;height:14px;vertical-align:middle;"></i> ${req.collabMode}</span>` : ''}
-      ${req.remoteOk ? `<span class="badge badge-gray"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 远程OK</span>` : ''}
+      ${req.locationMode === 'same-city' ? `<span class="badge badge-blue"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:middle;"></i> 同城${req.city ? '·' + escapeHtml(req.city) : ''}</span>` : req.locationMode === 'onsite' ? `<span class="badge badge-orange"><i data-lucide="building" style="width:14px;height:14px;vertical-align:middle;"></i> 线下${req.city ? '·' + escapeHtml(req.city) : ''}</span>` : req.locationMode === 'remote' ? `<span class="badge badge-gray"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 远程</span>` : req.remoteOk ? `<span class="badge badge-gray"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 远程OK</span>` : ''}
+      ${req.address ? `<span class="badge badge-gray" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"><i data-lucide="navigation" style="width:14px;height:14px;vertical-align:middle;"></i> ${escapeHtml(req.address)}</span>` : ''}
     </div>` : ''}
     ${(req.lookingFor && req.lookingFor.length) ? `
     <div style="margin:0 0 6px;font-size:12px;color:var(--text-muted);">招募角色</div>
@@ -3834,7 +4500,7 @@ function openReqDetail(reqId) {
     <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:16px;">${escapeHtml(req.desc)}</div>
     ${req.htmlContent ? `
     <div class="section" style="margin-top:16px;margin-bottom:16px;">
-      <h2 style="font-size:14px;color:var(--accent-purple);margin-bottom:8px;">HTML 展示</h2>
+      <h2 style="font-size:14px;color:var(--accent);margin-bottom:8px;">HTML 展示</h2>
       <div style="border:1px solid rgba(255,255,255,0.08);border-radius:var(--radius-md);overflow:hidden;">
         <iframe srcdoc="${escapeAttr(req.htmlContent)}" style="width:100%;height:400px;border:none;background:#fff;" sandbox="allow-scripts"></iframe>
       </div>
@@ -3850,7 +4516,7 @@ function openReqDetail(reqId) {
         <button class="btn btn-ghost btn-sm" onclick="editMyRequirement('${req.id}')"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i> 编辑</button>
         <button class="btn btn-ghost btn-sm btn-danger" onclick="event.stopPropagation();deleteMyRequirement('${req.id}')" style="margin-left:auto;"><i data-lucide="trash-2" style="width:14px;height:14px;vertical-align:middle;"></i> 删除</button>
       ` : `
-        ${canApply ? `<button class="btn btn-primary btn-sm" onclick="closeModal('modal-req-detail');applyReq('${req.id}')">📨 申请参与</button>` : ''}
+        ${canApply ? `<button class="btn btn-primary btn-sm" onclick="closeModal('modal-req-detail');applyReq('${req.id}')"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 申请参与</button>` : ''}
         ${!canApply ? `<span style="font-size:12px;color:var(--text-muted);">该需求暂不对外开放申请</span>` : ''}
       `}
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-req-detail')">关闭</button>
@@ -3858,7 +4524,7 @@ function openReqDetail(reqId) {
     <div class="prototype-section" style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
         <h3 style="font-size:14px;color:var(--text-primary);display:flex;align-items:center;gap:6px;">
-          <i data-lucide="monitor" style="width:16px;height:16px;color:var(--accent-purple);"></i> 原型展示
+          <i data-lucide="monitor" style="width:16px;height:16px;color:var(--accent);"></i> 原型展示
         </h3>
         <div style="display:flex;gap:6px;">
           ${!req.prototype ? `
@@ -3924,7 +4590,7 @@ async function loadReqApplications(reqId) {
     if (!section) return;
     const pending = apps.filter(a => a.status === 'pending');
     if (pending.length) {
-      section.innerHTML = `<div style="font-size:12px;color:var(--accent-purple);font-weight:600;margin-bottom:8px;"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 待处理申请(${pending.length})</div>` +
+      section.innerHTML = `<div style="font-size:12px;color:var(--accent);font-weight:600;margin-bottom:8px;"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 待处理申请(${pending.length})</div>` +
         pending.map(a => `<div style="padding:10px 12px;margin-bottom:6px;background:var(--bg-tertiary);border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
           <div><strong>${escapeHtml(a.applicant?.name || '用户')}</strong><span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${escapeHtml(a.message || '')}</span></div>
           <div style="display:flex;gap:4px;">
@@ -3989,7 +4655,7 @@ function renderMatchSection() {
       <div class="icon"><i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i></div>
       <h3>${matchDomainFilter !== 'all' ? `${domainName}暂无需求` : '暂无需求'}</h3>
       <p>先去 AI 对话页面生成一条需求</p>
-      <button class="btn btn-primary btn-sm" onclick="newConversation();switchSection('home', document.querySelector('[data-section=home]'));setTimeout(()=>{const el=document.getElementById('chat-input');if(el)el.focus();},200)">去生成需求</button>
+      <button class="btn btn-secondary btn-sm" onclick="newConversation();switchSection('home', document.querySelector('[data-section=home]'));setTimeout(()=>{const el=document.getElementById('chat-input');if(el)el.focus();},200)">去生成需求</button>
     </div>`;
     return;
   }
@@ -4015,7 +4681,12 @@ function renderMatchSection() {
       </div>`;
     }).join('');
   }
-  container.innerHTML = html || '<div class="empty-state" style="padding:30px 16px;"><h3>暂无需求</h3></div>';
+  container.innerHTML = html || `<div class="empty-state" style="padding:30px 16px;">
+    <i data-lucide="file-text" style="width:36px;height:36px;color:var(--text-muted);margin-bottom:8px;"></i>
+    <h3>暂无需求</h3>
+    <p style="margin-bottom:12px;">发布一条需求，系统会自动推荐合适的人选</p>
+    <button class="btn btn-primary btn-sm" onclick="goPublishRequirement()">+ 发布需求</button>
+  </div>`;
 
   if (matchMode !== 'reqs') return;
   if (currentMatchReqId && currentMatchReqId !== lastLoadedMatchReqId) {
@@ -4099,7 +4770,7 @@ function renderMatchCard(u, req) {
   return `
     <div class="user-match-card">
       <div class="user-match-top">
-        <div class="avatar avatar-md" style="background:${u.avatarColor};">${u.avatar}</div>
+        <div class="avatar avatar-md" ${u.avatarUrl ? `style="background:none;background-image:url(${u.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${u.avatarColor};"`}>${u.avatarUrl ? '' : u.avatar}</div>
         <div class="user-match-info">
           <h3>${escapeHtml(u.name)}</h3>
           <p>${escapeHtml(u.position)}</p>
@@ -4175,20 +4846,20 @@ function switchMatchMode(mode, el) {
 
 /** 渲染反向匹配左侧（当前用户技能概览） */
 function renderReverseMatchSection() {
-  if (matchMode !== 'user') return;
+  if (matchMode !== 'user' || !currentUser) return;
   const loadGen = matchPanelGen;
   const container = document.getElementById('match-req-list');
   container.innerHTML = `
     <div style="padding:12px;">
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px;background:var(--accent-gradient-soft);border-radius:var(--radius-md);">
-        <div class="avatar avatar-md" style="background:${currentUser.avatarColor};">${currentUser.avatar}</div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px;background:var(--accent-soft);border-radius:var(--radius-md);">
+        <div class="avatar avatar-md" ${currentUser.avatarUrl ? `style="background:none;background-image:url(${currentUser.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${currentUser.avatarColor || 'var(--accent)'};"`}>${currentUser.avatarUrl ? '' : (currentUser.avatar || '')}</div>
         <div>
-          <div style="font-size:14px;font-weight:600;">${escapeHtml(currentUser.name)}</div>
-          <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(currentUser.position)}</div>
+          <div style="font-size:14px;font-weight:600;">${escapeHtml(currentUser.name || '')}</div>
+          <div style="font-size:11px;color:var(--text-muted);">${escapeHtml(currentUser.position || '')}</div>
         </div>
       </div>
       <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px;">我的技能</div>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;">${renderBadges(currentUser.skills)}</div>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;">${renderBadges(currentUser.skills || [])}</div>
     </div>`;
 
   // Run reverse match
@@ -4239,7 +4910,7 @@ async function renderProfileRecs(profileContentEl) {
     </div>`;
   });
   html += `<div style="font-size:11px;color:var(--text-muted);margin-top:8px;">
-    前往 <span style="color:var(--accent-purple);cursor:pointer;text-decoration:underline;" onclick="switchSection('match', document.querySelector('[data-section=match]'))">智能匹配</span> 查看更多
+    前往 <span style="color:var(--accent);cursor:pointer;text-decoration:underline;" onclick="switchSection('match', document.querySelector('[data-section=match]'))">智能匹配</span> 查看更多
   </div></div>`;
   // Append after the last profile card
   profileContentEl.insertAdjacentHTML('beforeend', html);
@@ -4256,7 +4927,7 @@ function sendInvite(uid, reqId) {
   if (!user || !req) return;
   document.getElementById('modal-invite-body').innerHTML = `
     <div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;padding:14px;background:var(--bg-tertiary);border-radius:var(--radius-md);">
-      <div class="avatar avatar-md" style="background:${user.avatarColor};">${user.avatar}</div>
+      <div class="avatar avatar-md" ${user.avatarUrl ? `style="background:none;background-image:url(${user.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${user.avatarColor};"`}>${user.avatarUrl ? '' : user.avatar}</div>
       <div>
         <div style="font-size:14px;font-weight:600;">${escapeHtml(user.name)}</div>
         <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(user.position)}</div>
@@ -4317,7 +4988,7 @@ function renderGroupsList() {
     const lastMsg = msgs[msgs.length - 1];
     return `
       <div class="group-list-item ${activeGroupId === g.id ? 'active' : ''}" id="group-item-${g.id}" onclick="openGroup('${g.id}')">
-        <div class="group-list-avatar" style="background:${g.avatarColor || 'linear-gradient(135deg,#8b5cf6,#3b82f6)'};">${g.emoji || '<i data-lucide="users" style="width:14px;height:14px;vertical-align:middle;"></i>'}</div>
+        <div class="group-list-avatar" style="background:${g.avatarColor || 'var(--accent)'};">${g.emoji || '<i data-lucide="users" style="width:14px;height:14px;vertical-align:middle;"></i>'}</div>
         <div class="group-list-info">
           <div class="group-list-name">${escapeHtml(g.name || g.title || '协作群组')}</div>
           <div class="group-list-last">${lastMsg ? (lastMsg.type==='file' ? '<i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:middle;"></i> ' + lastMsg.fileName : escapeHtml(lastMsg.content.slice(0,24))) : '暂无消息'}</div>
@@ -4357,9 +5028,9 @@ function openGroup(gid) {
   membersCount.textContent = `(${(group.members||[]).length})`;
   document.getElementById('active-members-list').innerHTML = (group.members||[]).map(m => `
     <div class="member-item">
-      <div class="avatar avatar-sm" style="background:${m.avatarColor || 'var(--accent-gradient)'};">${m.avatar}</div>
+      <div class="avatar avatar-sm" ${m.avatarUrl ? `style="background:none;background-image:url(${m.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${m.avatarColor || 'var(--accent)'};"`}>${m.avatarUrl ? '' : m.avatar}</div>
       <div>
-        <div class="member-name">${escapeHtml(m.name)}${m.id === currentUser.id ? ' <span style="font-size:10px;color:var(--accent-purple);">(我)</span>' : ''}</div>
+        <div class="member-name">${escapeHtml(m.name)}${m.id === currentUser.id ? ' <span style="font-size:10px;color:var(--accent);">(我)</span>' : ''}</div>
         <div class="member-role">${escapeHtml(m.position || '成员')}</div>
       </div>
       <div class="member-status ${m.online ? 'online' : 'offline'}" title="${m.online ? '在线' : '离线'}" style="margin-left:auto;"></div>
@@ -4387,11 +5058,11 @@ function renderGroupMessage(msg) {
       </div>`
     : `<div class="group-msg-bubble">${escapeHtml(msg.content)}</div>`;
 
-  const copyBtn = msg.type === 'text' ? `<span class="msg-action-btn" onclick="event.stopPropagation();kbSaveFromGroup('${escapeAttr(msg.content)}', '${activeGroupId}')" title="保存到知识库"><i data-lucide="bookmark-plus" style="width:13px;height:13px;"></i></span><button onclick="event.stopPropagation();copyText('${escapeAttr(msg.content)}')">📋 复制</button>` : '';
+  const copyBtn = msg.type === 'text' ? `<span class="msg-action-btn" onclick="event.stopPropagation();kbSaveFromGroup('${escapeAttr(msg.content)}', '${activeGroupId}')" title="保存到知识库"><i data-lucide="bookmark-plus" style="width:13px;height:13px;"></i></span><button onclick="event.stopPropagation();copyText('${escapeAttr(msg.content)}')"><i data-lucide="copy" style="width:13px;height:13px;vertical-align:middle;"></i> 复制</button>` : '';
 
   return `
     <div class="group-msg-row ${rowCls}">
-      <div class="avatar avatar-sm" style="background:${msg.user.avatarColor || 'var(--accent-gradient)'};">${msg.user.avatar || msg.user.name[0]}</div>
+      <div class="avatar avatar-sm" ${msg.user.avatarUrl ? `style="background:none;background-image:url(${msg.user.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${msg.user.avatarColor || 'var(--accent)'};"`}>${msg.user.avatarUrl ? '' : (msg.user.avatar || msg.user.name[0])}</div>
       <div class="group-msg-body">
         ${!isSelf ? `<div class="group-msg-sender">${escapeHtml(msg.user.name)}</div>` : ''}
         ${bubbleContent}
@@ -4631,7 +5302,7 @@ function renderSquareCard(r) {
       <div class="square-card-body">${escapeHtml(r.desc.slice(0, 100))}${r.desc.length > 100 ? '...' : ''}</div>
       <div class="square-card-meta">
         <div class="square-card-author">
-          <div class="avatar avatar-sm" style="background:${r.author.avatarColor || 'var(--accent-gradient)'};">${r.author.avatar}</div>
+          <div class="avatar avatar-sm" ${r.author.avatarUrl ? `style="background:none;background-image:url(${r.author.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${r.author.avatarColor || 'var(--accent)'};"`}>${r.author.avatarUrl ? '' : r.author.avatar}</div>
           ${escapeHtml((r.author || {}).name || '未知用户')} · ${escapeHtml(r.author.position || '')}
         </div>
         <div class="square-card-time">${r.time}</div>
@@ -4647,15 +5318,20 @@ function renderSquareCard(r) {
       <div class="square-card-footer">
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:12px;color:var(--text-muted);">
           <span><i data-lucide="calendar" style="width:14px;height:14px;vertical-align:middle;"></i> ${r.timeline}</span>
-          ${r.weeklyHours ? `<span style="color:var(--accent-purple);">⏱ ${r.weeklyHours}/周</span>` : ''}
+          ${r.weeklyHours ? `<span style="color:var(--accent);"><i data-lucide="clock" style="width:14px;height:14px;vertical-align:middle;"></i> ${r.weeklyHours}/周</span>` : ''}
           ${r.collabMode ? `<span style="color:var(--success);"><i data-lucide="handshake" style="width:14px;height:14px;vertical-align:middle;"></i> ${r.collabMode}</span>` : ''}
+          ${r.locationMode === 'same-city' ? `<span style="color:var(--accent-blue);"><i data-lucide="map-pin" style="width:14px;height:14px;vertical-align:middle;"></i> 同城${r.city ? '·' + escapeHtml(r.city) : ''}</span>` : r.locationMode === 'onsite' ? `<span style="color:var(--warning);"><i data-lucide="building" style="width:14px;height:14px;vertical-align:middle;"></i> 线下${r.city ? '·' + escapeHtml(r.city) : ''}</span>` : ''}
+          ${r.address ? `<span style="color:var(--text-muted);"><i data-lucide="navigation" style="width:14px;height:14px;vertical-align:middle;"></i> ${escapeHtml(r.address)}</span>` : ''}
           ${r.prototype ? `
-          <span style="font-size:11px;color:var(--accent-cyan);cursor:pointer;display:flex;align-items:center;gap:4px;" onclick="event.stopPropagation();openReqDetail('${escapeHtml(r.id)}');setTimeout(()=>document.querySelector('.prototype-preview')?.scrollIntoView({behavior:'smooth'}),100);">
+          <span style="font-size:11px;color:var(--accent);cursor:pointer;display:flex;align-items:center;gap:4px;" onclick="event.stopPropagation();openReqDetail('${escapeHtml(r.id)}');setTimeout(()=>document.querySelector('.prototype-preview')?.scrollIntoView({behavior:'smooth'}),100);">
             <i data-lucide="monitor" style="width:12px;height:12px;"></i> 有原型
           </span>
           ` : ''}
         </div>
-        ${applyBtn}
+        <div style="display:flex;gap:6px;align-items:center;">
+          <span style="font-size:10px;color:var(--text-muted);cursor:pointer;opacity:0.5;" onclick="event.stopPropagation();reportReq('${r.id}')" title="举报"><i data-lucide="flag" style="width:12px;height:12px;"></i></span>
+          ${applyBtn}
+        </div>
       </div>
     </div>`;
 }
@@ -4670,6 +5346,16 @@ function sortSquare(val) {
   if (val === 'skills') reqs.sort((a, b) => (b.skills?.length || 0) - (a.skills?.length || 0));
   const grid = document.getElementById('square-grid');
   grid.innerHTML = reqs.map(r => renderSquareCard(r)).join('');
+}
+
+/** 举报需求 */
+function reportReq(reqId) {
+  const req = REQUIREMENTS.find(r => r.id === reqId);
+  const title = req ? escapeHtml(req.title) : reqId;
+  if (confirm(`举报此需求？\n\n「${title}」\n\n点击确定后将通知管理员审核。`)) {
+    showToast('已收到举报，我们会尽快处理', 'info');
+    console.warn('[REPORT]', { reqId, title, reporter: currentUser?.id, time: new Date().toISOString() });
+  }
 }
 
 async function applyReq(reqId) {
@@ -4716,7 +5402,7 @@ async function generateApiToken() {
   try {
     const data = await CollabApi.api('/users/me/api-token/generate', { method: 'POST' });
     currentUser.apiToken = data.token;
-    renderProfile();
+    renderSettingsApiToken();
     showToast('Token 已生成', 'success');
   } catch(e) { showToast('生成失败', 'warning'); }
 }
@@ -4725,7 +5411,7 @@ async function revokeApiToken() {
   try {
     await CollabApi.api('/users/me/api-token/revoke', { method: 'POST' });
     currentUser.apiToken = '';
-    renderProfile();
+    renderSettingsApiToken();
     showToast('Token 已重置', 'info');
   } catch(e) { showToast('重置失败', 'warning'); }
 }
@@ -4733,14 +5419,30 @@ function copyApiToken() {
   navigator.clipboard.writeText(currentUser.apiToken).then(() => showToast('已复制到剪贴板')).catch(() => showToast('复制失败', 'warning'));
 }
 
+function renderSettingsApiToken() {
+  const area = document.getElementById('settings-api-token-area');
+  if (!area || !currentUser) return;
+  if (currentUser.apiToken) {
+    area.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input id="api-token-display" value="${currentUser.apiToken.slice(0,12)}..." readonly style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:var(--bg-tertiary);color:var(--text-primary);">
+        <button class="btn btn-ghost btn-sm" onclick="copyApiToken()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--danger);" onclick="revokeApiToken()">重置</button>
+      </div>`;
+  } else {
+    area.innerHTML = `<button class="btn btn-primary btn-sm" onclick="generateApiToken()">生成 Token</button>`;
+  }
+  lucide.createIcons();
+}
+
 function copyAgentEndpoint() {
-  const url = location.origin + '/api/integrations/xcd/mcp';
+  const url = CollabApi.API_BASE + '/mcp';
   navigator.clipboard.writeText(url).then(() => showToast('Endpoint 已复制')).catch(() => showToast('复制失败', 'warning'));
 }
 
 function copyAgentCurl() {
   if (!currentUser.apiToken) { showToast('请先生成 API Token', 'warning'); return; }
-  const curl = `curl -X POST "${location.origin}/api/integrations/xcd/mcp" \\\\n  -H "Authorization: Bearer ${currentUser.apiToken}" \\\\n  -H "Content-Type: application/json" \\\\n  -d '{"action":"create_portfolio","title":"我的项目","role":"全栈","desc":"项目描述"}'`;
+  const curl = `curl -X POST "${CollabApi.API_BASE}/mcp" \\\\\n  -H "Content-Type: application/json" \\\\\n  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}'`;
   navigator.clipboard.writeText(curl).then(() => showToast('curl 命令已复制')).catch(() => showToast('复制失败', 'warning'));
 }
 
@@ -4757,8 +5459,8 @@ function renderProfile() {
     <div class="profile-card">
       <div class="profile-top">
         <div class="profile-avatar-wrap">
-          <div class="avatar avatar-xl" id="profile-avatar" style="background:${currentUser.avatarColor};">${currentUser.avatar}</div>
-          <div class="profile-avatar-edit" onclick="cycleAvatarColor()"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i></div>
+          <div class="avatar avatar-xl" id="profile-avatar" ${currentUser.avatarUrl ? `style="background:none;background-image:url(${currentUser.avatarUrl});background-size:cover;background-position:center;"` : `style="background:${currentUser.avatarColor};"`}>${currentUser.avatarUrl ? '' : currentUser.avatar}</div>
+          <div class="profile-avatar-edit" onclick="generateAvatar()" title="AI 生成头像"><i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:middle;"></i></div>
         </div>
         <div class="profile-info">
           <div class="profile-name-row">
@@ -4857,56 +5559,21 @@ function renderProfile() {
     </div>
 
     <!-- Stats Card -->
-    <div class="profile-card" style="background:var(--accent-gradient-soft);border-color:rgba(167,139,250,0.25);">
+    <div class="profile-card" style="background:var(--accent-soft);border-color:rgba(139,123,247,0.20);">
       <div style="font-size:14px;font-weight:600;margin-bottom:14px;"><i data-lucide="bar-chart" style="width:14px;height:14px;vertical-align:middle;"></i> 协作数据</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;text-align:center;">
         <div>
-          <div style="font-size:26px;font-weight:700;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${REQUIREMENTS.filter(r=>r.author?.id===currentUser?.id).length}</div>
+          <div style="font-size:26px;font-weight:700;background:var(--accent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${REQUIREMENTS.filter(r=>r.author?.id===currentUser?.id).length}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">发布需求</div>
         </div>
         <div>
-          <div style="font-size:26px;font-weight:700;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${GROUPS.filter(g=>g.members.some(m=>m.id===currentUser?.id)).length}</div>
+          <div style="font-size:26px;font-weight:700;background:var(--accent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${GROUPS.filter(g=>g.members.some(m=>m.id===currentUser?.id)).length}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">协作群组</div>
         </div>
         <div>
-          <div style="font-size:26px;font-weight:700;background:var(--accent-gradient);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${currentUser.collabScore || '—'}</div>
+          <div style="font-size:26px;font-weight:700;background:var(--accent);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">${currentUser.collabScore || '—'}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:3px;">协作评分</div>
         </div>
-      </div>
-    </div>
-
-    <!-- API Token -->
-    <div class="profile-card">
-      <div style="font-size:14px;font-weight:600;margin-bottom:8px;"><i data-lucide="key" style="width:14px;height:14px;vertical-align:middle;"></i> API Token（Agent 接入）</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">在 Cursor / Coze 等 Agent 中通过 MCP 接入时提供此 Token</div>
-      ${currentUser.apiToken ? `
-        <div style="display:flex;gap:8px;align-items:center;">
-          <input id="api-token-display" value="${currentUser.apiToken.slice(0,12)}..." readonly style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;font-family:monospace;background:var(--bg-tertiary);">
-          <button class="btn btn-ghost btn-sm" onclick="copyApiToken()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制</button>
-          <button class="btn btn-ghost btn-sm btn-danger" onclick="revokeApiToken()">重置</button>
-        </div>
-      ` : `
-        <button class="btn btn-primary btn-sm" onclick="generateApiToken()">生成 Token</button>
-      `}
-    </div>
-
-    <!-- Agent Integration -->
-    <div class="profile-card" style="border-color:rgba(167,139,250,0.3);background:linear-gradient(135deg,rgba(167,139,250,0.05),rgba(59,130,246,0.05));">
-      <div style="font-size:14px;font-weight:600;margin-bottom:8px;"><i data-lucide="bot" style="width:14px;height:14px;vertical-align:middle;"></i> Agent 接入指引</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-bottom:12px;line-height:1.5;">让你的 AI Agent 通过 MCP 直接上传作品、发布需求、参与匹配</div>
-      <div style="background:var(--bg-tertiary);border-radius:8px;padding:12px;font-size:11px;font-family:monospace;color:var(--text-secondary);line-height:1.8;word-break:break-all;">
-        <div style="color:var(--text-muted);margin-bottom:4px;"># MCP Endpoint</div>
-        <div style="color:var(--accent-purple);">POST <span id="agent-endpoint-url">${location.origin}/api/integrations/xcd/mcp</span></div>
-        <div style="margin-top:8px;color:var(--text-muted);"># Header</div>
-        <div>Authorization: Bearer <span id="agent-token-ref">${currentUser.apiToken ? currentUser.apiToken.slice(0,8)+'...' : '（先生成 Token）'}</span></div>
-        <div style="margin-top:8px;color:var(--text-muted);"># 上传作品示例</div>
-        <div style="color:var(--text-secondary);">{ "action": "create_portfolio", "title": "项目名", "role": "全栈", "desc": "描述" }</div>
-        <div style="margin-top:6px;color:var(--text-muted);"># 发布需求示例</div>
-        <div style="color:var(--text-secondary);">{ "action": "create_requirement", "title": "需求标题", "desc": "需求描述", "skills": ["React","Node.js"], "domain": "tech" }</div>
-      </div>
-      <div style="margin-top:8px;display:flex;gap:8px;">
-        <button class="btn btn-primary btn-sm" onclick="copyAgentEndpoint()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制 Endpoint</button>
-        ${currentUser.apiToken ? `<button class="btn btn-secondary btn-sm" onclick="copyAgentCurl()"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制 curl 示例</button>` : ''}
       </div>
     </div>
   `;
@@ -5035,7 +5702,7 @@ function renderPortfolioGrid(items) {
   }
   const cards = items.map(p => `
     <div class="port-card" onclick="event.stopPropagation();editPortfolioItemById('${p.id}')">
-      <div class="port-card-header" style="background:${p.color || 'var(--accent-gradient)'};"><i data-lucide="folder" style="width:14px;height:14px;vertical-align:middle;"></i></div>
+      <div class="port-card-header" style="background:${p.color || 'var(--accent)'};"><i data-lucide="folder" style="width:14px;height:14px;vertical-align:middle;"></i></div>
       <div class="port-card-body">
         <div class="port-card-title">${escapeHtml(p.title)}</div>
         <div class="port-card-role">${escapeHtml(p.role)}</div>
@@ -5095,7 +5762,7 @@ async function submitPortfolio() {
     title, role,
     desc: document.getElementById('pf-desc').value.trim(),
     visibility: document.getElementById('pf-vis').value,
-    color: 'linear-gradient(135deg, #8b5cf6, #3b82f6)',
+    color: 'var(--accent)',
   };
   try {
     if (editingPortfolioId) {
@@ -5152,13 +5819,93 @@ async function showMyApplications() {
   }
 }
 
-const colorKeys = Object.keys(COLORS);
-let colorIdx = 0;
-function cycleAvatarColor() {
-  colorIdx = (colorIdx + 1) % colorKeys.length;
-  currentUser.avatarColor = COLORS[colorKeys[colorIdx]];
-  document.getElementById('profile-avatar').style.background = currentUser.avatarColor;
-  document.getElementById('sidebar-user-avatar').style.background = currentUser.avatarColor;
+const AVATAR_STYLES = [
+  { key: 'adventurer', label: '冒险家' },
+  { key: 'adventurer-neutral', label: '简约风' },
+  { key: 'avataaars', label: '卡通' },
+  { key: 'bottts', label: '机器人' },
+  { key: 'fun-emoji', label: '趣味表情' },
+  { key: 'lorelei', label: '洛蕾莱' },
+  { key: 'notionists', label: '手绘风' },
+  { key: 'pixel-art', label: '像素风' },
+  { key: 'big-smile', label: '大笑脸' },
+  { key: 'micah', label: '米卡' },
+];
+
+let avatarStyleIdx = 0;
+let isGeneratingAvatar = false;
+
+async function generateAvatar() {
+  if (isGeneratingAvatar) return;
+  isGeneratingAvatar = true;
+  const editBtn = document.querySelector('.profile-avatar-edit');
+  if (editBtn) editBtn.innerHTML = '<span class="spinner" style="width:14px;height:14px;"></span>';
+
+  try {
+    const style = AVATAR_STYLES[avatarStyleIdx % AVATAR_STYLES.length];
+    avatarStyleIdx++;
+    const seed = currentUser.name + '-' + Date.now();
+    const url = `https://api.dicebear.com/9.x/${style.key}/svg?seed=${encodeURIComponent(seed)}&backgroundColor=c0aede,d1d4f9,ffd5dc,ffdfbf,b6e3f4`;
+
+    // Preload to verify it works
+    await new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = url;
+    });
+
+    currentUser.avatarUrl = url;
+    currentUser.avatarColor = '';
+    currentUser.avatar = '';
+
+    // Save to server
+    try { await CollabApi.saveUserProfile({ avatarUrl: url, avatarColor: '', avatar: '' }); } catch(e) { console.warn('avatar save failed', e); }
+
+    // Update UI
+    updateAvatarDisplay();
+    showToast(`${style.label}头像已生成`, 'success');
+  } catch (e) {
+    showToast('头像生成失败，请重试', 'warning');
+  } finally {
+    isGeneratingAvatar = false;
+    if (editBtn) editBtn.innerHTML = '<i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:middle;"></i>';
+    lucide.createIcons();
+  }
+}
+
+function updateAvatarDisplay() {
+  if (!currentUser) return;
+  // Profile avatar
+  const profileAv = document.getElementById('profile-avatar');
+  if (profileAv) {
+    if (currentUser.avatarUrl) {
+      profileAv.style.background = 'none';
+      profileAv.style.backgroundImage = `url(${currentUser.avatarUrl})`;
+      profileAv.style.backgroundSize = 'cover';
+      profileAv.style.backgroundPosition = 'center';
+      profileAv.textContent = '';
+    } else {
+      profileAv.style.backgroundImage = '';
+      profileAv.style.background = currentUser.avatarColor || 'var(--accent)';
+      profileAv.textContent = currentUser.avatar || currentUser.name[0] || '';
+    }
+  }
+  // Sidebar avatar
+  const sidebarAv = document.getElementById('sidebar-user-avatar');
+  if (sidebarAv) {
+    if (currentUser.avatarUrl) {
+      sidebarAv.style.background = 'none';
+      sidebarAv.style.backgroundImage = `url(${currentUser.avatarUrl})`;
+      sidebarAv.style.backgroundSize = 'cover';
+      sidebarAv.style.backgroundPosition = 'center';
+      sidebarAv.textContent = '';
+    } else {
+      sidebarAv.style.backgroundImage = '';
+      sidebarAv.style.background = currentUser.avatarColor || 'var(--bg-tertiary)';
+      sidebarAv.textContent = currentUser.avatar || currentUser.name[0] || '';
+    }
+  }
 }
 
 async function saveProfile() {
@@ -5178,7 +5925,7 @@ async function saveProfile() {
     }
     if (pos) document.getElementById('display-pos').textContent = pos;
     if (bio) document.getElementById('display-bio').textContent = bio;
-    showToast('✅个人资料已保存', 'success');
+    showToast('个人资料已保存', 'success');
     toggleProfileEdit(false);
   } catch (e) {
     showToast(e.message || '保存失败', 'warning');
@@ -5202,7 +5949,7 @@ async function aiEnhanceProfile() {
     const user = await CollabApi.aiEnhanceProfile();
     currentUser = { ...currentUser, ...user };
     renderProfile();
-    showToast('✅ AI 已根据你的协作记录更新名片', 'success');
+    showToast('AI 已根据你的协作记录更新名片', 'success');
   } catch(e) {
     showToast(e.message || 'AI 完善失败', 'warning');
   }
@@ -5239,7 +5986,7 @@ async function init() {
       hideLogin();
       await loadAppData();
       CollabApi.pingPresence().catch(() => {});
-      setInterval(() => CollabApi.pingPresence().catch(() => {}), 60000);
+      window._presenceInterval = setInterval(() => CollabApi.pingPresence().catch(() => {}), 60000);
       syncSidebarUser();
       renderAllSections();
       return;
@@ -5272,7 +6019,7 @@ function editMyRequirement(reqId) {
   if (!req) return;
   const body = document.getElementById('modal-req-body');
   body.innerHTML = `
-    <div style="font-size:12px;color:var(--accent-purple);margin-bottom:12px;font-weight:600;"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i> 编辑需求</div>
+    <div style="font-size:12px;color:var(--accent);margin-bottom:12px;font-weight:600;"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i> 编辑需求</div>
     <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">标题</label>
     <input id="edit-req-title" value="${escapeHtml(req.title)}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:14px;" />
     <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">项目背景</label>
@@ -5348,7 +6095,7 @@ async function forwardMsg(idx) {
   if (!convs.length) { showToast('没有其他对话可转发', 'info'); return; }
   document.getElementById('modal-forward-body').innerHTML = convs.map(c => `
     <div style="padding:8px 12px;cursor:pointer;border-radius:6px;margin:3px 0;border:1px solid var(--border);"
-      onmouseover="this.style.borderColor='var(--accent-purple)';this.style.background='var(--bg-hover)'"
+      onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--bg-hover)'"
       onmouseout="this.style.borderColor='var(--border)';this.style.background=''"
       onclick="doForward(${idx},'${c.id}')">${escapeHtml(c.title)}</div>
   `).join('');
@@ -5407,10 +6154,11 @@ document.addEventListener('click', e => {
   if (!e.target.closest('.publish-dropdown')) {
     document.querySelectorAll('.publish-dropdown-menu').forEach(m => { m.style.display = 'none'; });
   }
+  if (!e.target.closest('.sidebar-user')) {
+    closeUserMenu();
+  }
 });
-document.getElementById('login-code')?.addEventListener('keydown', e => {
-  if (e.key === 'Enter') doLogin();
-});
+
 
 // ============================================================
 //  KNOWLEDGE BASE
@@ -5421,8 +6169,8 @@ let kbSuggestShown = false;
 let kbAiSuggestionContent = '';
 let kbActiveDocId = null;
 const KB_COLUMNS = [
-  { key: 'brainstorming', label: '构思中', color: 'var(--accent-purple)' },
-  { key: 'refined', label: '已梳理', color: 'var(--accent-cyan)' },
+  { key: 'brainstorming', label: '构思中', color: 'var(--accent)' },
+  { key: 'refined', label: '已梳理', color: 'var(--accent)' },
   { key: 'published', label: '已发布', color: 'var(--success)' },
   { key: 'matched', label: '已匹配', color: 'var(--warning)' },
 ];
@@ -5544,7 +6292,7 @@ function renderKbCard(item) {
       ${tagsHtml ? `<div class="kb-card-tags">${tagsHtml}</div>` : ''}
       <div class="kb-card-meta">
         <span>${timeStr}</span>
-        ${item.source ? `<span style="color:var(--accent-purple);">${escapeHtml(item.source)}</span>` : ''}
+        ${item.source ? `<span style="color:var(--accent);">${escapeHtml(item.source)}</span>` : ''}
       </div>
     </div>`;
 }
@@ -5672,7 +6420,7 @@ function kbOpenEditModal(item) {
           <textarea id="kb-edit-content" placeholder="输入内容...支持 Markdown">${escapeHtml(data.content || '')}</textarea>
           ${(data.content && (data.content.trim().startsWith('<!DOCTYPE') || data.content.trim().startsWith('<html') || data.content.trim().startsWith('<body') || data.content.trim().startsWith('<div'))) ? `
           <div style="margin-top:8px;">
-            <div style="font-size:12px;color:var(--accent-purple);margin-bottom:4px;">HTML 预览</div>
+            <div style="font-size:12px;color:var(--accent);margin-bottom:4px;">HTML 预览</div>
             <div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;">
               ${kbRenderPreview(data.content)}
             </div>
@@ -5745,7 +6493,7 @@ function kbOpenEditModal(item) {
 function kbRenderPreview(content) {
   const trimmed = (content || '').trim();
   if (trimmed.startsWith('<!DOCTYPE') || trimmed.startsWith('<html') || trimmed.startsWith('<body') || trimmed.startsWith('<div')) {
-    return `<iframe srcdoc="${escapeAttr(content)}" style="width:100%;height:500px;border:none;background:#fff;border-radius:8px;" sandbox="allow-scripts allow-same-origin"></iframe>`;
+    return `<iframe srcdoc="${escapeAttr(content)}" style="width:100%;height:500px;border:none;background:#fff;border-radius:8px;" sandbox="allow-scripts"></iframe>`;
   }
   return kbMarkdown(content);
 }
@@ -5765,8 +6513,11 @@ function kbMarkdown(text) {
   html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
   // Bold
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
-  // Links
-  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+  // Links (block javascript: URLs)
+  html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (_, text, url) => {
+    const safe = /^https?:\/\//i.test(url.trim()) ? url.trim() : '#';
+    return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${text}</a>`;
+  });
   // Images
   html = html.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '<img src="$2" alt="$1" style="max-width:100%;border-radius:6px;">');
   // Horizontal rule
@@ -5814,23 +6565,24 @@ function kbSaveFromGroup(content, groupId) {
 
 // --- Helper: call AI for KB tasks ---
 async function kbCallAiForKb(prompt) {
-  let tempConv = conversations.find(c => c.id === '__kb_temp__');
+  let tempConv = conversations.find(c => c._kbTemp);
   if (!tempConv) {
     try {
       tempConv = await CollabApi.createConversation(currentDomain);
-      tempConv.id = '__kb_temp__';
       tempConv._kbTemp = true;
+      tempConv._origId = tempConv.id; // preserve real ID for API calls
       conversations.push(tempConv);
     } catch (e) {
       console.error('[kb] 创建临时对话失败', e);
       throw new Error('创建临时对话失败');
     }
   }
+  const apiConvId = tempConv._origId || tempConv.id;
   return new Promise((resolve, reject) => {
     let result = '';
-    CollabApi.streamAiChat(tempConv.id, prompt, (chunk) => {
+    CollabApi.streamAiChat(apiConvId, prompt, (chunk) => {
       result += chunk;
-    }, [], currentDomain).then(({ message }) => {
+    }, [], currentDomain, getLlmConfig()).then(({ message }) => {
       resolve(message?.content || result);
     }).catch(reject);
   });
