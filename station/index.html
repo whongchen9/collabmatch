@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>驿站</title>
+  <style>
+    /* ===== CSS RESET & BASE ===== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ===== CSS VARIABLES ===== */
+    :root {
+      --bg-primary: #0a0e1a;
+      --bg-secondary: #0f1322;
+      --bg-tertiary: #161b2e;
+      --bg-card: #1a1f35;
+      --bg-hover: #222840;
+      --border: rgba(255,255,255,0.06);
+      --border-light: rgba(255,255,255,0.10);
+      --text-primary: #e8ecf4;
+      --text-secondary: #9aa0b8;
+      --text-muted: #5c627a;
+      --accent: #8b7bf7;
+      --accent-soft: rgba(139,123,247,0.12);
+      --accent-hover: #9d8ff9;
+      --success: #6bcf8e;
+      --warning: #d4a843;
+      --danger: #e07a7a;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-xl: 20px;
+      --shadow: 0 4px 24px rgba(0,0,0,0.5);
+      --shadow-sm: 0 2px 8px rgba(0,0,0,0.4);
+      --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.15); }
+
+    /* ===== BODY ===== */
+    html, body {
+      height: 100%;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      overflow: hidden;
+    }
+
+    /* ===== CANVAS ===== */
+    #game-canvas {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 0; image-rendering: pixelated;
+      display: block;
+    }
+
+    /* ===== OVERLAY ===== */
+    #game-overlay {
+      position: fixed; top: 0; left: 0;
+      width: 100vw; height: 100vh;
+      z-index: 10; display: none;
+      justify-content: center; align-items: center;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+    }
+    #game-overlay.active { display: flex; }
+    .game-panel {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      max-width: 620px; max-height: 80vh;
+      overflow-y: auto; padding: 24px;
+      box-shadow: var(--shadow);
+      color: var(--text-primary);
+    }
+    .game-close-btn {
+      position: absolute; top: 16px; right: 16px;
+      padding: 8px 16px; border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.1); color: var(--text-secondary);
+      border: none; cursor: pointer; font-size: 13px;
+      display: flex; align-items: center; gap: 6px;
+      transition: var(--transition);
+    }
+    .game-close-btn:hover { background: rgba(255,255,255,0.2); color: var(--text-primary); }
+
+    /* ===== EXIT BUTTON ===== */
+    #exit-station-btn {
+      position: fixed; top: 12px; right: 12px;
+      z-index: 100; padding: 6px 14px;
+      font-size: 12px; border-radius: var(--radius-sm);
+      background: var(--accent-soft); color: var(--accent);
+      border: 1px solid var(--accent); cursor: pointer;
+      transition: var(--transition);
+    }
+    #exit-station-btn:hover { background: var(--accent); color: #fff; }
+
+    /* ===== MESSAGE ===== */
+    .station-msg {
+      position: fixed; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--bg-card);
+      color: var(--text-secondary);
+      padding: 24px 40px;
+      border-radius: var(--radius-lg);
+      text-align: center;
+      z-index: 200;
+      border: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== GAME CANVAS ===== -->
+<canvas id="game-canvas"></canvas>
+
+<!-- ===== GAME OVERLAY ===== -->
+<div id="game-overlay">
+  <div class="game-panel" id="game-panel-content"></div>
+  <button class="game-close-btn" onclick="closeGameOverlay()">关闭</button>
+</div>
+
+<!-- ===== EXIT BUTTON ===== -->
+<button id="exit-station-btn" onclick="window.close()">退出驿站</button>
+
+<!-- ===== API BRIDGE ===== -->
+<script src="../api-bridge.js"></script>
+
+<!-- ===== i18n bridge: expose t() to game modules ===== -->
+<script>
+// Minimal i18n for station — delegates to main app's t() if available
+(function() {
+  var GAME_TEXT = {
+    zh: {
+      'game.interact': '交互',
+      'game.pressInteract': '按 空格 ',
+      'game.talk': '对话',
+      'game.check': '查看',
+      'game.tabSwitch': 'Tab切换',
+      'game.animTeleport': '✨ 传送中...',
+      'game.animSeat': '🪑 入座...',
+      'game.animToast': '🍻 举杯共饮！'
+    },
+    en: {
+      'game.interact': 'Interact',
+      'game.pressInteract': 'Press Space ',
+      'game.talk': 'Talk',
+      'game.check': 'Check',
+      'game.tabSwitch': 'Tab switch',
+      'game.animTeleport': '✨ Teleporting...',
+      'game.animSeat': '🪑 Taking seat...',
+      'game.animToast': '🍻 Cheers!'
+    }
+  };
+  var lang = (navigator.language || 'zh').startsWith('zh') ? 'zh' : 'en';
+  window.t = function(key) {
+    return (GAME_TEXT[lang] && GAME_TEXT[lang][key]) || key;
+  };
+})();
+</script>
+
+<!-- ===== GAME LOGIC ===== -->
+<script>
+// ===== 工具函数 =====
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// ===== 全局状态 =====
+var gameModeActive = false;
+var renderTarget = 'game-overlay';
+var __gameInitPromise = null;
+
+// ===== getContentContainer =====
+function getContentContainer() {
+  return document.getElementById('game-panel-content');
+}
+
+// ===== renderProfileToOverlay =====
+function renderProfileToOverlay() {
+  var container = getContentContainer();
+  if (!container) return;
+  CollabApi.me().then(function(user) {
+    if (user && user.name) {
+      var avatarChar = (user.name || '?')[0];
+      container.innerHTML =
+        '<div style="padding:20px;">' +
+          '<div style="display:flex;align-items:center;gap:16px;margin-bottom:16px;">' +
+            '<div style="width:64px;height:64px;border-radius:50%;background:var(--accent);' +
+              'display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:700;">' +
+              avatarChar +
+            '</div>' +
+            '<div>' +
+              '<h2 style="margin:0;font-size:18px;">' + escapeHtml(user.name) + '</h2>' +
+              '<p style="color:var(--text-secondary);margin:4px 0;font-size:13px;">' +
+                escapeHtml(user.email || (user.id || '')) +
+              '</p>' +
+            '</div>' +
+          '</div>' +
+          '<p style="color:var(--text-secondary);font-size:13px;">' +
+            escapeHtml(user.bio || '暂无简介') +
+          '</p>' +
+        '</div>';
+    } else {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">未找到用户信息</div>';
+    }
+  }).catch(function() {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">获取用户信息失败</div>';
+  });
+}
+
+// ===== renderSquareToOverlay =====
+function renderSquareToOverlay() {
+  var container = getContentContainer();
+  if (!container) return;
+  CollabApi.getRequirements().then(function(reqs) {
+    if (!reqs || !reqs.length) {
+      container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">暂无需求</div>';
+      return;
+    }
+    var html = '';
+    for (var i = 0; i < reqs.length; i++) {
+      var r = reqs[i];
+      html += '<div style="background:var(--bg-hover);border-radius:var(--radius-md);padding:16px;margin-bottom:12px;border:1px solid var(--border);">' +
+        '<div style="font-size:15px;font-weight:600;margin-bottom:6px;">' + escapeHtml(r.title) + '</div>' +
+        '<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px;">' +
+          escapeHtml((r.desc || '').slice(0, 150)) + (r.desc && r.desc.length > 150 ? '...' : '') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">' +
+          '<span style="font-size:11px;color:var(--accent);background:var(--accent-soft);padding:2px 8px;border-radius:4px;">' +
+            escapeHtml(r.domain || 'tech') +
+          '</span>' +
+          (r.skills || []).slice(0, 5).map(function(s) {
+            return '<span style="font-size:11px;color:var(--text-muted);background:var(--bg-tertiary);padding:2px 8px;border-radius:4px;">' +
+              escapeHtml(s) + '</span>';
+          }).join('') +
+        '</div>' +
+      '</div>';
+    }
+    container.innerHTML = html;
+  }).catch(function() {
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">获取需求列表失败</div>';
+  });
+}
+
+// ===== 初始化游戏事件监听 =====
+(function initGameBusListeners() {
+  window.addEventListener('game:openDialog', function() {
+    renderTarget = 'game-overlay';
+    var overlay = document.getElementById('game-overlay');
+    var panel = document.getElementById('game-panel-content');
+    if (overlay && panel) {
+      overlay.classList.add('active');
+      panel.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-secondary)">小二哥：客官有何吩咐？<br><small>AI 对话加载中...</small></div>';
+    }
+  });
+
+  window.addEventListener('game:openSquare', function() {
+    renderTarget = 'game-overlay';
+    var overlay = document.getElementById('game-overlay');
+    if (overlay) {
+      overlay.classList.add('active');
+      renderSquareToOverlay();
+    }
+  });
+
+  window.addEventListener('game:openProfile', function() {
+    renderTarget = 'game-overlay';
+    var overlay = document.getElementById('game-overlay');
+    if (overlay) {
+      overlay.classList.add('active');
+      renderProfileToOverlay();
+    }
+  });
+
+  window.addEventListener('game:openMatchCard', function(e) {
+    renderTarget = 'game-overlay';
+    var overlay = document.getElementById('game-overlay');
+    var panel = document.getElementById('game-panel-content');
+    if (overlay && panel) {
+      overlay.classList.add('active');
+      var detail = e.detail || {};
+      var user = detail.matchedUser || {};
+      var pct = user.matchPct || 0;
+      var cls = pct >= 80 ? 'high' : pct >= 60 ? 'mid' : 'low';
+      panel.innerHTML =
+        '<div style="padding:20px;">' +
+          '<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">' +
+            '<div style="width:48px;height:48px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:20px;">🗡️</div>' +
+            '<div>' +
+              '<div style="font-size:16px;font-weight:600;color:var(--text-primary);">' + (user.name || '侠客') + '</div>' +
+              '<div style="font-size:12px;color:var(--text-muted);">' + (user.position || '江湖侠士') + '</div>' +
+            '</div>' +
+            '<div style="margin-left:auto;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;' +
+              'background:' + (cls === 'high' ? 'rgba(52,211,153,0.15);color:#34d399' : cls === 'mid' ? 'rgba(251,191,36,0.15);color:#fbbf24' : 'rgba(139,123,247,0.15);color:var(--accent)') + ';">' +
+              pct + '% 匹配' +
+            '</div>' +
+          '</div>' +
+          (user.reqTitle ? '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">正在寻找：<span style="color:var(--accent);">' + user.reqTitle + '</span></div>' : '') +
+          '<div style="display:flex;gap:8px;">' +
+            '<button class="btn btn-primary btn-sm" onclick="inviteHeroUser(\'' + (user.id || '') + '\',\'' + (user.reqId || '') + '\')"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 发送邀请</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="closeGameOverlay()">跳过</button>' +
+          '</div>' +
+        '</div>';
+      if (typeof lucide !== 'undefined') lucide.createIcons();
+    }
+  });
+
+  window.addEventListener('game:resume', function() {
+    document.getElementById('game-overlay').classList.remove('active');
+    document.getElementById('game-panel-content').innerHTML = '';
+    renderTarget = 'app';
+    if (typeof resume === 'function') resume();
+  });
+
+  window.addEventListener('game:overlayClosed', function() {
+    if (typeof resume === 'function') resume();
+  });
+
+  window.addEventListener('game:matchSuccess', function(e) {
+    var detail = e.detail || {};
+    var heroId = detail.heroId;
+    if (typeof startMatchAnimation === 'function' && heroId) {
+      startMatchAnimation('hero_' + heroId);
+    }
+  });
+
+  window.addEventListener('game:matchAnimationDone', function(e) {
+    var detail = e.detail || {};
+    var user = detail.matchedUser || {};
+    // 跳转到群组页面
+    if (user.reqId) {
+      window.open('../index.html#groups', '_blank');
+    }
+  });
+})();
+
+// ===== closeGameOverlay =====
+function closeGameOverlay() {
+  document.getElementById('game-overlay').classList.remove('active');
+  document.getElementById('game-panel-content').innerHTML = '';
+  renderTarget = 'app';
+  window.dispatchEvent(new CustomEvent('game:overlayClosed'));
+}
+
+// ===== 侠客邀请 =====
+function inviteHeroUser(userId, reqId) {
+  if (!userId || !reqId) {
+    closeGameOverlay();
+    return;
+  }
+  CollabApi.createGroup(reqId, userId).then(function(group) {
+    closeGameOverlay();
+    if (typeof sfxMatchSuccess === 'function') sfxMatchSuccess();
+    // 触发匹配成功动画（F8）
+    window.dispatchEvent(new CustomEvent('game:matchSuccess', { detail: { userId: userId, reqId: reqId, group: group } }));
+  }).catch(function(err) {
+    closeGameOverlay();
+    console.error('[Station] 邀请失败:', err);
+  });
+}
+
+// ===== 动态加载游戏脚本 =====
+function loadGameScripts() {
+  var scripts = [
+    '../scripts/game/sprites.js',
+    '../scripts/game/scene.js',
+    '../scripts/game/player.js',
+    '../scripts/game/npc.js',
+    '../scripts/game/audio.js',
+    '../scripts/game/engine.js'
+  ];
+  var index = 0;
+
+  return new Promise(function(resolve, reject) {
+    function loadNext() {
+      if (index >= scripts.length) {
+        resolve();
+        return;
+      }
+      var script = document.createElement('script');
+      script.src = scripts[index];
+      script.async = false;
+      script.onload = function() {
+        index++;
+        loadNext();
+      };
+      script.onerror = function() {
+        reject(new Error('Failed to load: ' + scripts[index]));
+      };
+      document.head.appendChild(script);
+    }
+    loadNext();
+  });
+}
+
+// ===== enterGameMode =====
+function enterGameMode() {
+  gameModeActive = true;
+  document.getElementById('game-canvas').style.display = 'block';
+
+  if (!__gameInitPromise) {
+    __gameInitPromise = loadGameScripts().then(function() {
+      initGame('game-canvas');
+    }).catch(function(err) {
+      console.error('[Station] 游戏初始化失败:', err);
+      document.getElementById('game-canvas').style.display = 'none';
+      document.body.innerHTML +=
+        '<div class="station-msg">' +
+          '游戏加载失败: ' + (err.message || err) + '<br>' +
+          '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页</a>' +
+        '</div>';
+    });
+  } else {
+    __gameInitPromise.then(function() {
+      if (typeof gameLoop !== 'undefined') {
+        resumeGameLoop();
+      }
+    });
+  }
+}
+
+// ===== 检查登录态并自动启动 =====
+function checkLoginAndStart() {
+  // 通过 api-bridge 检查是否有 token（同域 Cookie/Storage 共享）
+  var token = CollabApi && CollabApi.getToken ? CollabApi.getToken() : localStorage.getItem('collabmatch_token');
+  if (!token) {
+    document.getElementById('game-canvas').style.display = 'none';
+    document.body.innerHTML +=
+      '<div class="station-msg">' +
+        '请先在主应用中登录后再进入驿站<br>' +
+        '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页登录</a>' +
+      '</div>';
+    return;
+  }
+  enterGameMode();
+}
+
+// ===== 自动启动 =====
+window.onload = function() {
+  checkLoginAndStart();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "builds": [
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "privacy-policy.html", "use": "@vercel/static" },
+    { "src": "terms-of-service.html", "use": "@vercel/static" },
+    { "src": "privacy-policy-zh.html", "use": "@vercel/static" },
+    { "src": "user-agreement-zh.html", "use": "@vercel/static" },
+    { "src": "scripts/game/*.js", "use": "@vercel/static" },
+    { "src": "docs/**/*.md", "use": "@vercel/static" }
+  ],
+  "routes": [
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}
