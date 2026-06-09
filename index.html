@@ -4608,6 +4608,7 @@ function switchLoginTab(tab) {
   const phoneTab = document.getElementById('login-tab-phone');
   const emailForm = document.getElementById('login-email-form');
   const phoneForm = document.getElementById('login-phone-form');
+  document.getElementById('login-error').textContent = '';
   if (tab === 'email') {
     emailTab.style.background = 'var(--accent-soft)'; emailTab.style.color = '#fff';
     phoneTab.style.background = 'transparent'; phoneTab.style.color = 'var(--text-muted)';
