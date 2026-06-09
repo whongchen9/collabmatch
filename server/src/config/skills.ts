@@ -17,7 +17,7 @@ export interface SkillConfig {
 export const SKILLS: Record<string, SkillConfig> = {
   generate_prd: {
     id: 'generate_prd',
-    icon: '📋',
+    icon: 'list',
     name: '生成需求文档',
     desktop: '将用户的描述整理为结构化需求文档',
     instruct:
@@ -31,7 +31,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   diagnose: {
     id: 'diagnose',
-    icon: '🎯',
+    icon: 'target',
     name: '诊断需求',
     desktop: '从市场/技术/资源三维度分析可行性',
     instruct:
@@ -45,7 +45,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   optimize: {
     id: 'optimize',
-    icon: '✨',
+    icon: 'sparkle',
     name: '优化描述',
     desktop: '让需求描述更吸引协作者',
     instruct:
@@ -73,7 +73,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   invite: {
     id: 'invite',
-    icon: '📨',
+    icon: 'send',
     name: '生成邀请文案',
     desktop: '为匹配到的协作者生成个性化邀请',
     instruct:
@@ -87,7 +87,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   summary: {
     id: 'summary',
-    icon: '📊',
+    icon: 'chart',
     name: '协作周报',
     desktop: '自动总结群组近期讨论内容',
     instruct:
@@ -115,7 +115,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   swot: {
     id: 'swot',
-    icon: '🔍',
+    icon: 'search',
     name: 'SWOT 分析',
     desktop: '竞品 SWOT 分析矩阵',
     instruct:
@@ -129,7 +129,7 @@ export const SKILLS: Record<string, SkillConfig> = {
   },
   roadmap: {
     id: 'roadmap',
-    icon: '🗺️',
+    icon: 'map',
     name: '产品路线图',
     desktop: '生成分阶段产品路线图',
     instruct:
@@ -161,16 +161,3 @@ export const DEFAULT_INSTALLED_SKILL_IDS = [
   'summary',
 ];
 
-export function listMarketSkills(query?: string): SkillConfig[] {
-  let list = Object.values(SKILLS).filter((s) => s.isInstallable);
-  const q = query?.trim().toLowerCase();
-  if (q) {
-    list = list.filter(
-      (s) =>
-        s.name.toLowerCase().includes(q) ||
-        s.id.toLowerCase().includes(q) ||
-        (s.tags || []).some((t) => t.toLowerCase().includes(q)),
-    );
-  }
-  return list;
-}

@@ -22,8 +22,8 @@ function buildUserMessageText(text: string, attachmentNames: string[]): string {
   if (trimmed) return trimmed;
   if (attachmentNames.length) {
     return attachmentNames.length === 1
-      ? `📎 ${attachmentNames[0]}`
-      : `📎 发送了 ${attachmentNames.length} 个文件：${attachmentNames.join('、')}`;
+      ? `${attachmentNames[0]}`
+      : `发送了 ${attachmentNames.length} 个文件：${attachmentNames.join('、')}`;
   }
   return '';
 }

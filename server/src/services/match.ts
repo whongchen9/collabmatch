@@ -3,10 +3,10 @@ import type { IUser } from '../models/User.js';
 import type { IRequirement } from '../models/Requirement.js';
 
 function skillOverlap(a: string[], b: string[]): number {
+  const bl = new Set(b.map(s => s.toLowerCase()));
   let count = 0;
   for (const s of a) {
-    const sl = s.toLowerCase();
-    if (b.some((k) => sl.includes(k.toLowerCase()) || k.toLowerCase().includes(sl))) count++;
+    if (bl.has(s.toLowerCase())) count++;
   }
   return count;
 }
@@ -22,9 +22,10 @@ export function scoreUsersForRequirement(req: IRequirement, users: IUser[]) {
       const domainBonus = Math.min(domainFit * 5, 15);
       const overlap = skillOverlap(u.skills, keywords);
       const skillScore = Math.min((overlap / Math.max(keywords.length, 1)) * 50, 50);
-      const collabScore = (u.collabScore - 4) * 25;
+      // 有协作评分时才加分，无评分（新用户）不加分也不减分
+      const collabBonus = u.collabScore != null ? Math.min((u.collabScore - 3) * 10, 20) : 0;
       const base = 25;
-      const matchPct = Math.round(Math.min(skillScore + collabScore + domainBonus + base, 98));
+      const matchPct = Math.round(Math.min(skillScore + collabBonus + domainBonus + base, 98));
       return { user: u, matchPct };
     })
     .sort((a, b) => b.matchPct - a.matchPct);

@@ -38,7 +38,7 @@ const groupMessageSchema = new Schema<IGroupMessage>(
 const groupSchema = new Schema<IGroup>(
   {
     name: { type: String, required: true },
-    emoji: { type: String, default: '🚀' },
+    emoji: { type: String, default: 'rocket' },
     avatarColor: { type: String, default: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
     desc: { type: String, default: '' },
     reqId: { type: Schema.Types.ObjectId, ref: 'Requirement', required: true },

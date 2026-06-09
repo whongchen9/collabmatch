@@ -43,6 +43,7 @@ export function toUserJson(
     name: u.name,
     avatar: u.avatar,
     avatarColor: u.avatarColor,
+    avatarUrl: u.avatarUrl,
     position: u.position,
     bio: u.bio,
     skills: u.skills,

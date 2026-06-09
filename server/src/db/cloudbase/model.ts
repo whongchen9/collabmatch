@@ -156,6 +156,7 @@ class CBQuery implements CloudBaseQuery {
               avatar: val.avatar,
               position: val.position,
               avatarColor: val.avatarColor,
+              avatarUrl: val.avatarUrl,
               skills: val.skills,
               bio: val.bio,
             };

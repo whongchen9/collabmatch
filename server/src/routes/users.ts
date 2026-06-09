@@ -4,8 +4,6 @@ import { User } from '../models/User.js';
 import { toUserJson } from '../utils/serialize.js';
 import { requireAuth, type AuthRequest } from '../middleware/auth.js';
 import { DEFAULT_INSTALLED_SKILL_IDS } from '../config/skills.js';
-import { validateSkillIds } from '../services/skillResolve.js';
-import { incrementSkillInstalls } from '../services/skillMarket.js';
 import { toPortfolioJson } from '../utils/portfolio.js';
 import { Application } from '../models/Application.js';
 import { Requirement } from '../models/Requirement.js';
@@ -43,16 +41,8 @@ router.post('/me/skills', requireAuth, async (req: AuthRequest, res, next) => {
       res.status(400).json({ error: 'skillIds 必须为数组' });
       return;
     }
-    const invalid = await validateSkillIds(skillIds, req.user!._id);
-    if (invalid) {
-      res.status(400).json({ error: `无效技能 ID: ${invalid}` });
-      return;
-    }
-    const prev = new Set(req.user!.skillIds || []);
-    const added = skillIds.filter((id) => !prev.has(id));
     req.user!.skillIds = skillIds;
     await req.user!.save();
-    await incrementSkillInstalls(added);
     res.json({ skillIds: req.user!.skillIds });
   } catch (e) {
     next(e);
@@ -220,21 +210,26 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-const VALID_DOMAINS = ['tech', 'design', 'content', 'education', 'business', 'food', 'service'];
-const VALID_WEEKLY_HOURS = ['1-5', '5-10', '10-20', '20+', '灵活'];
-const VALID_COLLAB_INTENTS = ['find_project', 'find_partner', 'open_to_work', 'exploring'];
+const VALID_DOMAINS = ['tech', 'design', 'content', 'education', 'business', 'campus'];
+const VALID_WEEKLY_HOURS = ['≤5h', '5-10h', '10-20h', '20h+'];
+const VALID_COLLAB_INTENTS = ['联创', '有偿副业', '开源贡献'];
 
 router.put('/me', requireAuth, validate({
   name: { type: 'string', maxLength: 50 },
   bio: { type: 'string', maxLength: 2000 },
 }), async (req: AuthRequest, res, next) => {
   try {
-    const { name, avatar, avatarColor, position, bio, domain, weeklyHours, collabIntent, interestedStages } = req.body;
+    const { name, avatar, avatarColor, avatarUrl, position, bio, domain, weeklyHours, collabIntent, interestedStages } = req.body;
     if (name !== undefined) req.user!.name = name;
     if (avatar !== undefined) req.user!.avatar = avatar;
     if (avatarColor !== undefined) {
       if (!avatarColor || /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(avatarColor) || /^linear-gradient\(/.test(avatarColor)) {
         req.user!.avatarColor = avatarColor;
+      }
+    }
+    if (avatarUrl !== undefined) {
+      if (!avatarUrl || /^https?:\/\//.test(avatarUrl)) {
+        req.user!.avatarUrl = avatarUrl;
       }
     }
     if (position !== undefined) req.user!.position = position;

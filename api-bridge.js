@@ -87,9 +87,12 @@
         throw new Error(text || res.statusText);
       }
       if (!res.ok) {
-        if (res.status === 401 && auth !== false) {
+        if (res.status === 401 && auth !== false && auth !== 'silent') {
           handleUnauthorized(auth);
           throw new Error(data.error || '登录已过期，请重新登录');
+        }
+        if (res.status === 401 && auth === 'silent') {
+          throw new Error(data.error || '登录已过期');
         }
         throw new Error(data.error || `请求失败 ${res.status}`);
       }
@@ -124,7 +127,8 @@
       resources: u.resources || [],
       skills: u.skills || [],
       avatar: u.avatar || (u.name && u.name[0]) || '?',
-      avatarColor: u.avatarColor || 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+      avatarColor: u.avatarColor || 'linear-gradient(135deg, #8b7bf7, #6c5ce7)',
+      avatarUrl: u.avatarUrl || '',
     };
   }
 
@@ -171,6 +175,16 @@
     const data = await api('/auth/login', { method: 'POST', body: { phone, code }, auth: false });
     setToken(data.token);
     return normalizeUser(data.user);
+  }
+
+  async function emailLogin(email, password) {
+    const data = await api('/auth/email-login', { method: 'POST', body: { email, password }, auth: false });
+    return { token: data.token, user: normalizeUser(data.user) };
+  }
+
+  async function register(email, password, name) {
+    const data = await api('/auth/register', { method: 'POST', body: { email, password, name }, auth: false });
+    return { token: data.token, user: normalizeUser(data.user) };
   }
 
   let uploadLimitsCache = null;
@@ -275,10 +289,11 @@
     return data.conversation;
   }
 
-  async function streamAiChat(conversationId, message, onChunk, fileIds, domain) {
+  async function streamAiChat(conversationId, message, onChunk, fileIds, domain, llmConfig) {
     const body = { conversationId, message };
     if (fileIds?.length) body.fileIds = fileIds;
     if (domain) body.domain = domain;
+    if (llmConfig) body.llmConfig = llmConfig;
     const res = await fetch(`${API_BASE}/ai/chat`, {
       method: 'POST',
       headers: {
@@ -351,6 +366,7 @@
     }));
   }
 
+
   async function publishRequirement(id, visibility) {
     const data = await api(`/requirements/${id}/publish`, { method: 'PUT', body: { visibility } });
     return data.requirement;
@@ -379,58 +395,6 @@
   async function saveUserSkills(skills) {
     const data = await api('/users/me/skills', { method: 'PUT', body: { skills } });
     return normalizeUser(data.user);
-  }
-
-  async function fetchSkillMarket(q) {
-    const path = q ? `/skills/market?q=${encodeURIComponent(q)}` : '/skills/market';
-    const data = await api(path, { auth: false });
-    const list = Array.isArray(data) ? data : (data.items || data.skills || []);
-    return list;
-  }
-
-  async function fetchInstalledSkillIds() {
-    const data = await api('/users/me/skills');
-    return data.skillIds || [];
-  }
-
-  async function saveInstalledSkillIds(skillIds) {
-    const data = await api('/users/me/skills', { method: 'POST', body: { skillIds } });
-    return data.skillIds || [];
-  }
-
-  async function fetchWorkflows() {
-    const data = await api('/workflows');
-    return data.workflows || [];
-  }
-
-  async function fetchUserSkills() {
-    const data = await api('/user-skills');
-    return data.skills || [];
-  }
-
-  async function createUserSkill(body) {
-    const data = await api('/user-skills', { method: 'POST', body });
-    return data;
-  }
-
-  async function deleteUserSkill(skillId) {
-    return api(`/user-skills/${encodeURIComponent(skillId)}`, { method: 'DELETE' });
-  }
-
-  async function createUserWorkflow(body) {
-    const data = await api('/user-workflows', { method: 'POST', body });
-    return data.workflow;
-  }
-
-  async function deleteUserWorkflow(workflowId) {
-    return api(`/user-workflows/${encodeURIComponent(workflowId)}`, { method: 'DELETE' });
-  }
-
-  async function runWorkflow(workflowId, conversationId, context) {
-    return api('/workflows/run', {
-      method: 'POST',
-      body: { workflowId, conversationId, context },
-    });
   }
 
   async function saveUserResources(resources) {
@@ -490,10 +454,6 @@
   async function deleteRequirement(id) {
     await api(`/requirements/${id}`, { method: 'DELETE' });
   }
-  async function fetchSkillDetail(skillId) {
-    const data = await api(`/skills/${skillId}`);
-    return data.skill;
-  }
   async function fetchMyApplications() {
     const data = await api('/users/me/applications');
     return Array.isArray(data) ? data : (data.items || data.applications || []);
@@ -531,7 +491,7 @@
   }
 
   async function pingPresence() {
-    return api('/users/me/presence', { method: 'POST' });
+    return api('/users/me/presence', { method: 'POST', auth: 'silent' }).catch(() => {});
   }
 
   global.escapeHtml = function escapeHtml(str) {
@@ -554,6 +514,8 @@
     fetchAuthConfig,
     sendSmsCode,
     login,
+    emailLogin,
+    register,
     fetchMe,
     fetchUploadConfig,
     uploadFile,
@@ -573,16 +535,6 @@
     applyRequirement,
     saveUserProfile,
     saveUserSkills,
-    fetchSkillMarket,
-    fetchInstalledSkillIds,
-    saveInstalledSkillIds,
-    fetchWorkflows,
-    fetchUserSkills,
-    createUserSkill,
-    deleteUserSkill,
-    createUserWorkflow,
-    deleteUserWorkflow,
-    runWorkflow,
     saveUserResources,
     createGroup,
     sendGroupMessage,
@@ -598,7 +550,6 @@
     aiEnhanceProfile,
     deleteConversation,
     deleteRequirement,
-    fetchSkillDetail,
     resolveFileUrl,
     uploadChatAttachment,
     forwardMessage,

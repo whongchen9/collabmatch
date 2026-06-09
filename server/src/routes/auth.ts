@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { asOne } from '../db/helpers.js';
 import { User } from '../models/User.js';
 import { env, useProductionAuth, hasTencentSms } from '../config/env.js';
@@ -45,6 +46,7 @@ router.get('/config', (_req, res) => {
     authMode: env.authMode,
     smsEnabled: useProductionAuth(),
     devLoginAvailable,
+    emailAuthEnabled: true,
     // SEC-10: 不再通过 API 响应泄露 devAuthCode
   });
 });
@@ -126,6 +128,83 @@ router.post('/login', async (req, res, next) => {
     user.lastSeenAt = new Date();
     await user.save();
 
+    const token = signToken(String(user._id));
+    res.json({ token, user: toUserJson(user, { includePrivatePortfolio: true }) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/register', async (req, res, next) => {
+  try {
+    const { email, password, name } = req.body as { email?: string; password?: string; name?: string };
+    if (!email || !password || !name) {
+      res.status(400).json({ error: '需要 email、password 和 name' });
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      res.status(400).json({ error: '邮箱格式不正确' });
+      return;
+    }
+    if (password.length < 6) {
+      res.status(400).json({ error: '密码长度至少 6 位' });
+      return;
+    }
+    const existing = await User.findOne({ email });
+    if (existing) {
+      res.status(409).json({ error: '该邮箱已注册' });
+      return;
+    }
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = asOne(
+      await User.create({
+        email,
+        passwordHash,
+        name,
+        avatar: name[0] ?? '用',
+        position: '协作者',
+        bio: '',
+        skills: [],
+        domain: 'tech',
+      }),
+    );
+    const token = signToken(String(user._id));
+    res.status(201).json({ token, user: toUserJson(user, { includePrivatePortfolio: true }) });
+  } catch (e) {
+    next(e);
+  }
+});
+
+router.post('/email-login', async (req, res, next) => {
+  try {
+    const { email, password } = req.body as { email?: string; password?: string };
+    if (!email || !password) {
+      res.status(400).json({ error: '需要 email 和 password' });
+      return;
+    }
+    // IP 级限流
+    const clientIp = getClientIp(req);
+    if (!checkRateLimit(`ip:${clientIp}`, IP_RATE_LIMIT_MS)) {
+      res.status(429).json({ error: '操作过于频繁，请稍后再试' });
+      return;
+    }
+    if (!checkRateLimit(`email-login:${email}`)) {
+      res.status(429).json({ error: '登录过于频繁，请60秒后再试' });
+      return;
+    }
+    const user = await User.findOne({ email });
+    if (!user || !user.passwordHash) {
+      res.status(401).json({ error: '邮箱或密码错误' });
+      return;
+    }
+    const match = await bcrypt.compare(password, user.passwordHash);
+    if (!match) {
+      res.status(401).json({ error: '邮箱或密码错误' });
+      return;
+    }
+    user.lastSeenAt = new Date();
+    await user.save();
     const token = signToken(String(user._id));
     res.json({ token, user: toUserJson(user, { includePrivatePortfolio: true }) });
   } catch (e) {

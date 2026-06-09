@@ -23,9 +23,12 @@ export interface IPortfolioItem {
 export interface IUser extends Document {
   _id: Types.ObjectId;
   phone: string;
+  email: string;
+  passwordHash: string;
   name: string;
   avatar: string;
   avatarColor: string;
+  avatarUrl: string;
   position: string;
   bio: string;
   skills: string[];
@@ -50,10 +53,13 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>(
   {
-    phone: { type: String, required: true, unique: true, index: true },
+    phone: { type: String, required: false, unique: true, sparse: true, index: true },
+    email: { type: String, unique: true, sparse: true, index: true },
+    passwordHash: { type: String, default: '' },
     name: { type: String, required: true },
     avatar: { type: String, default: '' },
     avatarColor: { type: String, default: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
+    avatarUrl: { type: String, default: '' },
     position: { type: String, default: '' },
     bio: { type: String, default: '' },
     skills: { type: [String], default: [] },
@@ -61,7 +67,7 @@ const userSchema = new Schema<IUser>(
     apiTokenLastGenerated: { type: Date },
     skillIds: { type: [String], default: [] },
     domain: { type: String, default: 'tech' },
-    collabScore: { type: Number, default: 4.5 },
+    collabScore: { type: Number, default: null },
     projects: { type: Number, default: 0 },
     resources: {
       type: [{ icon: String, name: String, desc: String }],

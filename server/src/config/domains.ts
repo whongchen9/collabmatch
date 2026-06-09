@@ -12,7 +12,7 @@ export interface DomainConfig {
 
 const raw: Record<DomainKey, Omit<DomainConfig, 'key'>> = {
   tech: {
-    name: '💻 技术开发',
+    name: '技术开发',
     icon: '💻',
     color: '#8b5cf6',
     skills: [
@@ -27,7 +27,7 @@ const raw: Record<DomainKey, Omit<DomainConfig, 'key'>> = {
     chatIntro: '描述你的 Side Project 或开源计划，AI 帮你整理需求并匹配合适的工程师',
   },
   design: {
-    name: '🎨 创意设计',
+    name: '创意设计',
     icon: '🎨',
     color: '#f59e0b',
     skills: ['Figma', 'UI设计', 'UX研究', '品牌视觉', '插画', '动画', '3D', 'Framer', '设计系统'],
@@ -39,7 +39,7 @@ const raw: Record<DomainKey, Omit<DomainConfig, 'key'>> = {
     chatIntro: '描述你的创意项目，AI 帮你整理需求并匹配设计师、插画师等创意人才',
   },
   content: {
-    name: '📝 内容创作',
+    name: '内容创作',
     icon: '📝',
     color: '#22c55e',
     skills: ['写作', '视频剪辑', '播客', '自媒体运营', '编辑', '新媒体', '摄影', '内容策划'],
@@ -51,7 +51,7 @@ const raw: Record<DomainKey, Omit<DomainConfig, 'key'>> = {
     chatIntro: '描述你的内容创作方向，AI 帮你整理需求并匹配创作者、编辑、运营伙伴',
   },
   education: {
-    name: '🎓 教育培训',
+    name: '教育培训',
     icon: '🎓',
     color: '#3b82f6',
     skills: ['课程设计', '教学设计', '知识付费', '培训', '教育科技', '教研', '辅导'],
@@ -63,7 +63,7 @@ const raw: Record<DomainKey, Omit<DomainConfig, 'key'>> = {
     chatIntro: '描述你的教育项目或教学需求，AI 帮你整理并匹配教育行业伙伴',
   },
   business: {
-    name: '📈 商业合作',
+    name: '商业合作',
     icon: '📈',
     color: '#ef4444',
     skills: ['市场营销', 'BD', '融资', '数据分析', '运营', '产品管理', 'PRD撰写', '商业模式', '供应链'],

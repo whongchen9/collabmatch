@@ -6,18 +6,20 @@ import { Group } from '../models/Group.js';
 import { Conversation } from '../models/Conversation.js';
 
 const COLORS = {
-  purple: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
-  blue: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-  green: 'linear-gradient(135deg, #22c55e, #16a34a)',
-  orange: 'linear-gradient(135deg, #f97316, #ea580c)',
-  pink: 'linear-gradient(135deg, #ec4899, #be185d)',
-  cyan: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+  purple: 'linear-gradient(135deg, #8b7bf7, #6c5ce7)',
+  blue: 'linear-gradient(135deg, #7c8cf7, #5b6ce7)',
+  green: 'linear-gradient(135deg, #6bcf8e, #4ab87a)',
+  orange: 'linear-gradient(135deg, #c4956a, #a87d5c)',
+  pink: 'linear-gradient(135deg, #b07cc7, #9466b0)',
+  cyan: 'linear-gradient(135deg, #6bb8c9, #5a9fb0)',
 };
 
 export async function seedIfEmpty(): Promise<void> {
   const count = await User.countDocuments();
   if (count > 0) {
     console.log('[seed] skipped, users exist:', count);
+    // 补充已有用户的 email/passwordHash（从手机登录迁移到邮箱登录时需要）
+    await backfillEmailAuth();
     return;
   }
 
@@ -25,6 +27,8 @@ export async function seedIfEmpty(): Promise<void> {
 
   const main = await User.create({
     phone: '13800000000',
+    email: 'yunfan@collabmatch.app',
+    passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
     name: '李云帆',
     avatar: '李',
     avatarColor: COLORS.purple,
@@ -36,9 +40,9 @@ export async function seedIfEmpty(): Promise<void> {
     collabScore: 4.9,
     projects: 6,
     resources: [
-      { icon: '🖥️', name: '高性能服务器', desc: '4核8G 云服务器，可共享算力' },
-      { icon: '🗄️', name: '数据集资源', desc: '多领域脱敏数据集，可用于训练' },
-      { icon: '💰', name: '天使轮资金', desc: '可为优质项目提供种子资金支持' },
+      { icon: 'server', name: '高性能服务器', desc: '4核8G 云服务器，可共享算力' },
+      { icon: 'database', name: '数据集资源', desc: '多领域脱敏数据集，可用于训练' },
+      { icon: 'fund', name: '天使轮资金', desc: '可为优质项目提供种子资金支持' },
     ],
   });
 
@@ -46,6 +50,8 @@ export async function seedIfEmpty(): Promise<void> {
     await User.insertMany([
     {
       phone: '13800000001',
+      email: 'xiaowei@collabmatch.app',
+      passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
       name: '陈晓薇',
       avatar: '陈',
       avatarColor: COLORS.pink,
@@ -58,6 +64,8 @@ export async function seedIfEmpty(): Promise<void> {
     },
     {
       phone: '13800000002',
+      email: 'zhanglei@collabmatch.app',
+      passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
       name: '张磊',
       avatar: '张',
       avatarColor: COLORS.blue,
@@ -70,6 +78,8 @@ export async function seedIfEmpty(): Promise<void> {
     },
     {
       phone: '13800000003',
+      email: 'siyuan@collabmatch.app',
+      passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
       name: '王思远',
       avatar: '王',
       avatarColor: COLORS.green,
@@ -82,6 +92,8 @@ export async function seedIfEmpty(): Promise<void> {
     },
     {
       phone: '13800000004',
+      email: 'liufang@collabmatch.app',
+      passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
       name: '刘芳',
       avatar: '刘',
       avatarColor: COLORS.orange,
@@ -94,6 +106,8 @@ export async function seedIfEmpty(): Promise<void> {
     },
     {
       phone: '13800000005',
+      email: 'zihao@collabmatch.app',
+      passwordHash: '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.',
       name: '赵子豪',
       avatar: '赵',
       avatarColor: COLORS.cyan,
@@ -216,7 +230,7 @@ export async function seedIfEmpty(): Promise<void> {
     },
     {
       name: '低代码表单组',
-      emoji: '🛠️',
+      emoji: 'wrench',
       avatarColor: COLORS.blue,
       desc: '构建下一代开源低代码表单引擎',
       reqId: r3._id,
@@ -240,11 +254,40 @@ export async function seedIfEmpty(): Promise<void> {
       {
         role: 'ai',
         content:
-          '你好！我是 CollabAI 助手 👋\n\n我可以帮你：\n• **整理项目需求**\n• **智能推荐协作者**\n• **发布到需求广场**\n\n试试描述你的项目或协作需求吧！',
+          '嗨！我是 CollAI\n\n告诉我你的项目想法，我来帮你：\n• 整理成结构化需求\n• 匹配合适的协作者\n• 发布到需求广场\n\n直接说你想做什么就行！',
         time: new Date(),
       },
     ],
   });
 
-  console.log('[seed] done. Demo login: phone 13800000000, code from DEV_AUTH_CODE');
+  console.log('[seed] done. Demo login: email yunfan@collabmatch.app, password demo123456');
+}
+
+/** 为已有用户补充 email 和 passwordHash（手机登录迁移到邮箱登录） */
+const DEMO_EMAIL_MAP: Record<string, { email: string; name: string }> = {
+  '13800000000': { email: 'yunfan@collabmatch.app', name: '李云帆' },
+  '13800000001': { email: 'xiaowei@collabmatch.app', name: '陈晓薇' },
+  '13800000002': { email: 'zhanglei@collabmatch.app', name: '张磊' },
+  '13800000003': { email: 'siyuan@collabmatch.app', name: '王思远' },
+  '13800000004': { email: 'liufang@collabmatch.app', name: '刘芳' },
+  '13800000005': { email: 'zihao@collabmatch.app', name: '赵子豪' },
+};
+
+async function backfillEmailAuth(): Promise<void> {
+  const users = await User.find({ email: { $exists: false } });
+  if (users.length === 0) return;
+  const passwordHash = '$2b$10$Ph/Vm3Q47wObvi5s9sbbiOXoViHnfdGL2nJmJefMu703bXappMmG.'; // demo123456
+  let updated = 0;
+  for (const u of users) {
+    const mapping = DEMO_EMAIL_MAP[u.phone];
+    if (mapping) {
+      u.email = mapping.email;
+      u.passwordHash = passwordHash;
+      await u.save();
+      updated++;
+    }
+  }
+  if (updated > 0) {
+    console.log(`[seed] backfilled email/passwordHash for ${updated} users`);
+  }
 }

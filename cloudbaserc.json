@@ -1,0 +1,17 @@
+{
+  "envId": "cloudbase-d6g8yog0ub3e56efe",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    {
+      "name": "collabmatch-api",
+      "timeout": 15,
+      "runtime": "Nodejs18.15",
+      "envVariables": {
+        "DOUBAO_API_KEY": "ark-4f018bb4-044a-487f-975a-3db7a622b28c-38747",
+        "DOUBAO_MODEL": "ep-20260502114405-xrk59",
+        "JWT_SECRET": "c7f3a8e2b1d4f6a9c3e5b7d9f1a2c4e6a8b0d2f4a6c8e0b3d5f7a9c1e3b5d7f9",
+        "DEV_AUTH_CODE": "xsx7ii"
+      }
+    }
+  ]
+}

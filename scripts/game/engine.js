@@ -76,15 +76,23 @@ function gt(key, fallback) {
 }
 
 // ===== GameBus 事件总线 =====
+var _gameBusWrappers = new Map();
 var GameBus = {
   emit: function(eventName, detail) {
     window.dispatchEvent(new CustomEvent(eventName, { detail: detail }));
   },
   on: function(eventName, callback) {
-    window.addEventListener(eventName, function(e) { callback(e.detail); });
+    var wrapper = function(e) { callback(e.detail); };
+    _gameBusWrappers.set(eventName + ':' + callback, wrapper);
+    window.addEventListener(eventName, wrapper);
   },
   off: function(eventName, callback) {
-    window.removeEventListener(eventName, callback);
+    var key = eventName + ':' + callback;
+    var wrapper = _gameBusWrappers.get(key);
+    if (wrapper) {
+      window.removeEventListener(eventName, wrapper);
+      _gameBusWrappers.delete(key);
+    }
   }
 };
 
@@ -570,9 +578,15 @@ function checkAndSpawnHeroes() {
  * @param {object} matchedUser - 匹配用户信息 { id, name, position, matchPct }
  */
 function spawnHeroNpc(heroId, matchedUser) {
+  // 同步设置占位标记，防止异步竞态重复生成
+  heroNpcMap[heroId] = true;
+
   // 在场景中找一个可行走的随机位置
   var spawnPos = findRandomWalkablePos();
-  if (!spawnPos) return;
+  if (!spawnPos) {
+    delete heroNpcMap[heroId];
+    return;
+  }
 
   createNPCSprite('hero').then(function(sprite) {
     var heroNpc = new NPC({
@@ -589,6 +603,8 @@ function spawnHeroNpc(heroId, matchedUser) {
     });
     npcs.push(heroNpc);
     heroNpcMap[heroId] = heroNpc;
+  }).catch(function() {
+    delete heroNpcMap[heroId];
   });
 }
 

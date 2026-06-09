@@ -20,7 +20,7 @@ const userSkillSchema = new Schema<IUserSkill>(
   {
     userId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
     skillId: { type: String, required: true },
-    icon: { type: String, default: '✨' },
+    icon: { type: String, default: 'sparkle' },
     name: { type: String, required: true },
     desktop: { type: String, default: '' },
     instruct: { type: String, required: true },

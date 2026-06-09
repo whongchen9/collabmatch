@@ -181,7 +181,10 @@ router.put('/:id/applications/:appId', requireAuth, async (req: AuthRequest, res
       if (!reqDoc.invitees.some((id) => String(id) === String(aid))) {
         reqDoc.invitees.push(aid);
       }
-      if (reqDoc.matchProgress < 80) reqDoc.matchProgress = 80;
+      if (reqDoc.matchProgress < 80) {
+        // 基于邀请人数渐进计算：每增加1人+20，上限90
+        reqDoc.matchProgress = Math.min(20 + reqDoc.invitees.length * 20, 90);
+      }
       await reqDoc.save();
     }
 
@@ -264,7 +267,10 @@ router.put('/:id/publish', requireAuth, async (req: AuthRequest, res, next) => {
     const { visibility } = req.body as { visibility?: string };
     if (visibility) reqDoc.visibility = visibility as ReqVisibility;
     reqDoc.status = 'open';
-    if (reqDoc.matchProgress < 30) reqDoc.matchProgress = 45;
+    if (reqDoc.matchProgress < 30) {
+      // 发布时基础进度：有技能匹配则30，无则15
+      reqDoc.matchProgress = reqDoc.skills.length > 0 ? 30 : 15;
+    }
     await reqDoc.save();
     const list = await populateReqAuthor([reqDoc]);
     res.json({ requirement: list[0] });

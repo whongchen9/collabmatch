@@ -78,7 +78,7 @@ export async function processLlmChatResult(
     return {
       content:
         stripped ||
-        `已为你在「${getDomain(domainKey).name}」领域生成结构化需求文档 ✨\n\n点击下方卡片查看详情。`,
+        `已为你在「${getDomain(domainKey).name}」领域生成结构化需求文档\n\n点击下方卡片查看详情。`,
       reqCard: req,
       renameTitle: req.title.slice(0, 20),
     };
@@ -89,7 +89,7 @@ export async function processLlmChatResult(
     return {
       content:
         stripped ||
-        `已为你在「${getDomain(domainKey).name}」领域生成结构化需求文档 ✨\n\n点击下方卡片查看详情。`,
+        `已为你在「${getDomain(domainKey).name}」领域生成结构化需求文档\n\n点击下方卡片查看详情。`,
       reqCard: heuristic,
       renameTitle: heuristic.title.slice(0, 20),
     };

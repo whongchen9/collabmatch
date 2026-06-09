@@ -2,7 +2,7 @@ import type { Types } from 'mongoose';
 import { SKILLS, type SkillConfig } from '../config/skills.js';
 import { UserSkill } from '../models/UserSkill.js';
 
-export function userSkillToConfig(doc: {
+function userSkillToConfig(doc: {
   skillId: string;
   icon: string;
   name: string;
@@ -35,18 +35,4 @@ export async function resolveSkill(
   if (!userId) return null;
   const doc = await UserSkill.findOne({ userId, skillId });
   return doc ? userSkillToConfig(doc) : null;
-}
-
-export async function listUserSkills(userId: Types.ObjectId): Promise<SkillConfig[]> {
-  const docs = await UserSkill.find({ userId }).sort({ createdAt: -1 });
-  return docs.map((d) => userSkillToConfig(d));
-}
-
-export async function validateSkillIds(skillIds: string[], userId: Types.ObjectId): Promise<string | null> {
-  for (const id of skillIds) {
-    if (SKILLS[id]) continue;
-    const custom = await UserSkill.findOne({ userId, skillId: id });
-    if (!custom) return id;
-  }
-  return null;
 }

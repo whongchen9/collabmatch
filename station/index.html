@@ -297,20 +297,27 @@ function renderSquareToOverlay() {
           '<div style="display:flex;align-items:center;gap:14px;margin-bottom:18px;">' +
             '<div style="width:48px;height:48px;border-radius:50%;background:var(--accent-soft);display:flex;align-items:center;justify-content:center;font-size:20px;">🗡️</div>' +
             '<div>' +
-              '<div style="font-size:16px;font-weight:600;color:var(--text-primary);">' + (user.name || '侠客') + '</div>' +
-              '<div style="font-size:12px;color:var(--text-muted);">' + (user.position || '江湖侠士') + '</div>' +
+              '<div style="font-size:16px;font-weight:600;color:var(--text-primary);">' + escapeHtml(user.name || '侠客') + '</div>' +
+              '<div style="font-size:12px;color:var(--text-muted);">' + escapeHtml(user.position || '江湖侠士') + '</div>' +
             '</div>' +
             '<div style="margin-left:auto;padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;' +
               'background:' + (cls === 'high' ? 'rgba(52,211,153,0.15);color:#34d399' : cls === 'mid' ? 'rgba(251,191,36,0.15);color:#fbbf24' : 'rgba(139,123,247,0.15);color:var(--accent)') + ';">' +
               pct + '% 匹配' +
             '</div>' +
           '</div>' +
-          (user.reqTitle ? '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">正在寻找：<span style="color:var(--accent);">' + user.reqTitle + '</span></div>' : '') +
+          (user.reqTitle ? '<div style="font-size:13px;color:var(--text-secondary);margin-bottom:16px;">正在寻找：<span style="color:var(--accent);">' + escapeHtml(user.reqTitle) + '</span></div>' : '') +
           '<div style="display:flex;gap:8px;">' +
-            '<button class="btn btn-primary btn-sm" onclick="inviteHeroUser(\'' + (user.id || '') + '\',\'' + (user.reqId || '') + '\')"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 发送邀请</button>' +
+            '<button class="btn btn-primary btn-sm" data-hero-id="' + escapeHtml(user.id || '') + '" data-req-id="' + escapeHtml(user.reqId || '') + '" id="hero-invite-btn"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 发送邀请</button>' +
             '<button class="btn btn-ghost btn-sm" onclick="closeGameOverlay()">跳过</button>' +
           '</div>' +
         '</div>';
+      // 使用事件委托避免 onclick 注入
+      var inviteBtn = document.getElementById('hero-invite-btn');
+      if (inviteBtn) {
+        inviteBtn.addEventListener('click', function() {
+          inviteHeroUser(this.getAttribute('data-hero-id'), this.getAttribute('data-req-id'));
+        });
+      }
       if (typeof lucide !== 'undefined') lucide.createIcons();
     }
   });
@@ -362,7 +369,7 @@ function inviteHeroUser(userId, reqId) {
     closeGameOverlay();
     if (typeof sfxMatchSuccess === 'function') sfxMatchSuccess();
     // 触发匹配成功动画（F8）
-    window.dispatchEvent(new CustomEvent('game:matchSuccess', { detail: { userId: userId, reqId: reqId, group: group } }));
+    window.dispatchEvent(new CustomEvent('game:matchSuccess', { detail: { heroId: userId, reqId: reqId, group: group } }));
   }).catch(function(err) {
     closeGameOverlay();
     console.error('[Station] 邀请失败:', err);
@@ -414,11 +421,11 @@ function enterGameMode() {
     }).catch(function(err) {
       console.error('[Station] 游戏初始化失败:', err);
       document.getElementById('game-canvas').style.display = 'none';
-      document.body.innerHTML +=
-        '<div class="station-msg">' +
-          '游戏加载失败: ' + (err.message || err) + '<br>' +
-          '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页</a>' +
-        '</div>';
+      var msgDiv = document.createElement('div');
+      msgDiv.className = 'station-msg';
+      msgDiv.innerHTML = '游戏加载失败: ' + escapeHtml(err.message || String(err)) + '<br>' +
+        '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页</a>';
+      document.body.appendChild(msgDiv);
     });
   } else {
     __gameInitPromise.then(function() {
@@ -435,11 +442,11 @@ function checkLoginAndStart() {
   var token = CollabApi && CollabApi.getToken ? CollabApi.getToken() : localStorage.getItem('collabmatch_token');
   if (!token) {
     document.getElementById('game-canvas').style.display = 'none';
-    document.body.innerHTML +=
-      '<div class="station-msg">' +
-        '请先在主应用中登录后再进入驿站<br>' +
-        '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页登录</a>' +
-      '</div>';
+    var msgDiv = document.createElement('div');
+    msgDiv.className = 'station-msg';
+    msgDiv.innerHTML = '请先在主应用中登录后再进入驿站<br>' +
+      '<a href="../index.html" style="margin-top:12px;display:inline-block;padding:6px 16px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;font-size:13px;text-decoration:none;">返回主页登录</a>';
+    document.body.appendChild(msgDiv);
     return;
   }
   enterGameMode();

@@ -111,7 +111,7 @@ router.post('/', requireAuth, validate({
       group = asOne(
         await Group.create({
         name: `${requirement.title.slice(0, 12)}团队`,
-        emoji: '🚀',
+        emoji: 'rocket',
         desc: requirement.desc || requirement.title,
         reqId: requirement._id,
         members: [req.user!._id, invited._id],
@@ -219,7 +219,7 @@ router.post('/:id/meeting', requireAuth, async (req: AuthRequest, res, next) => 
     group.messages.push({
       user: req.user!._id,
       type: 'text',
-      content: `📹 视频会议已创建：${meetingUrl}`,
+      content: `video 视频会议已创建：${meetingUrl}`,
       time: new Date(),
     });
     if (group.messages.length > MAX_MESSAGES) {

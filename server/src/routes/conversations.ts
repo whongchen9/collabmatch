@@ -59,7 +59,7 @@ router.post('/', requireAuth, validate({
       messages: [
         {
           role: 'ai',
-          content: `你好！欢迎来到 CollabMatch「${d.name}」频道 😊\n\n我是 CollabAI，帮你找到志同道合的协作伙伴。\n\n你有什么项目想法或协作需求？`,
+          content: `嗨！欢迎来到「${d.name}」频道\n\n告诉我你想做什么项目，我来帮你整理需求、匹配协作者。\n\n直接说就行，不用想太多。`,
           time: new Date(),
         },
       ],
@@ -142,7 +142,7 @@ router.post('/:id/attachments', requireAuth, async (req: AuthRequest, res, next)
     }
     conv.messages.push({
       role: 'user',
-      content: `📎 已发送文件：${fileName}\n${saved.url}`,
+      content: `已发送文件：${fileName}\n${saved.url}`,
       time: new Date(),
     });
     if (conv.messages.length > MAX_MESSAGES) {
@@ -188,7 +188,7 @@ router.post('/:id/forward', requireAuth, async (req: AuthRequest, res, next) => 
       return;
     }
 
-    const forwarded = `↗️ 转发：\n${msg.content}`;
+    const forwarded = `转发：\n${msg.content}`;
     target.messages.push({ role: 'user', content: forwarded, time: new Date() });
     if (target.messages.length > MAX_MESSAGES) {
       target.messages = target.messages.slice(-MAX_MESSAGES);
