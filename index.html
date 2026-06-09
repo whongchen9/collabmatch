@@ -1812,14 +1812,26 @@
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
           <button type="button" class="btn btn-ghost" style="padding:0;font-size:13px;color:var(--accent);" onclick="hideResetPassword()" data-i18n="login.backToLogin">← 返回登录</button>
         </div>
-        <label for="reset-email" data-i18n="login.email">账号</label>
-        <input type="text" id="reset-email" placeholder="注册邮箱" onkeydown="if(event.key==='Enter')doResetPassword()"/>
-        <label for="reset-code" data-i18n="login.code">验证码</label>
-        <input type="text" id="reset-code" placeholder="验证码" maxlength="6" onkeydown="if(event.key==='Enter')doResetPassword()"/>
-        <label for="reset-new-password" data-i18n="login.newPassword">新密码</label>
-        <input type="password" id="reset-new-password" placeholder="至少 6 位" onkeydown="if(event.key==='Enter')doResetPassword()"/>
-        <div class="login-hint" id="reset-hint" style="font-size:11px;color:var(--text-muted);"></div>
-        <button class="btn btn-primary" style="width:100%;" id="reset-btn" onclick="doResetPassword()" data-i18n="login.resetPassword">重置密码</button>
+        <!-- 步骤1：输入邮箱发送重置链接 -->
+        <div id="reset-step1">
+          <label for="reset-email" data-i18n="login.email">账号</label>
+          <input type="email" id="reset-email" placeholder="注册邮箱" onkeydown="if(event.key==='Enter')doForgotPassword()"/>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="forgot-btn" onclick="doForgotPassword()" data-i18n="login.sendResetLink">发送重置链接</button>
+        </div>
+        <!-- 步骤2：已发送提示 -->
+        <div id="reset-step2" style="display:none;text-align:center;padding:20px 0;">
+          <div style="font-size:40px;margin-bottom:12px;">📧</div>
+          <p style="font-size:14px;margin-bottom:4px;" data-i18n="login.resetEmailSent">重置链接已发送到你的邮箱</p>
+          <p style="font-size:12px;color:var(--text-muted);" data-i18n="login.resetEmailHint">请查收邮件，30 分钟内有效</p>
+        </div>
+        <!-- 步骤3：从邮件链接进入，设置新密码 -->
+        <div id="reset-step3" style="display:none;">
+          <label for="reset-new-password" data-i18n="login.newPassword">新密码</label>
+          <input type="password" id="reset-new-password" placeholder="至少 6 位" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+          <label for="reset-confirm-password" data-i18n="login.confirmPassword">确认密码</label>
+          <input type="password" id="reset-confirm-password" placeholder="再次输入新密码" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+          <button class="btn btn-primary" style="width:100%;margin-top:8px;" id="reset-btn" onclick="doResetPassword()" data-i18n="login.resetPassword">重置密码</button>
+        </div>
         <div class="login-error" id="reset-error"></div>
       </div>
 
@@ -2442,12 +2454,17 @@ const LANG = {
     'login.forgotPassword': '忘记密码？',
     'login.backToLogin': '← 返回登录',
     'login.newPassword': '新密码',
+    'login.confirmPassword': '确认密码',
     'login.resetPassword': '重置密码',
     'login.resetSuccess': '密码重置成功，请登录',
     'login.resetFailed': '重置失败',
     'login.fillAllFields': '请填写所有字段',
     'login.passwordTooShort': '密码至少 6 位',
-    'login.devCodeHint': '演示验证码：',
+    'login.passwordMismatch': '两次密码不一致',
+    'login.resetTokenMissing': '重置链接无效，请重新申请',
+    'login.sendResetLink': '发送重置链接',
+    'login.resetEmailSent': '重置链接已发送到你的邮箱',
+    'login.resetEmailHint': '请查收邮件，30 分钟内有效',
     'login.enterPhone': '请输入 11 位手机号',
     'login.codeSent': '验证码已发送',
     'login.sendFailed': '发送失败',
@@ -3219,12 +3236,17 @@ const LANG = {
     'login.forgotPassword': 'Forgot password?',
     'login.backToLogin': '← Back to login',
     'login.newPassword': 'New password',
+    'login.confirmPassword': 'Confirm password',
     'login.resetPassword': 'Reset password',
     'login.resetSuccess': 'Password reset successful, please login',
     'login.resetFailed': 'Reset failed',
     'login.fillAllFields': 'Please fill all fields',
     'login.passwordTooShort': 'Password must be at least 6 characters',
-    'login.devCodeHint': 'Demo code: ',
+    'login.passwordMismatch': 'Passwords do not match',
+    'login.resetTokenMissing': 'Invalid reset link, please request again',
+    'login.sendResetLink': 'Send reset link',
+    'login.resetEmailSent': 'Reset link has been sent to your email',
+    'login.resetEmailHint': 'Check your email, valid for 30 minutes',
     'login.enterPhone': 'Please enter an 11-digit phone number',
     'login.codeSent': 'Verification code sent',
     'login.sendFailed': 'Send failed',
@@ -4755,35 +4777,65 @@ function showResetPassword() {
   document.getElementById('login-email-form').style.display = 'none';
   document.getElementById('login-reset-form').style.display = '';
   document.getElementById('login-error').textContent = '';
+  document.getElementById('reset-error').textContent = '';
   // 预填当前输入的邮箱
   var emailVal = document.getElementById('login-email').value;
   if (emailVal) document.getElementById('reset-email').value = emailVal;
-  // 显示验证码提示
-  var hint = document.getElementById('reset-hint');
-  var devCode = window._devAuthCode;
-  if (devCode) hint.textContent = t('login.devCodeHint') + devCode;
-  else hint.textContent = '';
+  // 检查 URL 是否有 reset_token
+  var resetToken = new URLSearchParams(location.search).get('reset_token');
+  if (resetToken) {
+    window._resetToken = resetToken;
+    document.getElementById('reset-step1').style.display = 'none';
+    document.getElementById('reset-step3').style.display = '';
+    // 清除 URL 中的 token
+    var cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('reset_token');
+    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
+  } else {
+    document.getElementById('reset-step1').style.display = '';
+    document.getElementById('reset-step2').style.display = 'none';
+    document.getElementById('reset-step3').style.display = 'none';
+  }
 }
 function hideResetPassword() {
   document.getElementById('login-reset-form').style.display = 'none';
   document.getElementById('login-email-form').style.display = '';
   document.getElementById('reset-error').textContent = '';
+  window._resetToken = null;
+}
+async function doForgotPassword() {
+  var email = document.getElementById('reset-email').value.trim();
+  var errEl = document.getElementById('reset-error');
+  var btn = document.getElementById('forgot-btn');
+  errEl.textContent = '';
+  if (!email) { errEl.textContent = t('login.fillAllFields'); return; }
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await CollabApi.api('/auth/forgot-password', { method: 'POST', body: { email }, auth: false });
+    document.getElementById('reset-step1').style.display = 'none';
+    document.getElementById('reset-step2').style.display = '';
+  } catch (e) {
+    errEl.textContent = (e && e.message) ? e.message : t('login.resetFailed');
+  } finally {
+    btn.disabled = false; btn.textContent = t('login.sendResetLink');
+  }
 }
 async function doResetPassword() {
-  var email = document.getElementById('reset-email').value.trim();
-  var code = document.getElementById('reset-code').value.trim();
   var newPassword = document.getElementById('reset-new-password').value;
+  var confirmPassword = document.getElementById('reset-confirm-password').value;
   var errEl = document.getElementById('reset-error');
   var btn = document.getElementById('reset-btn');
   errEl.textContent = '';
-  if (!email || !code || !newPassword) { errEl.textContent = t('login.fillAllFields'); return; }
+  if (!newPassword || !confirmPassword) { errEl.textContent = t('login.fillAllFields'); return; }
   if (newPassword.length < 6) { errEl.textContent = t('login.passwordTooShort'); return; }
+  if (newPassword !== confirmPassword) { errEl.textContent = t('login.passwordMismatch'); return; }
+  var token = window._resetToken;
+  if (!token) { errEl.textContent = t('login.resetTokenMissing'); return; }
   btn.disabled = true; btn.textContent = '...';
   try {
-    await CollabApi.api('/auth/reset-password', { method: 'POST', body: { email, code, newPassword }, auth: false });
+    await CollabApi.api('/auth/reset-password', { method: 'POST', body: { token, newPassword }, auth: false });
     showToast(t('login.resetSuccess'), 'success');
     hideResetPassword();
-    document.getElementById('login-email').value = email;
     document.getElementById('login-password').value = '';
     document.getElementById('login-password').focus();
   } catch (e) {
@@ -8143,6 +8195,15 @@ async function init() {
     }
   }
   showLogin();
+  // 如果 URL 中有 reset_token，自动显示重置密码面板
+  var resetToken = new URLSearchParams(location.search).get('reset_token');
+  if (resetToken) {
+    window._resetToken = resetToken;
+    var cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('reset_token');
+    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
+    showResetPassword();
+  }
 }
 
 async function deleteMyRequirement(reqId) {

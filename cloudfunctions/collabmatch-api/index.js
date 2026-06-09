@@ -45,7 +45,7 @@ G('/api/config/workflows', ()=>WORKFLOWS);
 // ─── Auth ───────────────────────────
 G('/api/auth/config', ()=>{
   const githubEnabled = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
-  return {mode:'dev',emailAuthEnabled:true,githubEnabled,githubClientId:process.env.GITHUB_CLIENT_ID||''};
+  return {mode:'dev',emailAuthEnabled:true,githubEnabled,githubClientId:process.env.GITHUB_CLIENT_ID||'',devAuthCode:DEV_AUTH_CODE};
 });
 P('/api/auth/sms/send', ()=>({ok:true}));
 P('/api/auth/send-code', ()=>({ok:true}));
@@ -83,15 +83,66 @@ P('/api/auth/email-login', async (p,b)=>{
   const user={...u.data[0],id:u.data[0]._id};
   return {token,user};
 });
-P('/api/auth/reset-password', async (p,b)=>{
-  const {email,code,newPassword}=b;
-  if(!email||!code||!newPassword) return err('\u9700\u8981 email\u3001\u9a8c\u8bc1\u7801\u548c\u65b0\u5bc6\u7801');
-  if(newPassword.length<6) return err('\u5bc6\u7801\u957f\u5ea6\u81f3\u5c11 6 \u4f4d');
-  if(code!==DEV_AUTH_CODE) return err('\u9a8c\u8bc1\u7801\u9519\u8bef');
+// ─── \u5bc6\u7801\u91cd\u7f6e\uff08\u90ae\u7bb1 token \u94fe\u63a5\u65b9\u5f0f\uff09 ──
+const crypto = require('crypto');
+P('/api/auth/forgot-password', async (p,b,q)=>{
+  const {email}=b;
+  if(!email) return err('\u8bf7\u8f93\u5165\u90ae\u7bb1');
   const u=await db.collection('users').where({email}).limit(1).get();
-  if(!u.data.length) return err('\u8be5\u90ae\u7bb1\u672a\u6ce8\u518c');
+  // \u65e0\u8bba\u90ae\u7bb1\u662f\u5426\u5b58\u5728\uff0c\u90fd\u8fd4\u56de\u76f8\u540c\u54cd\u5e94\uff08\u9632\u90ae\u7bb1\u63a2\u6d4b\uff09
+  if(!u.data.length) return {ok:true,message:'\u5982\u679c\u8be5\u90ae\u7bb1\u5df2\u6ce8\u518c\uff0c\u91cd\u7f6e\u94fe\u63a5\u5df2\u53d1\u9001'};
+  // \u751f\u6210\u5b89\u5168\u968f\u673a token
+  const token=crypto.randomBytes(32).toString('hex');
+  const tokenHash=crypto.createHash('sha256').update(token).digest('hex');
+  const expiresAt=Date.now()+30*60*1000; // 30 \u5206\u949f\u8fc7\u671f
+  // \u5220\u9664\u8be5\u7528\u6237\u4e4b\u524d\u7684\u672a\u4f7f\u7528 token
+  const oldTokens=await db.collection('password_resets').where({userId:u.data[0]._id,used:false}).get();
+  for(const ot of oldTokens.data) await db.collection('password_resets').doc(ot._id).remove();
+  // \u5b58\u50a8 token hash
+  await db.collection('password_resets').add({userId:u.data[0]._id,email,tokenHash,expiresAt,used:false,createdAt:Date.now()});
+  // \u53d1\u9001\u90ae\u4ef6
+  const RESEND_API_KEY=process.env.RESEND_API_KEY||'';
+  const frontendUrl=process.env.FRONTEND_URL||'https://cloudbase-d6g8yog0ub3e56efe-1427257718.tcloudbaseapp.com';
+  const resetUrl=frontendUrl+'/?reset_token='+token;
+  if(RESEND_API_KEY){
+    try{
+      const https=require('https');
+      await new Promise((resolve,reject)=>{
+        const req=https.request('https://api.resend.com/emails',{
+          method:'POST',
+          headers:{'Authorization':'Bearer '+RESEND_API_KEY,'Content-Type':'application/json'},
+        },res=>{
+          const chunks=[];
+          res.on('data',c=>chunks.push(c));
+          res.on('end',()=>{try{resolve(JSON.parse(Buffer.concat(chunks).toString('utf8')))}catch(e){reject(e)}});
+        });
+        req.on('error',reject);
+        req.write(JSON.stringify({
+          from:'CollabMatch <onboarding@resend.dev>',
+          to:email,
+          subject:'\u5bc6\u7801\u91cd\u7f6e - CollabMatch',
+          html:'<div style="max-width:480px;margin:0 auto;font-family:sans-serif;"><h2 style="color:#6c5ce7;">\u5bc6\u7801\u91cd\u7f6e</h2><p>\u4f60\u6536\u5230\u8fd9\u5c01\u90ae\u4ef6\u662f\u56e0\u4e3a\u6709\u4eba\u8bf7\u6c42\u91cd\u7f6e\u4f60\u5728 CollabMatch \u7684\u5bc6\u7801\u3002</p><a href="'+resetUrl+'" style="display:inline-block;padding:12px 24px;background:#6c5ce7;color:#fff;border-radius:8px;text-decoration:none;margin:16px 0;">\u91cd\u7f6e\u5bc6\u7801</a><p style="color:#999;font-size:12px;">\u94fe\u63a5 30 \u5206\u949f\u5185\u6709\u6548\u3002\u5982\u679c\u4e0d\u662f\u4f60\u672c\u4eba\u64cd\u4f5c\uff0c\u8bf7\u5ffd\u7565\u6b64\u90ae\u4ef6\u3002</p></div>'
+        }));
+        req.end();
+      });
+    }catch(e){console.error('Resend error:',e)}
+  }
+  return {ok:true,message:'\u5982\u679c\u8be5\u90ae\u7bb1\u5df2\u6ce8\u518c\uff0c\u91cd\u7f6e\u94fe\u63a5\u5df2\u53d1\u9001'};
+});
+P('/api/auth/reset-password', async (p,b)=>{
+  const {token,newPassword}=b;
+  if(!token||!newPassword) return err('\u7f3a\u5c11\u53c2\u6570');
+  if(newPassword.length<6) return err('\u5bc6\u7801\u957f\u5ea6\u81f3\u5c11 6 \u4f4d');
+  const tokenHash=crypto.createHash('sha256').update(token).digest('hex');
+  const r=await db.collection('password_resets').where({tokenHash,used:false}).limit(1).get();
+  if(!r.data.length) return err('\u91cd\u7f6e\u94fe\u63a5\u65e0\u6548\u6216\u5df2\u8fc7\u671f');
+  const reset=r.data[0];
+  if(Date.now()>reset.expiresAt) return err('\u91cd\u7f6e\u94fe\u63a5\u5df2\u8fc7\u671f');
+  // \u66f4\u65b0\u5bc6\u7801
   const passwordHash=await bcrypt.hash(newPassword,10);
-  await db.collection('users').doc(u.data[0]._id).update({passwordHash,updatedAt:Date.now()});
+  await db.collection('users').doc(reset.userId).update({passwordHash,updatedAt:Date.now()});
+  // \u6807\u8bb0 token \u5df2\u4f7f\u7528
+  await db.collection('password_resets').doc(reset._id).update({used:true});
   return {ok:true};
 });
 G('/api/auth/me', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const d=await db.collection('users').doc(u.userId).get(); const user=addId(d.data[0]||{}); return {user}; });
