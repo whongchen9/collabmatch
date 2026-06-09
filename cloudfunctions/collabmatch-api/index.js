@@ -22,7 +22,9 @@ function addIds(arr) { if(!Array.isArray(arr)) return arr; return arr.map(addId)
 
 const R = {}; // routes
 function r(m,p,h) { R[m+':'+p]=h; }
-const G=(p,h)=>r('GET',p,h); const P=(p,h)=>r('POST',p,h); const U=(p,h)=>r('PUT',p,h); const D=(p,h)=>r('DELETE',p,h);
+// Register both with and without /api prefix (HTTP access service strips /api trigger prefix)
+function r2(m,p,h) { R[m+':'+p]=h; if (p.startsWith('/api/')) R[m+':'+p.slice(4)]=h; else if (p==='/api') R[m+':'+'/']=h; }
+const G=(p,h)=>r2('GET',p,h); const P=(p,h)=>r2('POST',p,h); const U=(p,h)=>r2('PUT',p,h); const D=(p,h)=>r2('DELETE',p,h);
 
 // ─── Health ─────────────────────────
 G('/health', ()=>({ok:true,version:'v3-fix',path:'/'}));
