@@ -10,7 +10,10 @@
         "DOUBAO_API_KEY": "ark-4f018bb4-044a-487f-975a-3db7a622b28c-38747",
         "DOUBAO_MODEL": "ep-20260502114405-xrk59",
         "JWT_SECRET": "c7f3a8e2b1d4f6a9c3e5b7d9f1a2c4e6a8b0d2f4a6c8e0b3d5f7a9c1e3b5d7f9",
-        "DEV_AUTH_CODE": "xsx7ii"
+        "DEV_AUTH_CODE": "xsx7ii",
+        "GITHUB_CLIENT_ID": "Ov23liq85d6hBRbmCfOh",
+        "GITHUB_CLIENT_SECRET": "e9443d7e28f62f3b416913c8a4cadc874c63f50a",
+        "GITHUB_OAUTH_CALLBACK_URL": "https://cloudbase-d6g8yog0ub3e56efe.service.tcloudbase.com/api/auth/github/callback"
       }
     }
   ]
