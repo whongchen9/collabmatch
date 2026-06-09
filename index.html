@@ -1770,14 +1770,14 @@
 
       <!-- 登录方式切换 -->
       <div class="login-tabs" style="display:flex;gap:4px;margin-bottom:16px;">
-        <button class="login-tab active" onclick="switchLoginTab('email')" id="login-tab-email" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--accent-soft);color:#fff;cursor:pointer;transition:var(--transition);" data-i18n="login.emailTab">邮箱登录</button>
+        <button class="login-tab active" onclick="switchLoginTab('email')" id="login-tab-email" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--accent-soft);color:#fff;cursor:pointer;transition:var(--transition);" data-i18n="login.emailTab">账号登录</button>
         <button class="login-tab" onclick="switchLoginTab('phone')" id="login-tab-phone" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:var(--transition);" data-i18n="login.phoneTab">手机验证码</button>
       </div>
 
-      <!-- 邮箱登录/注册 -->
+      <!-- 账号登录/注册 -->
       <div id="login-email-form">
-        <label for="login-email" data-i18n="login.email">邮箱</label>
-        <input type="email" id="login-email" aria-label="邮箱" data-i18n-aria-label="login.email" placeholder="your@email.com" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
+        <label for="login-email" data-i18n="login.email">账号</label>
+        <input type="text" id="login-email" aria-label="账号" data-i18n-aria-label="login.email" placeholder="邮箱或用户名" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
         <label for="login-password" data-i18n="login.password">密码</label>
         <input type="password" id="login-password" aria-label="密码" data-i18n-aria-label="login.password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="至少 6 位" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
         <label for="login-name" id="login-name-label" style="display:none;" data-i18n="login.nickname">昵称</label>
@@ -1803,6 +1803,26 @@
       </div>
 
       <div class="login-error" id="login-error"></div>
+
+      <!-- 快捷登录 -->
+      <div style="margin-top:16px;text-align:center;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+          <span style="font-size:11px;color:var(--text-muted);white-space:nowrap;" data-i18n="login.orContinueWith">其他方式</span>
+          <div style="flex:1;height:1px;background:var(--border);"></div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:center;">
+          <button type="button" class="btn btn-ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;" onclick="doGithubLogin()">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+            <span data-i18n="login.github">GitHub</span>
+          </button>
+          <button type="button" class="btn btn-ghost" style="display:flex;align-items:center;gap:6px;font-size:12px;padding:6px 14px;" onclick="enterGuestMode()">
+            <i data-lucide="eye-off" style="width:14px;height:14px;"></i>
+            <span data-i18n="login.guest">访客模式</span>
+          </button>
+        </div>
+      </div>
+
       <div style="text-align:center;margin-top:12px;">
         <button type="button" id="login-lang-switch" class="btn btn-ghost" style="font-size:12px;" onclick="setLang(currentLang==='zh'?'en':'zh')">English</button>
       </div>
@@ -2358,9 +2378,9 @@ const LANG = {
     // Login
     'login.welcome': '欢迎回来',
     'login.subtitle': '登录你的账号',
-    'login.emailTab': '邮箱登录',
+    'login.emailTab': '账号登录',
     'login.phoneTab': '手机验证码',
-    'login.email': '邮箱',
+    'login.email': '账号',
     'login.password': '密码',
     'login.nickname': '昵称',
     'login.nicknamePlaceholder': '你的昵称',
@@ -2372,7 +2392,7 @@ const LANG = {
     'login.code': '验证码',
     'login.codePlaceholder': '6 位验证码',
     'login.getCode': '获取验证码',
-    'login.enterEmailAndPassword': '请输入邮箱和密码',
+    'login.enterEmailAndPassword': '请输入账号和密码',
     'login.loggingIn': '登录中…',
     'login.loggingIn2': '正在登录…',
     'login.loadingData': '正在加载数据…',
@@ -2394,6 +2414,11 @@ const LANG = {
     'login.previewMode': '开发模式（本地预览）',
     'login.previewHint': '后端未连接，点击登录以访客模式预览',
     'login.bridgeError': 'API 桥接未加载，请刷新页面或检查网络',
+    'login.orContinueWith': '其他方式',
+    'login.github': 'GitHub',
+    'login.guest': '访客模式',
+    'login.guestEnter': '以访客身份进入',
+    'login.githubFailed': 'GitHub 登录失败',
     'login.enterPreview': '进入预览',
     'login.enterPhone': '请输入 11 位手机号',
     'login.codeSent': '验证码已发送',
@@ -3121,9 +3146,9 @@ const LANG = {
     // Login
     'login.welcome': 'Welcome Back',
     'login.subtitle': 'Sign in to your account',
-    'login.emailTab': 'Email Login',
+    'login.emailTab': 'Account Login',
     'login.phoneTab': 'SMS Code',
-    'login.email': 'Email',
+    'login.email': 'Account',
     'login.password': 'Password',
     'login.nickname': 'Nickname',
     'login.nicknamePlaceholder': 'Your nickname',
@@ -3135,7 +3160,7 @@ const LANG = {
     'login.code': 'Code',
     'login.codePlaceholder': '6-digit code',
     'login.getCode': 'Get Code',
-    'login.enterEmailAndPassword': 'Please enter email and password',
+    'login.enterEmailAndPassword': 'Please enter account and password',
     'login.loggingIn': 'Signing in…',
     'login.loggingIn2': 'Signing in…',
     'login.loadingData': 'Loading data…',
@@ -3157,6 +3182,11 @@ const LANG = {
     'login.previewMode': 'Dev Mode (Local Preview)',
     'login.previewHint': 'Backend not connected, click login to preview as guest',
     'login.bridgeError': 'API bridge not loaded, please refresh or check network',
+    'login.orContinueWith': 'Or continue with',
+    'login.github': 'GitHub',
+    'login.guest': 'Guest Mode',
+    'login.guestEnter': 'Enter as guest',
+    'login.githubFailed': 'GitHub login failed',
     'login.enterPreview': 'Enter Preview',
     'login.enterPhone': 'Please enter an 11-digit phone number',
     'login.codeSent': 'Verification code sent',
@@ -4733,6 +4763,9 @@ async function initLoginAuth() {
   }
   try {
     const cfg = await CollabApi.fetchAuthConfig();
+    // 根据 GitHub OAuth 配置显示/隐藏 GitHub 按钮
+    const githubBtn = document.querySelector('[onclick="doGithubLogin()"]');
+    if (githubBtn) githubBtn.style.display = cfg.githubEnabled ? '' : 'none';
     if (cfg.smsEnabled) {
       subtitle.textContent = t('login.smsEnabled');
       subtitle.dataset.custom = '1';
@@ -4980,6 +5013,27 @@ function doLogout() {
   setAppLoading(false);
   showLogin();
   showToast(t('common.logout'), 'info');
+}
+
+function enterGuestMode() {
+  currentUser = { id: 'guest', name: t('common.guest'), avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
+  CollabApi.setToken(null);
+  hideLogin();
+  syncSidebarUser();
+  renderAllSections();
+  showToast(t('login.guestEnter'), 'info');
+}
+
+function doGithubLogin() {
+  // GitHub OAuth: 重定向到后端 /auth/github 路由
+  const apiBase = (typeof CollabApi !== 'undefined' && CollabApi.API_BASE) ? CollabApi.API_BASE.replace(/\/api\/?$/, '') : '';
+  if (!apiBase) {
+    showToast(t('login.githubFailed'), 'warning');
+    return;
+  }
+  // 保存当前路径用于回调后跳转
+  sessionStorage.setItem('github_oauth_redirect', location.pathname + location.search);
+  location.href = apiBase + '/api/auth/github';
 }
 
 function openModal(id) {
@@ -7928,6 +7982,16 @@ async function aiEnhanceProfile() {
 //  INITIALIZATION
 // ============================================================
 async function init() {
+  // 处理 GitHub OAuth 回调（URL 中带 github_token 参数）
+  const githubToken = new URLSearchParams(location.search).get('github_token');
+  if (githubToken) {
+    // 清除 URL 中的 token 参数
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('github_token');
+    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
+    CollabApi.setToken(githubToken);
+  }
+
   // 确保 CollabApi 存在后再初始化
   if (typeof CollabApi === 'undefined' || !CollabApi.setUnauthorizedHandler) {
     console.error('[init] CollabApi 未加载，无法初始化应用');

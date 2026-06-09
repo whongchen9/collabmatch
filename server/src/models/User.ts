@@ -47,6 +47,8 @@ export interface IUser extends Document {
   collabIntent: string;
   interestedStages: string[];
   lastSeenAt?: Date;
+  /** GitHub OAuth ID */
+  githubId: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -74,6 +76,7 @@ const userSchema = new Schema<IUser>(
       default: [],
     },
     lastSeenAt: { type: Date },
+    githubId: { type: String, unique: true, sparse: true, index: true },
     portfolio: {
       type: [
         {

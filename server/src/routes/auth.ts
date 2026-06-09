@@ -47,6 +47,7 @@ router.get('/config', (_req, res) => {
     smsEnabled: useProductionAuth(),
     devLoginAvailable,
     emailAuthEnabled: true,
+    githubEnabled: hasGitHubOAuth(),
     // SEC-10: 不再通过 API 响应泄露 devAuthCode
   });
 });
@@ -214,6 +215,122 @@ router.post('/email-login', async (req, res, next) => {
 
 router.get('/me', requireAuth, (req: AuthRequest, res) => {
   res.json({ user: toUserJson(req.user!, { includePrivatePortfolio: true }) });
+});
+
+// ── GitHub OAuth ──────────────────────────────────────────────
+function hasGitHubOAuth(): boolean {
+  return Boolean(env.githubClientId && env.githubClientSecret);
+}
+
+// Step 1: 重定向到 GitHub 授权页
+router.get('/github', (_req, res) => {
+  if (!hasGitHubOAuth()) {
+    res.status(400).json({ error: '未配置 GitHub OAuth（需设置 GITHUB_CLIENT_ID 和 GITHUB_CLIENT_SECRET）' });
+    return;
+  }
+  const callbackUrl = env.githubOAuthCallbackUrl || `${_req.protocol}://${_req.get('host')}/api/auth/github/callback`;
+  const redirectUri = encodeURIComponent(callbackUrl);
+  const state = Math.random().toString(36).slice(2);
+  res.redirect(
+    `https://github.com/login/oauth/authorize?client_id=${env.githubClientId}&redirect_uri=${redirectUri}&scope=user:email&state=${state}`,
+  );
+});
+
+// Step 2: GitHub 回调，换取 access_token，获取用户信息，登录/注册
+router.get('/github/callback', async (req, res, next) => {
+  try {
+    const { code } = req.query as { code?: string };
+    if (!code) {
+      res.status(400).json({ error: '缺少授权码' });
+      return;
+    }
+
+    // 换取 access_token
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: env.githubClientId,
+        client_secret: env.githubClientSecret,
+        code,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      res.status(401).json({ error: 'GitHub 授权失败' });
+      return;
+    }
+
+    // 获取 GitHub 用户信息
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    });
+    const ghUser = await userRes.json();
+    if (!ghUser.id) {
+      res.status(401).json({ error: '获取 GitHub 用户信息失败' });
+      return;
+    }
+
+    // 获取 GitHub 邮箱（可能私有）
+    let email = ghUser.email || '';
+    if (!email) {
+      try {
+        const emailRes = await fetch('https://api.github.com/user/emails', {
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+        });
+        const emails = await emailRes.json();
+        const primary = (emails as Array<{ email: string; primary: boolean; verified: boolean }>)
+          ?.find((e) => e.primary && e.verified);
+        if (primary) email = primary.email;
+      } catch { /* ignore */ }
+    }
+
+    const githubId = String(ghUser.id);
+    const name = ghUser.name || ghUser.login || `GitHub${ghUser.id}`;
+    const avatarUrl = ghUser.avatar_url || '';
+
+    // 查找已绑定 GitHub 的用户
+    let user = await User.findOne({ githubId });
+    if (!user && email) {
+      // 如果有邮箱，尝试匹配已有账号
+      user = await User.findOne({ email });
+      if (user) {
+        // 绑定 GitHub 到已有账号
+        user.githubId = githubId;
+        if (avatarUrl && !user.avatarUrl) user.avatarUrl = avatarUrl;
+      }
+    }
+    if (!user) {
+      // 自动注册
+      user = asOne(
+        await User.create({
+          email: email || `gh${githubId}@github.placeholder`,
+          name,
+          avatar: name[0] ?? 'G',
+          avatarUrl,
+          position: '协作者',
+          bio: ghUser.bio || '',
+          skills: [],
+          domain: 'tech',
+          githubId,
+        }),
+      );
+    }
+
+    user.lastSeenAt = new Date();
+    await user.save();
+
+    const token = signToken(String(user._id));
+
+    // 重定向回前端，携带 token
+    const frontendUrl = env.githubOAuthCallbackUrl
+      ? new URL(env.githubOAuthCallbackUrl).origin
+      : req.protocol + '://' + req.get('host');
+    res.redirect(`${frontendUrl}/?github_token=${token}#/`);
+  } catch (e) {
+    next(e);
+  }
 });
 
 export default router;

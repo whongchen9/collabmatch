@@ -53,6 +53,11 @@ export const env = {
   cosPrefix: envStr('COS_PREFIX', 'collabmatch'),
   cosPublicBaseUrl: envStr('COS_PUBLIC_BASE_URL'),
 
+  /** GitHub OAuth */
+  githubClientId: envStr('GITHUB_CLIENT_ID'),
+  githubClientSecret: envStr('GITHUB_CLIENT_SECRET'),
+  githubOAuthCallbackUrl: envStr('GITHUB_OAUTH_CALLBACK_URL'),
+
   /** 即DAO（小陈即到 / xiaoChen-dao）云开发对接 */
   xcdInvokeUrl: envStr('XCD_INVOKE_URL'),
   xcdApiBaseUrl: envStr('XCD_API_BASE_URL'),
