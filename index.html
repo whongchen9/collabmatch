@@ -4648,11 +4648,19 @@ async function doEmailLogin() {
     currentUser = data.user;
     CollabApi.setToken(data.token);
   } catch (e) {
-    // 后端不可用时，允许以访客身份预览
-    currentUser = { id: 'guest', name: t('common.guest'), email, avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
-    showToast(t('login.guestMode'), 'warning');
-    hideLogin(); syncSidebarUser(); renderAllSections();
-    setAppLoading(false); btn.disabled = false; btn.textContent = t('login.btn');
+    const msg = (e && e.message) ? e.message : '';
+    // 只有网络连接失败才进入访客模式，认证错误（密码错/用户不存在）显示错误提示
+    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch') || msg.includes('无法连接') || msg.includes('后端')) {
+      currentUser = { id: 'guest', name: t('common.guest'), email, avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
+      showToast(t('login.guestMode'), 'warning');
+      hideLogin(); syncSidebarUser(); renderAllSections();
+      setAppLoading(false); btn.disabled = false; btn.textContent = t('login.btn');
+      return;
+    }
+    // 认证失败：显示具体错误
+    setAppLoading(false);
+    btn.disabled = false; btn.textContent = t('login.btn');
+    errEl.textContent = msg || t('login.loadFailed');
     return;
   }
   try {
