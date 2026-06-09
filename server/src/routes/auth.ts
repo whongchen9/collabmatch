@@ -48,6 +48,7 @@ router.get('/config', (_req, res) => {
     devLoginAvailable,
     emailAuthEnabled: true,
     githubEnabled: hasGitHubOAuth(),
+    githubClientId: hasGitHubOAuth() ? env.githubClientId : '',
     // SEC-10: 不再通过 API 响应泄露 devAuthCode
   });
 });
@@ -328,6 +329,95 @@ router.get('/github/callback', async (req, res, next) => {
       ? new URL(env.githubOAuthCallbackUrl).origin
       : req.protocol + '://' + req.get('host');
     res.redirect(`${frontendUrl}/?github_token=${token}#/`);
+  } catch (e) {
+    next(e);
+  }
+});
+
+// 前端 code 换 token 方式（Vercel / 现代前端推荐）
+router.post('/github/token', async (req, res, next) => {
+  try {
+    const { code } = req.body as { code?: string };
+    if (!code) {
+      res.status(400).json({ error: '缺少授权码' });
+      return;
+    }
+
+    // 换取 access_token
+    const tokenRes = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        client_id: env.githubClientId,
+        client_secret: env.githubClientSecret,
+        code,
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
+    if (!accessToken) {
+      res.status(401).json({ error: 'GitHub 授权失败' });
+      return;
+    }
+
+    // 获取 GitHub 用户信息
+    const userRes = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+    });
+    const ghUser = await userRes.json();
+    if (!ghUser.id) {
+      res.status(401).json({ error: '获取 GitHub 用户信息失败' });
+      return;
+    }
+
+    // 获取 GitHub 邮箱（可能私有）
+    let email = ghUser.email || '';
+    if (!email) {
+      try {
+        const emailRes = await fetch('https://api.github.com/user/emails', {
+          headers: { Authorization: `Bearer ${accessToken}`, Accept: 'application/json' },
+        });
+        const emails = await emailRes.json();
+        const primary = (emails as Array<{ email: string; primary: boolean; verified: boolean }>)
+          ?.find((e) => e.primary && e.verified);
+        if (primary) email = primary.email;
+      } catch { /* ignore */ }
+    }
+
+    const githubId = String(ghUser.id);
+    const name = ghUser.name || ghUser.login || `GitHub${ghUser.id}`;
+    const avatarUrl = ghUser.avatar_url || '';
+
+    // 查找已绑定 GitHub 的用户
+    let user = await User.findOne({ githubId });
+    if (!user && email) {
+      user = await User.findOne({ email });
+      if (user) {
+        user.githubId = githubId;
+        if (avatarUrl && !user.avatarUrl) user.avatarUrl = avatarUrl;
+      }
+    }
+    if (!user) {
+      user = asOne(
+        await User.create({
+          email: email || `gh${githubId}@github.placeholder`,
+          name,
+          avatar: name[0] ?? 'G',
+          avatarUrl,
+          position: '协作者',
+          bio: ghUser.bio || '',
+          skills: [],
+          domain: 'tech',
+          githubId,
+        }),
+      );
+    }
+
+    user.lastSeenAt = new Date();
+    await user.save();
+
+    const token = signToken(String(user._id));
+    res.json({ token, user: toUserJson(user, { includePrivatePortfolio: true }) });
   } catch (e) {
     next(e);
   }
