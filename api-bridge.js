@@ -87,14 +87,20 @@
     showLoading();
     let res;
     try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
       try {
         res = await fetch(`${API_BASE}${path}`, {
           method,
           headers,
           body: body !== undefined ? JSON.stringify(body) : undefined,
+          signal: controller.signal,
         });
       } catch (err) {
+        if (err.name === 'AbortError') throw new Error('请求超时，请检查网络连接');
         throw wrapFetchError(err);
+      } finally {
+        clearTimeout(timer);
       }
       const text = await res.text();
       let data;
@@ -196,11 +202,13 @@
 
   async function emailLogin(email, password) {
     const data = await api('/auth/email-login', { method: 'POST', body: { email, password }, auth: false });
+    setToken(data.token);
     return { token: data.token, user: normalizeUser(data.user) };
   }
 
   async function register(email, password, name) {
     const data = await api('/auth/register', { method: 'POST', body: { email, password, name }, auth: false });
+    setToken(data.token);
     return { token: data.token, user: normalizeUser(data.user) };
   }
 

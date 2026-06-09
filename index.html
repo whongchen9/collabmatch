@@ -2460,6 +2460,7 @@ const LANG = {
     'login.resetFailed': '重置失败',
     'login.fillAllFields': '请填写所有字段',
     'login.passwordTooShort': '密码至少 6 位',
+    'login.invalidEmail': '邮箱格式不正确',
     'login.passwordMismatch': '两次密码不一致',
     'login.resetTokenMissing': '重置链接无效，请重新申请',
     'login.sendResetLink': '发送重置链接',
@@ -3242,6 +3243,7 @@ const LANG = {
     'login.resetFailed': 'Reset failed',
     'login.fillAllFields': 'Please fill all fields',
     'login.passwordTooShort': 'Password must be at least 6 characters',
+    'login.invalidEmail': 'Invalid email format',
     'login.passwordMismatch': 'Passwords do not match',
     'login.resetTokenMissing': 'Invalid reset link, please request again',
     'login.sendResetLink': 'Send reset link',
@@ -4535,9 +4537,9 @@ function renderAvatar(user, size='sm') {
   if (!user) user = {};
   const cls = `avatar avatar-${size}`;
   if (user.avatarUrl) {
-    return `<div class="${cls}" style="background:none;padding:0;"><img src="${user.avatarUrl}" style="width:100%;height:100%;border-radius:50%;" onerror="this.parentElement.innerHTML='${(user.name||'?')[0]}';this.parentElement.style.background='var(--accent)';"></div>`;
+    return `<div class="${cls}" style="background:none;padding:0;position:relative;"><img src="${escapeAttr(user.avatarUrl||'')}" style="width:100%;height:100%;border-radius:50%;" onerror="this.style.display='none';var fb=this.nextElementSibling;if(fb){fb.style.display='flex';}"><span style="display:none;position:absolute;inset:0;align-items:center;justify-content:center;font-size:inherit;background:var(--accent);border-radius:50%;">${escapeHtml((user.name||'?')[0])}</span></div>`;
   }
-  return `<div class="${cls}" style="background:${user.avatarColor || 'var(--accent)'};">${user.avatar || (user.name||'?')[0]}</div>`;
+  return `<div class="${cls}" style="background:${/^[a-zA-Z0-9#().%-]+$/.test(user.avatarColor)?user.avatarColor:'var(--accent)'};">${user.avatar || (user.name||'?')[0]}</div>`;
 }
 
 const COLORS = {
@@ -4677,12 +4679,12 @@ function syncSidebarUser() {
   const nm = document.getElementById('sidebar-user-name');
   if (av) {
     if (currentUser.avatarUrl) {
-      av.innerHTML = `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;" onerror="this.parentElement.textContent='${(currentUser.name||'?')[0]}';this.parentElement.style.background='var(--accent)';">`;
+      av.innerHTML = `<img src="${escapeAttr(currentUser.avatarUrl||'')}" style="width:100%;height:100%;border-radius:50%;" onerror="this.style.display='none';">`;
       av.style.background = 'none';
       av.style.padding = '0';
     } else {
       av.textContent = currentUser.avatar || (currentUser.name||'?')[0];
-      av.style.background = currentUser.avatarColor || 'var(--accent)';
+      av.style.background = /^[a-zA-Z0-9#().%-]+$/.test(currentUser.avatarColor) ? currentUser.avatarColor : 'var(--accent)';
     }
   }
   if (nm) nm.textContent = currentUser.name;
@@ -4733,6 +4735,7 @@ async function doEmailLogin() {
   const btn = document.getElementById('login-btn');
   errEl.textContent = '';
   if (!email || !password) { errEl.textContent = t('login.enterEmailAndPassword'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = t('login.invalidEmail'); return; }
   btn.disabled = true; btn.textContent = t('login.loggingIn');
   setAppLoading(true, t('login.loggingIn2'));
   try {
@@ -4853,6 +4856,8 @@ async function doRegister() {
   const btn = document.getElementById('login-btn');
   errEl.textContent = '';
   if (!email || !password || !name) { errEl.textContent = t('login.fillAllFields'); return; }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { errEl.textContent = t('login.invalidEmail'); return; }
+  if (password.length < 6) { errEl.textContent = t('login.passwordTooShort'); return; }
   btn.disabled = true; btn.textContent = t('login.registering');
   setAppLoading(true, t('login.registering'));
   try {
@@ -4985,7 +4990,7 @@ function hideLogin() {
 }
 
 function closeLogin() {
-  document.getElementById('login-overlay').classList.add('hidden');
+  hideLogin();
 }
 
 async function doLogin() {
@@ -5170,7 +5175,9 @@ function doGithubLogin() {
   const callbackUrl = location.origin + location.pathname;
   const redirectUri = encodeURIComponent(callbackUrl);
   sessionStorage.setItem('github_oauth_pending', '1');
-  location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
+  const state = Math.random().toString(36).slice(2) + Date.now().toString(36);
+  sessionStorage.setItem('github_oauth_state', state);
+  location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email&state=` + state;
 }
 
 function openModal(id) {
@@ -5309,7 +5316,7 @@ function wizRenderRoles() {
   if (!c) return;
   c.innerHTML = WIZ_ROLES.map(r => {
     const sel = wizData.lookingFor.includes(r);
-    return `<span class="wiz-chip ${sel?'active':''}" onclick="wizToggleRole(this,'${r}')" style="padding:6px 14px;border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;">${r}</span>`;
+    return `<span class="wiz-chip ${sel?'active':''}" onclick="wizToggleRole(this,'${escapeAttr(r)}')" style="padding:6px 14px;border:1px solid ${sel?'var(--accent)':'var(--border)'};border-radius:16px;cursor:pointer;font-size:12px;">${r}</span>`;
   }).join('');
 }
 function wizToggleRole(el, role) {
@@ -5471,7 +5478,7 @@ function renderChatMessage(msg) {
 
 function renderInlineReqCard(req) {
   return `
-    <div class="req-card-preview" onclick="openReqDetail('${req.id}')">
+    <div class="req-card-preview" onclick="openReqDetail('${escapeAttr(req.id)}')">
       <div class="req-card-title"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> ${escapeHtml(req.title)}</div>
       <div class="req-card-meta">
         <span class="badge badge-purple"><i data-lucide="calendar" style="width:14px;height:14px;vertical-align:middle;"></i> ${escapeHtml(req.timeline)}</span>
@@ -5480,17 +5487,17 @@ function renderInlineReqCard(req) {
       <div style="font-size:12px;color:var(--text-secondary);line-height:1.5;">${escapeHtml(req.desc)}</div>
       <div class="req-card-actions">
         ${req.status === 'draft' 
-          ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();setReqVisibility('${req.id}','public')"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 发布到广场</button>`
+          ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();setReqVisibility('${escapeAttr(req.id)}','public')"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 发布到广场</button>`
           : `<div class="publish-dropdown" style="position:relative;display:inline-block;">
           <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();togglePublishDropdown(this)"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 发布到广场 ▾</button>
           <div class="publish-dropdown-menu" style="display:none;position:absolute;bottom:100%;left:0;margin-bottom:4px;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow);padding:4px;min-width:200px;z-index:100;">
-            <div class="publish-option" onclick="event.stopPropagation();doPublish('${req.id}','public')"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> <b>公开发布</b><span style="font-size:10px;color:var(--text-muted);display:block;">显示在需求广场，所有人可见</span></div>
-            <div class="publish-option" onclick="event.stopPropagation();doPublish('${req.id}','match_only')"><i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i> <b>仅匹配推荐</b><span style="font-size:10px;color:var(--text-muted);display:block;">广场不可见，系统静默匹配</span></div>
-            <div class="publish-option" onclick="event.stopPropagation();doPublish('${req.id}','invite_only')"><i data-lucide="lock-keyhole" style="width:14px;height:14px;vertical-align:middle;"></i> <b>定向邀请</b><span style="font-size:10px;color:var(--text-muted);display:block;">只有你邀请的人可见</span></div>
+            <div class="publish-option" onclick="event.stopPropagation();doPublish('${escapeAttr(req.id)}','public')"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> <b>公开发布</b><span style="font-size:10px;color:var(--text-muted);display:block;">显示在需求广场，所有人可见</span></div>
+            <div class="publish-option" onclick="event.stopPropagation();doPublish('${escapeAttr(req.id)}','match_only')"><i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i> <b>仅匹配推荐</b><span style="font-size:10px;color:var(--text-muted);display:block;">广场不可见，系统静默匹配</span></div>
+            <div class="publish-option" onclick="event.stopPropagation();doPublish('${escapeAttr(req.id)}','invite_only')"><i data-lucide="lock-keyhole" style="width:14px;height:14px;vertical-align:middle;"></i> <b>定向邀请</b><span style="font-size:10px;color:var(--text-muted);display:block;">只有你邀请的人可见</span></div>
           </div>
         </div>
-        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openReqDetail('${req.id}')">查看详情</button>
-        ${req.status === 'open' ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();goToMatch('${req.id}')"><i data-lucide="search" style="width:14px;height:14px;vertical-align:middle;"></i> 立即匹配</button>` : ''}`}
+        <button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();openReqDetail('${escapeAttr(req.id)}')">查看详情</button>
+        ${req.status === 'open' ? `<button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();goToMatch('${escapeAttr(req.id)}')"><i data-lucide="search" style="width:14px;height:14px;vertical-align:middle;"></i> 立即匹配</button>` : ''}`}
       </div>
     </div>`;
 }
@@ -5501,9 +5508,9 @@ function renderProtoCard(code) {
   return `<div class="proto-card" id="${id}">
     <iframe class="proto-frame" srcdoc="${escapeHtml(code)}" sandbox="allow-scripts" id="${id}-frame"></iframe>
     <div class="proto-toolbar">
-      <button class="btn btn-ghost btn-sm" onclick="copyProtoCode('${id}')"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制代码</button>
-      <button class="btn btn-ghost btn-sm" onclick="toggleProtoFullscreen('${id}')"><i data-lucide="square" style="width:14px;height:14px;vertical-align:middle;"></i> 全屏预览</button>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${id}').querySelector('.proto-frame').style.height='600px'"><i data-lucide="chevron-down" style="width:14px;height:14px;vertical-align:middle;"></i> 展开</button>
+      <button class="btn btn-ghost btn-sm" onclick="copyProtoCode('${escapeAttr(id)}')"><i data-lucide="clipboard" style="width:14px;height:14px;vertical-align:middle;"></i> 复制代码</button>
+      <button class="btn btn-ghost btn-sm" onclick="toggleProtoFullscreen('${escapeAttr(id)}')"><i data-lucide="square" style="width:14px;height:14px;vertical-align:middle;"></i> 全屏预览</button>
+      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('${escapeAttr(id)}').querySelector('.proto-frame').style.height='600px'"><i data-lucide="chevron-down" style="width:14px;height:14px;vertical-align:middle;"></i> 展开</button>
     </div>
   </div>`;
 }
@@ -5558,7 +5565,7 @@ function renderReplyBar() {
   const inputBox = document.querySelector('.chat-input-box');
   if (!inputBox) return;
   const isAI = msg.role === 'ai';
-  const avatarBg = isAI ? 'var(--accent)' : (currentUser?.avatarColor || 'var(--accent)');
+  const avatarBg = isAI ? 'var(--accent)' : (/^[a-zA-Z0-9#().%-]+$/.test(currentUser?.avatarColor) ? currentUser.avatarColor : 'var(--accent)');
   const avatarText = isAI ? 'AI' : (currentUser?.avatar || 'U');
   const roleName = isAI ? 'AI' : (currentUser?.name || '自己');
   const bar = document.createElement('div');
@@ -5627,7 +5634,7 @@ function escapeHtml(str) {
 }
 
 function escapeAttr(str) {
-  return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/\\/g,'\\\\');
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
 function handleReqHtmlUpload(input) {
@@ -5875,7 +5882,7 @@ function renderQuickActions() {
 function renderDomainTabs() {
   const container = document.getElementById('domain-tabs');
   container.innerHTML = Object.entries(DOMAINS).map(([key, d]) =>
-    `<div class="domain-tab${key === currentDomain ? ' active' : ''}" data-domain="${key}" onclick="switchDomain('${key}', this)">${getDomainDisplayName(key)}</div>`
+    `<div class="domain-tab${key === currentDomain ? ' active' : ''}" data-domain="${key}" onclick="switchDomain('${escapeAttr(key)}', this)">${getDomainDisplayName(key)}</div>`
   ).join('');
 }
 
@@ -5915,7 +5922,7 @@ function renderPendingChatFiles() {
     return `<div class="chat-file-chip">
       ${thumb}
       <span class="chat-file-chip-name" title="${escapeHtml(p.file.name)}">${escapeHtml(p.file.name)}</span>
-      <span class="chat-file-chip-remove" onclick="removePendingChatFile('${p.id}')" title="移除">×</span>
+      <span class="chat-file-chip-remove" onclick="removePendingChatFile('${escapeAttr(p.id)}')" title="移除">×</span>
     </div>`;
   }).join('');
 }
@@ -6061,14 +6068,14 @@ function renderConvList() {
       const active = c.id === activeConvId;
       const lastMsg = c.messages.length ? escapeHtml(c.messages[c.messages.length - 1].content.slice(0, 30)) : '';
       html += `<div class="conv-item ${active ? 'active' : ''}">
-        <div onclick="switchConversation('${c.id}')" style="flex:1;">
+        <div onclick="switchConversation('${escapeAttr(c.id)}')" style="flex:1;">
           <div style="display:flex;align-items:center;gap:6px;justify-content:space-between;">
             <div style="font-weight:${active?'600':'500'};font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHtml(c.title)}</div>
             <div style="font-size:11px;color:var(--text-muted);flex-shrink:0;">${timeAgo(c.createdAt)}</div>
           </div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${lastMsg || t('chat.emptyConv')}</div>
         </div>
-        <span onclick="event.stopPropagation();deleteConv('${c.id}')" style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:2px 6px;flex-shrink:0;opacity:0;display:flex;align-items:center;" class="conv-del"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></span>
+        <span onclick="event.stopPropagation();deleteConv('${escapeAttr(c.id)}')" style="font-size:12px;color:var(--text-muted);cursor:pointer;padding:2px 6px;flex-shrink:0;opacity:0;display:flex;align-items:center;" class="conv-del"><i data-lucide="trash-2" style="width:13px;height:13px;"></i></span>
       </div>`;
     });
   }
@@ -6084,7 +6091,7 @@ function renderConvList() {
       const visBadge = r.visibility === 'match_only' ? '<span class="vis-badge vis-badge-private"><i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i></span>' :
                        r.visibility === 'invite_only' ? '<span class="vis-badge vis-badge-invite"><i data-lucide="lock-keyhole" style="width:14px;height:14px;vertical-align:middle;"></i></span>' : '';
       const statusText = r.status==='draft' ? t('req.draft') : r.status==='open' ? t('req.published') : t('req.matched');
-      html += `<div class="mini-req-card" onclick="${r.status==='draft' ? `showToast(t('chat.publishFirst'),'info');` : ''}openReqDetail('${r.id}')">
+      html += `<div class="mini-req-card" onclick="${r.status==='draft' ? `showToast(t('chat.publishFirst'),'info');` : ''}openReqDetail('${escapeAttr(r.id)}')">
         <div class="mini-req-card-title">${escapeHtml(r.title)}${visBadge}</div>
         <div class="mini-req-card-sub">${d.icon} ${getDomainName(r.domain || 'tech')} · ${statusText} · ${r.time}</div>
         <div class="mini-req-card-tags">${renderBadges(r.skills, 3)}</div>
@@ -6267,7 +6274,7 @@ function publishReq(reqId) {
   publishingReqId = reqId;
   const body = document.getElementById('modal-visibility-body');
   body.innerHTML = Object.entries(VIS_OPTIONS).map(([k, v]) => `
-    <div class="vis-option ${v.cls}" onclick="confirmPublishVisibility('${k}')">
+    <div class="vis-option ${v.cls}" onclick="confirmPublishVisibility('${escapeAttr(k)}')">
       <div class="vis-option-icon">${v.icon}</div>
       <div class="vis-option-info">
         <div class="vis-option-name">${v.name}</div>
@@ -6443,14 +6450,14 @@ function openReqDetail(reqId) {
     <div id="req-applications-section-${reqId}" style="margin-bottom:16px;"></div>
     <div style="display:flex;gap:8px;">
       ${isAuthor ? `
-        ${req.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="setReqVisibility('${req.id}','public')"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 发布</button>` : ''}
-        ${req.status === 'open' && req.visibility !== 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${req.id}','public')"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 升级为公开</button>` : ''}
-        ${req.status === 'open' && req.visibility === 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${req.id}','match_only')"><i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i> 改为仅匹配</button>` : ''}
-        ${req.status === 'open' ? `<button class="btn btn-secondary btn-sm" onclick="goToMatch('${req.id}');closeModal('modal-req-detail')"><i data-lucide="search" style="width:14px;height:14px;vertical-align:middle;"></i> 智能匹配</button>` : ''}
-        <button class="btn btn-ghost btn-sm" onclick="editMyRequirement('${req.id}')"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i> 编辑</button>
-        <button class="btn btn-ghost btn-sm btn-danger" onclick="event.stopPropagation();deleteMyRequirement('${req.id}')" style="margin-left:auto;"><i data-lucide="trash-2" style="width:14px;height:14px;vertical-align:middle;"></i> 删除</button>
+        ${req.status === 'draft' ? `<button class="btn btn-primary btn-sm" onclick="setReqVisibility('${escapeAttr(req.id)}','public')"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> 发布</button>` : ''}
+        ${req.status === 'open' && req.visibility !== 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${escapeAttr(req.id)}','public')"><i data-lucide="globe" style="width:14px;height:14px;vertical-align:middle;"></i> 升级为公开</button>` : ''}
+        ${req.status === 'open' && req.visibility === 'public' ? `<button class="btn btn-secondary btn-sm" onclick="setReqVisibility('${escapeAttr(req.id)}','match_only')"><i data-lucide="lock" style="width:14px;height:14px;vertical-align:middle;"></i> 改为仅匹配</button>` : ''}
+        ${req.status === 'open' ? `<button class="btn btn-secondary btn-sm" onclick="goToMatch('${escapeAttr(req.id)}');closeModal('modal-req-detail')"><i data-lucide="search" style="width:14px;height:14px;vertical-align:middle;"></i> 智能匹配</button>` : ''}
+        <button class="btn btn-ghost btn-sm" onclick="editMyRequirement('${escapeAttr(req.id)}')"><i data-lucide="pencil" style="width:14px;height:14px;vertical-align:middle;"></i> 编辑</button>
+        <button class="btn btn-ghost btn-sm btn-danger" onclick="event.stopPropagation();deleteMyRequirement('${escapeAttr(req.id)}')" style="margin-left:auto;"><i data-lucide="trash-2" style="width:14px;height:14px;vertical-align:middle;"></i> 删除</button>
       ` : `
-        ${canApply ? `<button class="btn btn-primary btn-sm" onclick="closeModal('modal-req-detail');applyReq('${req.id}')"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 申请参与</button>` : ''}
+        ${canApply ? `<button class="btn btn-primary btn-sm" onclick="closeModal('modal-req-detail');applyReq('${escapeAttr(req.id)}')"><i data-lucide="send" style="width:14px;height:14px;vertical-align:middle;"></i> 申请参与</button>` : ''}
         ${!canApply ? `<span style="font-size:12px;color:var(--text-muted);">该需求暂不对外开放申请</span>` : ''}
       `}
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-req-detail')">关闭</button>
@@ -6466,21 +6473,21 @@ function openReqDetail(reqId) {
             <i data-lucide="upload" style="width:14px;height:14px;"></i> 上传
           </button>
           <input type="file" accept=".html" id="prototype-upload-${req.id}" style="display:none;" onchange="uploadPrototype('${req.id}', this)">
-          <button class="btn btn-ghost btn-sm" onclick="linkPrototype('${req.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="linkPrototype('${escapeAttr(req.id)}')">
             <i data-lucide="link" style="width:14px;height:14px;"></i> 链接
           </button>
-          <button class="btn btn-primary btn-sm" onclick="generatePrototype('${req.id}')" id="btn-gen-proto-${req.id}">
+          <button class="btn btn-primary btn-sm" onclick="generatePrototype('${escapeAttr(req.id)}')" id="btn-gen-proto-${req.id}">
             <i data-lucide="sparkles" style="width:14px;height:14px;"></i> AI 生成
           </button>
           ` : `
           <span style="font-size:11px;color:var(--text-muted);">${req.prototype.type === 'ai' ? 'AI 生成' : req.prototype.type === 'upload' ? '已上传' : '外部链接'} · ${new Date(req.prototype.createdAt).toLocaleDateString('zh-CN')}</span>
-          <button class="btn btn-ghost btn-sm" onclick="downloadPrototype('${req.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="downloadPrototype('${escapeAttr(req.id)}')">
             <i data-lucide="download" style="width:14px;height:14px;"></i> 下载
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="editPrototypeSource('${req.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="editPrototypeSource('${escapeAttr(req.id)}')">
             <i data-lucide="pencil" style="width:14px;height:14px;"></i> 编辑
           </button>
-          <button class="btn btn-ghost btn-sm" onclick="regeneratePrototype('${req.id}')">
+          <button class="btn btn-ghost btn-sm" onclick="regeneratePrototype('${escapeAttr(req.id)}')">
             <i data-lucide="sparkles" style="width:14px;height:14px;"></i> 重新生成
           </button>
           `}
@@ -6493,7 +6500,7 @@ function openReqDetail(reqId) {
           <span style="width:10px;height:10px;border-radius:50%;background:#ffbd2e;"></span>
           <span style="width:10px;height:10px;border-radius:50%;background:#28ca41;"></span>
           <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">原型预览</span>
-          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:11px;" onclick="openPrototypeFullscreen('${req.id}')">
+          <button class="btn btn-ghost btn-sm" style="margin-left:auto;font-size:11px;" onclick="openPrototypeFullscreen('${escapeAttr(req.id)}')">
             <i data-lucide="maximize" style="width:12px;height:12px;"></i> 全屏
           </button>
         </div>
@@ -6528,8 +6535,8 @@ async function loadReqApplications(reqId) {
         pending.map(a => `<div style="padding:10px 12px;margin-bottom:6px;background:var(--bg-tertiary);border-radius:8px;display:flex;align-items:center;justify-content:space-between;">
           <div><strong>${escapeHtml(a.applicant?.name || '用户')}</strong><span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${escapeHtml(a.message || '')}</span></div>
           <div style="display:flex;gap:4px;">
-            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();reviewApp('${reqId}','${a.id}','accepted')">同意</button>
-            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reviewApp('${reqId}','${a.id}','rejected')">拒绝</button>
+            <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();reviewApp('${escapeAttr(reqId)}','${escapeAttr(a.id)}','accepted')">同意</button>
+            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();reviewApp('${escapeAttr(reqId)}','${escapeAttr(a.id)}','rejected')">拒绝</button>
           </div>
         </div>`).join('') +
         (apps.length > pending.length ? `<div style="font-size:11px;color:var(--text-muted);padding:4px 0;">另有 ${apps.length - pending.length} 条已处理</div>` : '');
@@ -6599,7 +6606,7 @@ function renderMatchSection() {
       const d = DOMAINS[r.domain] || DOMAINS.tech;
       const pending = r.pendingApplicationCount || 0;
     return `
-    <div class="match-req-item ${currentMatchReqId === r.id ? 'selected' : ''}" id="match-req-${r.id}" onclick="selectMatchReq('${r.id}')">
+    <div class="match-req-item ${currentMatchReqId === r.id ? 'selected' : ''}" id="match-req-${r.id}" onclick="selectMatchReq('${escapeAttr(r.id)}')">
       <div class="match-req-item-title">${escapeHtml(r.title)}${pending ? `<span class="pending-badge">${pending}</span>` : ''}</div>
       <div class="match-req-item-sub">${d.icon} ${getDomainName(r.domain || 'tech')} · ${r.time}</div>
     </div>`;
@@ -6609,7 +6616,7 @@ function renderMatchSection() {
     html += `<div style="font-size:10px;color:var(--text-muted);padding:8px 0 4px;"><i data-lucide="pencil-line" style="width:14px;height:14px;vertical-align:middle;"></i> ${t('match.draft')}</div>`;
     html += draftReqs.map(r => {
       const d = DOMAINS[r.domain] || DOMAINS.tech;
-      return `<div class="match-req-item" onclick="openReqDetail('${r.id}')" style="opacity:0.7;">
+      return `<div class="match-req-item" onclick="openReqDetail('${escapeAttr(r.id)}')" style="opacity:0.7;">
         <div class="match-req-item-title">${escapeHtml(r.title)}</div>
         <div class="match-req-item-sub">${d.icon} ${getDomainName(r.domain || 'tech')} · ${t('match.draft')}</div>
       </div>`;
@@ -6714,7 +6721,7 @@ function renderMatchCard(u, req) {
           <div class="collab-score-label">${t('match.collabScore')}</div>
           <div class="collab-score-val"><i data-lucide="star" style="width:14px;height:14px;vertical-align:middle;"></i> ${u.collabScore} (${t('match.projects', {n: u.projects})})</div>
         </div>
-        <button class="btn btn-primary btn-sm" onclick="sendInvite('${u.id}', '${req.id}')">${t('match.inviteCollab')}</button>
+        <button class="btn btn-primary btn-sm" onclick="sendInvite('${escapeAttr(u.id)}', '${escapeAttr(req.id)}')">${t('match.inviteCollab')}</button>
       </div>
     </div>`;
 }
@@ -6739,7 +6746,7 @@ async function reverseMatch(limit) {
 function renderMatchCardForReq(r) {
   const d = DOMAINS[r.domain] || DOMAINS.tech;
   const cls = r.userMatchPct >= 80 ? 'high' : r.userMatchPct >= 60 ? 'mid' : 'low';
-  return `<div class="user-match-card" style="cursor:pointer;" onclick="openReqDetail('${r.id}')">
+  return `<div class="user-match-card" style="cursor:pointer;" onclick="openReqDetail('${escapeAttr(r.id)}')">
     <div class="user-match-top">
       <div style="font-size:24px;width:48px;text-align:center;flex-shrink:0;">${d.icon}</div>
       <div class="user-match-info">
@@ -6752,7 +6759,7 @@ function renderMatchCardForReq(r) {
     <div class="user-match-skills">${renderBadges(r.skills, 4)}</div>
     <div class="user-match-footer">
       <div><div class="collab-score-label">${t('match.publisher')}</div><div class="collab-score-val">${escapeHtml((r.author || {}).name || t('match.unknownUser'))}</div></div>
-      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();applyReq('${r.id}')">${t('match.applyJoin')}</button>
+      <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();applyReq('${escapeAttr(r.id)}')">${t('match.applyJoin')}</button>
     </div>
   </div>`;
 }
@@ -6829,7 +6836,7 @@ async function renderProfileRecs(profileContentEl) {
   matched.forEach(r => {
     const cls = r.userMatchPct >= 80 ? 'high' : r.userMatchPct >= 60 ? 'mid' : 'low';
     const d = DOMAINS[r.domain] || DOMAINS.tech;
-    html += `<div class="rec-item" onclick="openReqDetail('${r.id}')">
+    html += `<div class="rec-item" onclick="openReqDetail('${escapeAttr(r.id)}')">
       <div class="rec-item-score ${cls}">${r.userMatchPct}%</div>
       <div class="rec-item-body">
         <div class="rec-item-title">${escapeHtml(r.title)}</div>
@@ -6868,7 +6875,7 @@ function sendInvite(uid, reqId) {
     <textarea id="invite-message-input" style="width:100%;padding:10px;border-radius:var(--radius-md);min-height:80px;margin-bottom:14px;" placeholder="介绍一下你的项目，以及为什么觉得对方适合...">你好，我在做「${escapeHtml(req.title)}」项目，看到你在 ${escapeHtml(user.skills[0])} 方面很有经验，希望能和你合作。</textarea>
     <div style="display:flex;gap:8px;justify-content:flex-end;">
       <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-invite')">取消</button>
-      <button class="btn btn-primary btn-sm" onclick="confirmInvite('${uid}', '${reqId}')">发送邀请</button>
+      <button class="btn btn-primary btn-sm" onclick="confirmInvite('${escapeAttr(uid)}', '${escapeAttr(reqId)}')">发送邀请</button>
     </div>
   `;
   openModal('modal-invite');
@@ -6916,8 +6923,8 @@ function renderGroupsList() {
     const msgs = g.messages||[];
     const lastMsg = msgs[msgs.length - 1];
     return `
-      <div class="group-list-item ${activeGroupId === g.id ? 'active' : ''}" id="group-item-${g.id}" onclick="openGroup('${g.id}')">
-        <div class="group-list-avatar" style="background:${g.avatarColor || 'linear-gradient(135deg,#8b5cf6,#3b82f6)'};">${g.emoji || '<i data-lucide="users" style="width:14px;height:14px;vertical-align:middle;"></i>'}</div>
+      <div class="group-list-item ${activeGroupId === g.id ? 'active' : ''}" id="group-item-${g.id}" onclick="openGroup('${escapeAttr(g.id)}')">
+        <div class="group-list-avatar" style="background:${/^[a-zA-Z0-9#().%-]+$/.test(g.avatarColor)?g.avatarColor:'linear-gradient(135deg,#8b5cf6,#3b82f6)'};">${g.emoji || '<i data-lucide="users" style="width:14px;height:14px;vertical-align:middle;"></i>'}</div>
         <div class="group-list-info">
           <div class="group-list-name">${escapeHtml(g.name || g.title || t('groups.collabGroup'))}</div>
           <div class="group-list-last">${lastMsg ? (lastMsg.type==='file' ? '<i data-lucide="paperclip" style="width:14px;height:14px;vertical-align:middle;"></i> ' + lastMsg.fileName : escapeHtml(lastMsg.content.slice(0,24))) : t('groups.noMessages')}</div>
@@ -6945,7 +6952,7 @@ function openGroup(gid) {
   chatEl.classList.add('active');
 
   document.getElementById('active-group-avatar').textContent = group.emoji;
-  document.getElementById('active-group-avatar').style.background = group.avatarColor;
+  document.getElementById('active-group-avatar').style.background = /^[a-zA-Z0-9#().%-]+$/.test(group.avatarColor) ? group.avatarColor : 'var(--accent)';
   document.getElementById('active-group-name').textContent = group.name;
   document.getElementById('active-group-desc').textContent = `${t('groups.memberCount', {n: (group.members||[]).length})} · ${(group.desc||'').slice(0,40)}`;
 
@@ -6957,7 +6964,7 @@ function openGroup(gid) {
   membersCount.textContent = `(${(group.members||[]).length})`;
   document.getElementById('active-members-list').innerHTML = (group.members||[]).map(m => `
     <div class="member-item">
-      <div class="avatar avatar-sm" style="background:${m.avatarColor || 'var(--accent)'};">${m.avatar || (m.name||'?')[0]}</div>
+      <div class="avatar avatar-sm" style="background:${/^[a-zA-Z0-9#().%-]+$/.test(m.avatarColor)?m.avatarColor:'var(--accent)'};">${m.avatar || (m.name||'?')[0]}</div>
       <div>
         <div class="member-name">${escapeHtml(m.name)}${m.id === currentUser.id ? ' <span style="font-size:10px;color:var(--accent);">(我)</span>' : ''}</div>
         <div class="member-role">${escapeHtml(m.position || '成员')}</div>
@@ -6987,7 +6994,7 @@ function renderGroupMessage(msg) {
       </div>`
     : `<div class="group-msg-bubble">${escapeHtml(msg.content)}</div>`;
 
-  const copyBtn = msg.type === 'text' ? `<span class="msg-action-btn" onclick="event.stopPropagation();kbSaveFromGroup('${escapeAttr(msg.content)}', '${activeGroupId}')" title="保存到知识库"><i data-lucide="bookmark-plus" style="width:13px;height:13px;"></i></span><button onclick="event.stopPropagation();copyText('${escapeAttr(msg.content)}')"><i data-lucide="copy" style="width:13px;height:13px;"></i> 复制</button>` : '';
+  const copyBtn = msg.type === 'text' ? `<span class="msg-action-btn" onclick="event.stopPropagation();kbSaveFromGroup('${escapeAttr(msg.content)}', '${escapeAttr(activeGroupId)}')" title="保存到知识库"><i data-lucide="bookmark-plus" style="width:13px;height:13px;"></i></span><button onclick="event.stopPropagation();copyText('${escapeAttr(msg.content)}')"><i data-lucide="copy" style="width:13px;height:13px;"></i> 复制</button>` : '';
 
   return `
     <div class="group-msg-row ${rowCls}">
@@ -7131,7 +7138,7 @@ function renderSquareSceneChips() {
   const tags = getSquareSceneTags();
   container.innerHTML =
     `<div class="filter-chip${currentSquareScene === 'all' ? ' active' : ''}" data-filter-scene="all" onclick="filterSquareScene('all', this)">全部</div>` +
-    tags.map(t => `<div class="filter-chip${currentSquareScene === t ? ' active' : ''}" data-filter-scene="${t}" onclick="filterSquareScene('${t.replace(/'/g, "\\'")}', this)">${t}</div>`).join('');
+    tags.map(t => `<div class="filter-chip${currentSquareScene === t ? ' active' : ''}" data-filter-scene="${t}" onclick="filterSquareScene('${escapeAttr(t)}', this)">${t}</div>`).join('');
 }
 
 /** 场景筛选（本地过滤，不请求 API） */
@@ -7218,10 +7225,10 @@ function renderSquareCard(r) {
   if (!isAuthor) {
     applyBtn = applied
       ? `<button class="btn btn-sm btn-secondary" disabled style="opacity:0.7;cursor:default;">${t('square.applied')}</button>`
-      : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();applyReq('${r.id}')">${t('square.applyJoin')}</button>`;
+      : `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();applyReq('${escapeAttr(r.id)}')">${t('square.applyJoin')}</button>`;
   }
   return `
-    <div class="square-req-card" onclick="openReqDetail('${r.id}')">
+    <div class="square-req-card" onclick="openReqDetail('${escapeAttr(r.id)}')">
       <div class="square-card-header">
         <div class="square-card-title">${escapeHtml(r.title)}</div>
         <div class="square-card-badges">
@@ -7354,7 +7361,7 @@ function renderProfile() {
     <div class="profile-card">
       <div class="profile-top">
         <div class="profile-avatar-wrap">
-          <div class="avatar avatar-xl profile-avatar-main" id="profile-avatar" style="${currentUser.avatarUrl ? 'background:none;padding:0;' : 'background:'+currentUser.avatarColor+';'}">${currentUser.avatarUrl ? `<img src="${currentUser.avatarUrl}" style="width:100%;height:100%;border-radius:50%;">` : currentUser.avatar}</div>
+          <div class="avatar avatar-xl profile-avatar-main" id="profile-avatar" style="${currentUser.avatarUrl ? 'background:none;padding:0;' : 'background:'+(/^[a-zA-Z0-9#().%-]+$/.test(currentUser.avatarColor)?currentUser.avatarColor:'var(--accent)')+';'}">${currentUser.avatarUrl ? `<img src="${escapeAttr(currentUser.avatarUrl||'')}" style="width:100%;height:100%;border-radius:50%;">` : currentUser.avatar}</div>
           <div class="profile-avatar-edit" onclick="generateAvatar()"><i data-lucide="sparkles" style="width:14px;height:14px;vertical-align:middle;"></i></div>
         </div>
         <div class="profile-info">
@@ -7600,7 +7607,7 @@ function renderPortfolioGrid(items) {
     </div>`;
   }
   const cards = items.map(p => `
-    <div class="port-card" onclick="event.stopPropagation();editPortfolioItemById('${p.id}')">
+    <div class="port-card" onclick="event.stopPropagation();editPortfolioItemById('${escapeAttr(p.id)}')">
       <div class="port-card-header" style="background:${p.color || 'var(--accent)'};"><i data-lucide="folder" style="width:14px;height:14px;vertical-align:middle;"></i></div>
       <div class="port-card-body">
         <div class="port-card-title">${escapeHtml(p.title)}</div>
@@ -7818,7 +7825,7 @@ function renderSettingsMatch() {
         ${domains.map(d => {
           const info = DOMAINS[d];
           const active = (userSettings.matchPrefs.preferredDomains || []).includes(d);
-          return `<span class="badge ${active ? 'badge-purple' : 'badge-gray'}" style="cursor:pointer;" onclick="toggleMatchDomain('${d}')">${getDomainDisplayName(d)}</span>`;
+          return `<span class="badge ${active ? 'badge-purple' : 'badge-gray'}" style="cursor:pointer;" onclick="toggleMatchDomain('${escapeAttr(d)}')">${getDomainDisplayName(d)}</span>`;
         }).join('')}
       </div>
       <div class="settings-row" style="margin-top:12px;">
@@ -8121,8 +8128,15 @@ async function aiEnhanceProfile() {
 async function init() {
   // 处理 GitHub OAuth 回调（URL 中带 code 参数）
   const githubCode = new URLSearchParams(location.search).get('code');
+  const githubState = new URLSearchParams(location.search).get('state');
   if (githubCode && sessionStorage.getItem('github_oauth_pending')) {
     sessionStorage.removeItem('github_oauth_pending');
+    // 验证 state 参数防止 CSRF
+    const savedState = sessionStorage.getItem('github_oauth_state');
+    sessionStorage.removeItem('github_oauth_state');
+    if (savedState && githubState !== savedState) {
+      console.error('[init] GitHub OAuth state mismatch, possible CSRF attack');
+    } else {
     // 清除 URL 中的 code 参数
     const cleanUrl = new URL(location.href);
     cleanUrl.searchParams.delete('code');
@@ -8138,16 +8152,10 @@ async function init() {
     } catch (e) {
       console.error('[init] GitHub OAuth token exchange failed:', e);
     }
+    } // end else (state matched)
   }
 
-  // 处理旧的 github_token 参数（兼容）
-  const githubToken = new URLSearchParams(location.search).get('github_token');
-  if (githubToken) {
-    const cleanUrl = new URL(location.href);
-    cleanUrl.searchParams.delete('github_token');
-    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
-    CollabApi.setToken(githubToken);
-  }
+  // [REMOVED] 旧的 github_token 参数处理 - 存在 Session Fixation 风险
 
   // 确保 CollabApi 存在后再初始化
   if (typeof CollabApi === 'undefined' || !CollabApi.setUnauthorizedHandler) {
@@ -8195,15 +8203,6 @@ async function init() {
     }
   }
   showLogin();
-  // 如果 URL 中有 reset_token，自动显示重置密码面板
-  var resetToken = new URLSearchParams(location.search).get('reset_token');
-  if (resetToken) {
-    window._resetToken = resetToken;
-    var cleanUrl = new URL(location.href);
-    cleanUrl.searchParams.delete('reset_token');
-    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
-    showResetPassword();
-  }
 }
 
 async function deleteMyRequirement(reqId) {
@@ -8245,8 +8244,8 @@ function editMyRequirement(reqId) {
     <label style="font-size:12px;color:var(--text-muted);display:block;margin-bottom:4px;">所需技能（逗号分隔）</label>
     <input id="edit-req-skills" value="${escapeHtml((req.skills||[]).join(', '))}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-bottom:14px;" />
     <div style="display:flex;gap:8px;">
-      <button class="btn btn-primary btn-sm" onclick="saveReqEdit('${reqId}')"><i data-lucide="save" style="width:14px;height:14px;vertical-align:middle;"></i> 保存</button>
-      <button class="btn btn-ghost btn-sm" onclick="openReqDetail('${reqId}')">取消</button>
+      <button class="btn btn-primary btn-sm" onclick="saveReqEdit('${escapeAttr(reqId)}')"><i data-lucide="save" style="width:14px;height:14px;vertical-align:middle;"></i> 保存</button>
+      <button class="btn btn-ghost btn-sm" onclick="openReqDetail('${escapeAttr(reqId)}')">取消</button>
     </div>
   `;
   setTimeout(() => { if (window.lucide) lucide.createIcons(); }, 50);
@@ -8297,7 +8296,7 @@ async function forwardMsg(idx) {
     <div style="padding:8px 12px;cursor:pointer;border-radius:6px;margin:3px 0;border:1px solid var(--border);"
       onmouseover="this.style.borderColor='var(--accent)';this.style.background='var(--bg-hover)'"
       onmouseout="this.style.borderColor='var(--border)';this.style.background=''"
-      onclick="doForward(${idx},'${c.id}')">${escapeHtml(c.title)}</div>
+      onclick="doForward(${idx},'${escapeAttr(c.id)}')">${escapeHtml(c.title)}</div>
   `).join('');
   openModal('modal-forward');
 }
@@ -8465,7 +8464,7 @@ function renderKbKanban() {
         <div class="kb-column-cards">
           ${colCards.map(c => renderKbCard(c)).join('')}
         </div>
-        <button class="kb-add-card-btn" onclick="kbOpenEditModal({type:'card',status:'${col.key}'})">+ 添加卡片</button>
+        <button class="kb-add-card-btn" onclick="kbOpenEditModal({type:'card',status:'${escapeAttr(col.key)}'})">+ 添加卡片</button>
       </div>`;
   }).join('');
   if (!cards.length) {
@@ -8479,12 +8478,12 @@ function renderKbCard(item) {
   const timeStr = item.updatedAt ? new Date(item.updatedAt).toLocaleDateString('zh-CN') : '';
   return `
     <div class="kb-card" draggable="true"
-         ondragstart="event.dataTransfer.setData('text/plain','${item.id}');this.classList.add('dragging')"
+         ondragstart="event.dataTransfer.setData('text/plain','${escapeAttr(item.id)}');this.classList.add('dragging')"
          ondragend="this.classList.remove('dragging')"
-         onclick="kbOpenEditModal(kbItems.find(i=>i.id==='${item.id}'))">
+         onclick="kbOpenEditModal(kbItems.find(i=>i.id==='${escapeAttr(item.id)}'))">
       <div class="kb-card-actions">
-        <button class="kb-card-action-btn" onclick="event.stopPropagation();kbOpenEditModal(kbItems.find(i=>i.id==='${item.id}'));" title="编辑"><i data-lucide="pencil" style="width:11px;height:11px;"></i></button>
-        <button class="kb-card-action-btn danger" onclick="event.stopPropagation();kbDeleteItem('${item.id}')" title="删除"><i data-lucide="trash-2" style="width:11px;height:11px;"></i></button>
+        <button class="kb-card-action-btn" onclick="event.stopPropagation();kbOpenEditModal(kbItems.find(i=>i.id==='${escapeAttr(item.id)}'));" title="编辑"><i data-lucide="pencil" style="width:11px;height:11px;"></i></button>
+        <button class="kb-card-action-btn danger" onclick="event.stopPropagation();kbDeleteItem('${escapeAttr(item.id)}')" title="删除"><i data-lucide="trash-2" style="width:11px;height:11px;"></i></button>
       </div>
       <div class="kb-card-title">${escapeHtml(item.title || '未命名')}</div>
       ${preview ? `<div class="kb-card-preview">${escapeHtml(preview)}</div>` : ''}
@@ -8501,7 +8500,7 @@ function renderKbDocs() {
   const list = document.getElementById('kb-doc-list');
   const docs = kbItems.filter(it => it.type === 'doc');
   list.innerHTML = docs.map(d => `
-    <div class="kb-doc-list-item${kbActiveDocId === d.id ? ' active' : ''}" onclick="kbOpenDoc('${d.id}')">
+    <div class="kb-doc-list-item${kbActiveDocId === d.id ? ' active' : ''}" onclick="kbOpenDoc('${escapeAttr(d.id)}')">
       <i data-lucide="file-text" style="width:13px;height:13px;margin-right:6px;"></i>${escapeHtml(d.title || '未命名')}
     </div>
   `).join('');
@@ -8569,7 +8568,7 @@ function renderKbDrafts() {
     const preview = (d.content || '').slice(0, 100).replace(/\n/g, ' ') + ((d.content || '').length > 100 ? '...' : '');
     const timeStr = d.createdAt ? new Date(d.createdAt).toLocaleString('zh-CN') : '';
     return `
-      <div class="kb-draft-item" onclick="kbOpenEditModal(kbItems.find(i=>i.id==='${d.id}'))">
+      <div class="kb-draft-item" onclick="kbOpenEditModal(kbItems.find(i=>i.id==='${escapeAttr(d.id)}'))">
         <div class="kb-draft-icon"><i data-lucide="pen-line" style="width:16px;height:16px;"></i></div>
         <div class="kb-draft-content">
           <div class="kb-draft-title">${escapeHtml(d.title || '未命名草稿')}</div>
@@ -8580,8 +8579,8 @@ function renderKbDrafts() {
           </div>
         </div>
         <div class="kb-draft-actions" onclick="event.stopPropagation();">
-          <button class="kb-draft-action-btn primary" onclick="kbConvertDraft('${d.id}','card')">转卡片</button>
-          <button class="kb-draft-action-btn primary" onclick="kbConvertDraft('${d.id}','doc')">转文档</button>
+          <button class="kb-draft-action-btn primary" onclick="kbConvertDraft('${escapeAttr(d.id)}','card')">转卡片</button>
+          <button class="kb-draft-action-btn primary" onclick="kbConvertDraft('${escapeAttr(d.id)}','doc')">转文档</button>
         </div>
       </div>`;
   }).join('');

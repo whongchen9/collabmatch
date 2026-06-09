@@ -45,7 +45,7 @@ G('/api/config/workflows', ()=>WORKFLOWS);
 // ─── Auth ───────────────────────────
 G('/api/auth/config', ()=>{
   const githubEnabled = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
-  return {mode:'dev',emailAuthEnabled:true,githubEnabled,githubClientId:process.env.GITHUB_CLIENT_ID||'',devAuthCode:DEV_AUTH_CODE};
+  return {mode:'dev',emailAuthEnabled:true,githubEnabled,githubClientId:process.env.GITHUB_CLIENT_ID||''};
 });
 P('/api/auth/sms/send', ()=>({ok:true}));
 P('/api/auth/send-code', ()=>({ok:true}));
@@ -85,9 +85,17 @@ P('/api/auth/email-login', async (p,b)=>{
 });
 // ─── \u5bc6\u7801\u91cd\u7f6e\uff08\u90ae\u7bb1 token \u94fe\u63a5\u65b9\u5f0f\uff09 ──
 const crypto = require('crypto');
+const FORGOT_RATE = new Map();
 P('/api/auth/forgot-password', async (p,b,q)=>{
   const {email}=b;
   if(!email) return err('\u8bf7\u8f93\u5165\u90ae\u7bb1');
+  // \u9891\u7387\u9650\u5236\uff1a\u6bcf\u4e2a\u90ae\u7bb1\u6bcf\u5c0f\u65f6\u6700\u591a 3 \u6b21
+  const rateKey = email.toLowerCase();
+  const now = Date.now();
+  const rate = FORGOT_RATE.get(rateKey);
+  if (rate && rate.count >= 3 && now - rate.windowStart < 3600000) return {ok:true,message:'\u5982\u679c\u8be5\u90ae\u7bb1\u5df2\u6ce8\u518c\uff0c\u91cd\u7f6e\u94fe\u63a5\u5df2\u53d1\u9001'};
+  if (!rate || now - rate.windowStart >= 3600000) FORGOT_RATE.set(rateKey, {count:1,windowStart:now});
+  else rate.count++;
   const u=await db.collection('users').where({email}).limit(1).get();
   // \u65e0\u8bba\u90ae\u7bb1\u662f\u5426\u5b58\u5728\uff0c\u90fd\u8fd4\u56de\u76f8\u540c\u54cd\u5e94\uff08\u9632\u90ae\u7bb1\u63a2\u6d4b\uff09
   if(!u.data.length) return {ok:true,message:'\u5982\u679c\u8be5\u90ae\u7bb1\u5df2\u6ce8\u518c\uff0c\u91cd\u7f6e\u94fe\u63a5\u5df2\u53d1\u9001'};
