@@ -12,13 +12,13 @@ function err(msg, code) { return { _status: code||400, error: msg }; }
 function addId(d) { if(!d||typeof d!='object') return d; if(d._id&&!d.id) d.id=d._id; return d; }
 function addIds(arr) { if(!Array.isArray(arr)) return arr; return arr.map(addId); }
 
-// L-05: MongoDB memory server 不支持持久化索引。生产环境建议在以下集合创建索引：
+// L-05: MongoDB memory server \u4e0d\u652f\u6301\u6301\u4e45\u5316\u7d22\u5f15\u3002\u751f\u4ea7\u73af\u5883\u5efa\u8bae\u5728\u4ee5\u4e0b\u96c6\u5408\u521b\u5efa\u7d22\u5f15\uff1a
 //   - users: { phone: 1 } unique, { skills: 1 }, { lastSeenAt: -1 }
 //   - requirements: { status: 1, visibility: 1, createdAt: -1 }, { author: 1 }, { skills: 1 }
 //   - applications: { requirementId: 1, applicant: 1 }, { applicant: 1 }
 //   - conversations: { userId: 1, updatedAt: -1 }
 //   - groups: { creatorId: 1 }, { 'members.id': 1 }
-//   示例: db.collection('users').createIndex({ phone: 1 }, { unique: true })
+//   \u793a\u4f8b: db.collection('users').createIndex({ phone: 1 }, { unique: true })
 
 const R = {}; // routes
 function r(m,p,h) { R[m+':'+p]=h; }
@@ -29,15 +29,15 @@ const G=(p,h)=>r2('GET',p,h); const P=(p,h)=>r2('POST',p,h); const U=(p,h)=>r2('
 // ─── Health ─────────────────────────
 G('/health', ()=>({ok:true,version:'v3-fix',path:'/'}));
 G('/api/health', ()=>({ok:true,version:'v3-fix',path:'/api'}));
-const DOMAINS={tech:{key:'tech',name:'💻 技术开发',icon:'💻',color:'#8b7bf7',sceneTags:['项目需求','开源协作'],skills:['React','Vue','Node.js','Python','Go','TypeScript','Java','Docker','Kubernetes','AI/ML','NLP','后端开发','前端开发','全栈开发','区块链','推荐算法','算法'],templates:[{label:'项目协作',text:'我想做一个 AI 工具，缺一位会 React 的全栈开发者，每周可投入 10 小时'},{label:'开源协作',text:'我有一个开源项目，需要前端贡献者和文档维护者'},{label:'SaaS 合伙',text:'已有 MVP idea，寻找技术合伙人一起做 B2B SaaS'}],chatIntro:'描述你的项目或想法，AI 帮你整理需求并匹配合适的工程师'},design:{key:'design',name:'🎨 创意设计',icon:'🎨',color:'#a78bfa',sceneTags:['品牌设计','插画合作','UI/UX'],skills:['Figma','UI设计','UX研究','品牌视觉','插画','动画','3D','Framer','设计系统'],templates:[{label:'品牌设计',text:'寻找设计师一起做一套品牌 VI 系统'},{label:'插画合作',text:'找插画师合作出版绘本项目'},{label:'设计系统',text:'需要 UI 设计师共建组件库设计规范'}],chatIntro:'描述你的创意项目，AI 帮你整理需求并匹配设计师、插画师等创意人才'},content:{key:'content',name:'📝 内容创作',icon:'📝',color:'#7c8cf7',sceneTags:['播客制作','视频创作','专栏合作'],skills:['写作','视频剪辑','播客','自媒体运营','编辑','新媒体','摄影','内容策划'],templates:[{label:'播客制作',text:'想找一个搭档一起做科技类播客节目'},{label:'视频创作',text:'组建视频创作团队做知识类短视频'},{label:'专栏合作',text:'寻找作者合作撰写专栏或电子书'}],chatIntro:'描述你的内容创作方向，AI 帮你整理需求并匹配创作者、编辑、运营伙伴'},education:{key:'education',name:'🎓 教育培训',icon:'🎓',color:'#6bb8c9',sceneTags:['课程共创','教育工具','知识社区'],skills:['课程设计','教学设计','知识付费','培训','教育科技','教研','辅导'],templates:[{label:'课程共创',text:'寻找学科专家一起开发在线课程'},{label:'教育工具',text:'需要教育行业经验的产品经理合作'},{label:'知识社区',text:'想组建教育知识分享社区团队'}],chatIntro:'描述你的教育项目或教学需求，AI 帮你整理并匹配教育行业伙伴'},business:{key:'business',name:'📈 商业合作',icon:'📈',color:'#b07cc7',sceneTags:['技术合伙','运营合伙','融资合作'],skills:['市场营销','BD','融资','数据分析','运营','产品管理','PRD撰写','商业模式','供应链'],templates:[{label:'技术合伙',text:'有产品 idea，寻找技术合伙人一起创业，每周可投入 10-15 小时'},{label:'运营合伙',text:'项目已有 MVP，需要运营合伙人一起做增长'},{label:'商业合伙',text:'项目已有原型，寻找商业合伙人负责市场和融资'}],chatIntro:'描述你的创业项目，AI 帮你整理需求并匹配技术或商业伙伴'},campus:{key:'campus',name:'🏫 校园生活',icon:'🏫',color:'#7cc4a8',sceneTags:['跑腿互助','拼单拼车','组局活动','技能交换','课程项目'],skills:['代拿快递','拼外卖','拼车','二手交易','课程组队','比赛组队','论文互助','PPT制作','运动搭子','桌游','徒步','摄影','吉他','编程','设计'],templates:[{label:'代拿快递',text:'求人帮忙拿个快递，菜鸟驿站，今天18点前，有偿3元'},{label:'拼外卖',text:'有人一起拼外卖吗？想点XX家，凑满减'},{label:'周末组局',text:'周末想去徒步/打羽毛球/玩桌游，找人一起'},{label:'技能交换',text:'我会Python，想找人教我吉他/帮我做PPT'},{label:'课程组队',text:'期末大作业需要组队，缺一个会前端的'}],chatIntro:'说说你需要什么帮忙，或者想找什么搭子，AI 帮你匹配'}};
+const DOMAINS={tech:{key:'tech',name:'💻 \u6280\u672f\u5f00\u53d1',icon:'💻',color:'#8b7bf7',sceneTags:['\u9879\u76ee\u9700\u6c42','\u5f00\u6e90\u534f\u4f5c'],skills:['React','Vue','Node.js','Python','Go','TypeScript','Java','Docker','Kubernetes','AI/ML','NLP','\u540e\u7aef\u5f00\u53d1','\u524d\u7aef\u5f00\u53d1','\u5168\u6808\u5f00\u53d1','\u533a\u5757\u94fe','\u63a8\u8350\u7b97\u6cd5','\u7b97\u6cd5'],templates:[{label:'\u9879\u76ee\u534f\u4f5c',text:'\u6211\u60f3\u505a\u4e00\u4e2a AI \u5de5\u5177\uff0c\u7f3a\u4e00\u4f4d\u4f1a React \u7684\u5168\u6808\u5f00\u53d1\u8005\uff0c\u6bcf\u5468\u53ef\u6295\u5165 10 \u5c0f\u65f6'},{label:'\u5f00\u6e90\u534f\u4f5c',text:'\u6211\u6709\u4e00\u4e2a\u5f00\u6e90\u9879\u76ee\uff0c\u9700\u8981\u524d\u7aef\u8d21\u732e\u8005\u548c\u6587\u6863\u7ef4\u62a4\u8005'},{label:'SaaS \u5408\u4f19',text:'\u5df2\u6709 MVP idea\uff0c\u5bfb\u627e\u6280\u672f\u5408\u4f19\u4eba\u4e00\u8d77\u505a B2B SaaS'}],chatIntro:'\u63cf\u8ff0\u4f60\u7684\u9879\u76ee\u6216\u60f3\u6cd5\uff0cAI \u5e2e\u4f60\u6574\u7406\u9700\u6c42\u5e76\u5339\u914d\u5408\u9002\u7684\u5de5\u7a0b\u5e08'},design:{key:'design',name:'🎨 \u521b\u610f\u8bbe\u8ba1',icon:'🎨',color:'#a78bfa',sceneTags:['\u54c1\u724c\u8bbe\u8ba1','\u63d2\u753b\u5408\u4f5c','UI/UX'],skills:['Figma','UI\u8bbe\u8ba1','UX\u7814\u7a76','\u54c1\u724c\u89c6\u89c9','\u63d2\u753b','\u52a8\u753b','3D','Framer','\u8bbe\u8ba1\u7cfb\u7edf'],templates:[{label:'\u54c1\u724c\u8bbe\u8ba1',text:'\u5bfb\u627e\u8bbe\u8ba1\u5e08\u4e00\u8d77\u505a\u4e00\u5957\u54c1\u724c VI \u7cfb\u7edf'},{label:'\u63d2\u753b\u5408\u4f5c',text:'\u627e\u63d2\u753b\u5e08\u5408\u4f5c\u51fa\u7248\u7ed8\u672c\u9879\u76ee'},{label:'\u8bbe\u8ba1\u7cfb\u7edf',text:'\u9700\u8981 UI \u8bbe\u8ba1\u5e08\u5171\u5efa\u7ec4\u4ef6\u5e93\u8bbe\u8ba1\u89c4\u8303'}],chatIntro:'\u63cf\u8ff0\u4f60\u7684\u521b\u610f\u9879\u76ee\uff0cAI \u5e2e\u4f60\u6574\u7406\u9700\u6c42\u5e76\u5339\u914d\u8bbe\u8ba1\u5e08\u3001\u63d2\u753b\u5e08\u7b49\u521b\u610f\u4eba\u624d'},content:{key:'content',name:'📝 \u5185\u5bb9\u521b\u4f5c',icon:'📝',color:'#7c8cf7',sceneTags:['\u64ad\u5ba2\u5236\u4f5c','\u89c6\u9891\u521b\u4f5c','\u4e13\u680f\u5408\u4f5c'],skills:['\u5199\u4f5c','\u89c6\u9891\u526a\u8f91','\u64ad\u5ba2','\u81ea\u5a92\u4f53\u8fd0\u8425','\u7f16\u8f91','\u65b0\u5a92\u4f53','\u6444\u5f71','\u5185\u5bb9\u7b56\u5212'],templates:[{label:'\u64ad\u5ba2\u5236\u4f5c',text:'\u60f3\u627e\u4e00\u4e2a\u642d\u6863\u4e00\u8d77\u505a\u79d1\u6280\u7c7b\u64ad\u5ba2\u8282\u76ee'},{label:'\u89c6\u9891\u521b\u4f5c',text:'\u7ec4\u5efa\u89c6\u9891\u521b\u4f5c\u56e2\u961f\u505a\u77e5\u8bc6\u7c7b\u77ed\u89c6\u9891'},{label:'\u4e13\u680f\u5408\u4f5c',text:'\u5bfb\u627e\u4f5c\u8005\u5408\u4f5c\u64b0\u5199\u4e13\u680f\u6216\u7535\u5b50\u4e66'}],chatIntro:'\u63cf\u8ff0\u4f60\u7684\u5185\u5bb9\u521b\u4f5c\u65b9\u5411\uff0cAI \u5e2e\u4f60\u6574\u7406\u9700\u6c42\u5e76\u5339\u914d\u521b\u4f5c\u8005\u3001\u7f16\u8f91\u3001\u8fd0\u8425\u4f19\u4f34'},education:{key:'education',name:'🎓 \u6559\u80b2\u57f9\u8bad',icon:'🎓',color:'#6bb8c9',sceneTags:['\u8bfe\u7a0b\u5171\u521b','\u6559\u80b2\u5de5\u5177','\u77e5\u8bc6\u793e\u533a'],skills:['\u8bfe\u7a0b\u8bbe\u8ba1','\u6559\u5b66\u8bbe\u8ba1','\u77e5\u8bc6\u4ed8\u8d39','\u57f9\u8bad','\u6559\u80b2\u79d1\u6280','\u6559\u7814','\u8f85\u5bfc'],templates:[{label:'\u8bfe\u7a0b\u5171\u521b',text:'\u5bfb\u627e\u5b66\u79d1\u4e13\u5bb6\u4e00\u8d77\u5f00\u53d1\u5728\u7ebf\u8bfe\u7a0b'},{label:'\u6559\u80b2\u5de5\u5177',text:'\u9700\u8981\u6559\u80b2\u884c\u4e1a\u7ecf\u9a8c\u7684\u4ea7\u54c1\u7ecf\u7406\u5408\u4f5c'},{label:'\u77e5\u8bc6\u793e\u533a',text:'\u60f3\u7ec4\u5efa\u6559\u80b2\u77e5\u8bc6\u5206\u4eab\u793e\u533a\u56e2\u961f'}],chatIntro:'\u63cf\u8ff0\u4f60\u7684\u6559\u80b2\u9879\u76ee\u6216\u6559\u5b66\u9700\u6c42\uff0cAI \u5e2e\u4f60\u6574\u7406\u5e76\u5339\u914d\u6559\u80b2\u884c\u4e1a\u4f19\u4f34'},business:{key:'business',name:'📈 \u5546\u4e1a\u5408\u4f5c',icon:'📈',color:'#b07cc7',sceneTags:['\u6280\u672f\u5408\u4f19','\u8fd0\u8425\u5408\u4f19','\u878d\u8d44\u5408\u4f5c'],skills:['\u5e02\u573a\u8425\u9500','BD','\u878d\u8d44','\u6570\u636e\u5206\u6790','\u8fd0\u8425','\u4ea7\u54c1\u7ba1\u7406','PRD\u64b0\u5199','\u5546\u4e1a\u6a21\u5f0f','\u4f9b\u5e94\u94fe'],templates:[{label:'\u6280\u672f\u5408\u4f19',text:'\u6709\u4ea7\u54c1 idea\uff0c\u5bfb\u627e\u6280\u672f\u5408\u4f19\u4eba\u4e00\u8d77\u521b\u4e1a\uff0c\u6bcf\u5468\u53ef\u6295\u5165 10-15 \u5c0f\u65f6'},{label:'\u8fd0\u8425\u5408\u4f19',text:'\u9879\u76ee\u5df2\u6709 MVP\uff0c\u9700\u8981\u8fd0\u8425\u5408\u4f19\u4eba\u4e00\u8d77\u505a\u589e\u957f'},{label:'\u5546\u4e1a\u5408\u4f19',text:'\u9879\u76ee\u5df2\u6709\u539f\u578b\uff0c\u5bfb\u627e\u5546\u4e1a\u5408\u4f19\u4eba\u8d1f\u8d23\u5e02\u573a\u548c\u878d\u8d44'}],chatIntro:'\u63cf\u8ff0\u4f60\u7684\u521b\u4e1a\u9879\u76ee\uff0cAI \u5e2e\u4f60\u6574\u7406\u9700\u6c42\u5e76\u5339\u914d\u6280\u672f\u6216\u5546\u4e1a\u4f19\u4f34'},campus:{key:'campus',name:'🏫 \u6821\u56ed\u751f\u6d3b',icon:'🏫',color:'#7cc4a8',sceneTags:['\u8dd1\u817f\u4e92\u52a9','\u62fc\u5355\u62fc\u8f66','\u7ec4\u5c40\u6d3b\u52a8','\u6280\u80fd\u4ea4\u6362','\u8bfe\u7a0b\u9879\u76ee'],skills:['\u4ee3\u62ff\u5feb\u9012','\u62fc\u5916\u5356','\u62fc\u8f66','\u4e8c\u624b\u4ea4\u6613','\u8bfe\u7a0b\u7ec4\u961f','\u6bd4\u8d5b\u7ec4\u961f','\u8bba\u6587\u4e92\u52a9','PPT\u5236\u4f5c','\u8fd0\u52a8\u642d\u5b50','\u684c\u6e38','\u5f92\u6b65','\u6444\u5f71','\u5409\u4ed6','\u7f16\u7a0b','\u8bbe\u8ba1'],templates:[{label:'\u4ee3\u62ff\u5feb\u9012',text:'\u6c42\u4eba\u5e2e\u5fd9\u62ff\u4e2a\u5feb\u9012\uff0c\u83dc\u9e1f\u9a7f\u7ad9\uff0c\u4eca\u592918\u70b9\u524d\uff0c\u6709\u507f3\u5143'},{label:'\u62fc\u5916\u5356',text:'\u6709\u4eba\u4e00\u8d77\u62fc\u5916\u5356\u5417\uff1f\u60f3\u70b9XX\u5bb6\uff0c\u51d1\u6ee1\u51cf'},{label:'\u5468\u672b\u7ec4\u5c40',text:'\u5468\u672b\u60f3\u53bb\u5f92\u6b65/\u6253\u7fbd\u6bdb\u7403/\u73a9\u684c\u6e38\uff0c\u627e\u4eba\u4e00\u8d77'},{label:'\u6280\u80fd\u4ea4\u6362',text:'\u6211\u4f1aPython\uff0c\u60f3\u627e\u4eba\u6559\u6211\u5409\u4ed6/\u5e2e\u6211\u505aPPT'},{label:'\u8bfe\u7a0b\u7ec4\u961f',text:'\u671f\u672b\u5927\u4f5c\u4e1a\u9700\u8981\u7ec4\u961f\uff0c\u7f3a\u4e00\u4e2a\u4f1a\u524d\u7aef\u7684'}],chatIntro:'\u8bf4\u8bf4\u4f60\u9700\u8981\u4ec0\u4e48\u5e2e\u5fd9\uff0c\u6216\u8005\u60f3\u627e\u4ec0\u4e48\u642d\u5b50\uff0cAI \u5e2e\u4f60\u5339\u914d'}};
 
-const SKILLS={generate_prd:{id:'generate_prd',icon:'📋',name:'生成需求文档',desktop:'将用户的描述整理为结构化需求文档',instruct:'请把用户刚才描述的内容整理成结构化需求文档。输出格式：标题、项目背景、核心目标、所需技能、预期时间线、预期成果。',category:'official',author:'CollabAI',tags:['文档','需求'],installs:12580,version:'1.3',isInstallable:!0},diagnose:{id:'diagnose',icon:'🎯',name:'诊断需求',desktop:'从市场/技术/资源三维度分析可行性',instruct:'请从市场可行性、技术难度、资源需求三个维度诊断用户刚才描述的需求，指出潜在风险和被忽略的关键点，给出务实建议。',category:'official',author:'CollabAI',tags:['诊断','分析'],installs:9820,version:'1.2',isInstallable:!0},optimize:{id:'optimize',icon:'✨',name:'优化描述',desktop:'让需求描述更吸引协作者',instruct:'请优化用户刚才的需求描述，使其更吸引潜在协作者。突出：项目亮点、为什么值得参与、合作能获得什么。保持简洁有力。',category:'official',author:'CollabAI',tags:['优化','文案'],installs:8640,version:'1.1',isInstallable:!0},estimate:{id:'estimate',icon:'⏱️',name:'估算周期',desktop:'给项目阶段划分和时间估算',instruct:'请根据用户描述的项目需求，给出分阶段的周期估算。拆成 MVP/核心功能/上线/迭代四个阶段，每个阶段给时间范围和关键交付物。',category:'official',author:'CollabAI',tags:['周期','规划'],installs:7200,version:'1.0',isInstallable:!0},invite:{id:'invite',icon:'📨',name:'生成邀请文案',desktop:'为匹配到的协作者生成个性化邀请',instruct:'请基于当前需求和匹配到的协作者信息，生成一段自然、真诚的协作邀请文案。包含：项目简介、为什么选对方、合作模式建议。',category:'official',author:'CollabAI',tags:['邀请','协作'],installs:6100,version:'1.0',isInstallable:!0},summary:{id:'summary',icon:'📊',name:'协作周报',desktop:'自动总结群组近期讨论内容',instruct:'请总结当前群组最近的讨论要点。按以下结构：本周进展、关键决策、待解决问题、下周计划。如果讨论内容不足，告知无法总结。',category:'official',author:'CollabAI',tags:['周报','总结'],installs:5400,version:'1.0',isInstallable:!0},generate_ui:{id:'generate_ui',icon:'🖼️',name:'生成 UI 原型',desktop:'根据描述生成可交互的产品界面原型',instruct:'请根据用户描述的产品需求，输出 UI 原型方案：页面结构、核心组件、交互流程、设计建议（配色与布局）。用 Markdown 分节描述，便于设计师落地。',category:'official',author:'CollabAI',tags:['原型','UI','设计'],installs:4300,version:'1.0',isInstallable:!0},swot:{id:'swot',icon:'🔍',name:'SWOT 分析',desktop:'竞品 SWOT 分析矩阵',instruct:'请对用户描述的项目做 SWOT 分析，按优势、劣势、机会、威胁四象限输出，每条 2-4 点，并给出 1-2 条战略建议。',category:'community',author:'策略大师',tags:['分析','竞品','商业'],installs:3200,version:'1.0',isInstallable:!0},roadmap:{id:'roadmap',icon:'🗺️',name:'产品路线图',desktop:'生成分阶段产品路线图',instruct:'请根据用户需求生成分阶段产品路线图：里程碑、时间范围、关键交付物、依赖关系。用表格或列表呈现。',category:'community',author:'PM助手',tags:['规划','产品','路线图'],installs:1800,version:'1.0',isInstallable:!0}};
+const SKILLS={generate_prd:{id:'generate_prd',icon:'📋',name:'\u751f\u6210\u9700\u6c42\u6587\u6863',desktop:'\u5c06\u7528\u6237\u7684\u63cf\u8ff0\u6574\u7406\u4e3a\u7ed3\u6784\u5316\u9700\u6c42\u6587\u6863',instruct:'\u8bf7\u628a\u7528\u6237\u521a\u624d\u63cf\u8ff0\u7684\u5185\u5bb9\u6574\u7406\u6210\u7ed3\u6784\u5316\u9700\u6c42\u6587\u6863\u3002\u8f93\u51fa\u683c\u5f0f\uff1a\u6807\u9898\u3001\u9879\u76ee\u80cc\u666f\u3001\u6838\u5fc3\u76ee\u6807\u3001\u6240\u9700\u6280\u80fd\u3001\u9884\u671f\u65f6\u95f4\u7ebf\u3001\u9884\u671f\u6210\u679c\u3002',category:'official',author:'CollabAI',tags:['\u6587\u6863','\u9700\u6c42'],installs:12580,version:'1.3',isInstallable:!0},diagnose:{id:'diagnose',icon:'🎯',name:'\u8bca\u65ad\u9700\u6c42',desktop:'\u4ece\u5e02\u573a/\u6280\u672f/\u8d44\u6e90\u4e09\u7ef4\u5ea6\u5206\u6790\u53ef\u884c\u6027',instruct:'\u8bf7\u4ece\u5e02\u573a\u53ef\u884c\u6027\u3001\u6280\u672f\u96be\u5ea6\u3001\u8d44\u6e90\u9700\u6c42\u4e09\u4e2a\u7ef4\u5ea6\u8bca\u65ad\u7528\u6237\u521a\u624d\u63cf\u8ff0\u7684\u9700\u6c42\uff0c\u6307\u51fa\u6f5c\u5728\u98ce\u9669\u548c\u88ab\u5ffd\u7565\u7684\u5173\u952e\u70b9\uff0c\u7ed9\u51fa\u52a1\u5b9e\u5efa\u8bae\u3002',category:'official',author:'CollabAI',tags:['\u8bca\u65ad','\u5206\u6790'],installs:9820,version:'1.2',isInstallable:!0},optimize:{id:'optimize',icon:'\u2728',name:'\u4f18\u5316\u63cf\u8ff0',desktop:'\u8ba9\u9700\u6c42\u63cf\u8ff0\u66f4\u5438\u5f15\u534f\u4f5c\u8005',instruct:'\u8bf7\u4f18\u5316\u7528\u6237\u521a\u624d\u7684\u9700\u6c42\u63cf\u8ff0\uff0c\u4f7f\u5176\u66f4\u5438\u5f15\u6f5c\u5728\u534f\u4f5c\u8005\u3002\u7a81\u51fa\uff1a\u9879\u76ee\u4eae\u70b9\u3001\u4e3a\u4ec0\u4e48\u503c\u5f97\u53c2\u4e0e\u3001\u5408\u4f5c\u80fd\u83b7\u5f97\u4ec0\u4e48\u3002\u4fdd\u6301\u7b80\u6d01\u6709\u529b\u3002',category:'official',author:'CollabAI',tags:['\u4f18\u5316','\u6587\u6848'],installs:8640,version:'1.1',isInstallable:!0},estimate:{id:'estimate',icon:'⏱️',name:'\u4f30\u7b97\u5468\u671f',desktop:'\u7ed9\u9879\u76ee\u9636\u6bb5\u5212\u5206\u548c\u65f6\u95f4\u4f30\u7b97',instruct:'\u8bf7\u6839\u636e\u7528\u6237\u63cf\u8ff0\u7684\u9879\u76ee\u9700\u6c42\uff0c\u7ed9\u51fa\u5206\u9636\u6bb5\u7684\u5468\u671f\u4f30\u7b97\u3002\u62c6\u6210 MVP/\u6838\u5fc3\u529f\u80fd/\u4e0a\u7ebf/\u8fed\u4ee3\u56db\u4e2a\u9636\u6bb5\uff0c\u6bcf\u4e2a\u9636\u6bb5\u7ed9\u65f6\u95f4\u8303\u56f4\u548c\u5173\u952e\u4ea4\u4ed8\u7269\u3002',category:'official',author:'CollabAI',tags:['\u5468\u671f','\u89c4\u5212'],installs:7200,version:'1.0',isInstallable:!0},invite:{id:'invite',icon:'📨',name:'\u751f\u6210\u9080\u8bf7\u6587\u6848',desktop:'\u4e3a\u5339\u914d\u5230\u7684\u534f\u4f5c\u8005\u751f\u6210\u4e2a\u6027\u5316\u9080\u8bf7',instruct:'\u8bf7\u57fa\u4e8e\u5f53\u524d\u9700\u6c42\u548c\u5339\u914d\u5230\u7684\u534f\u4f5c\u8005\u4fe1\u606f\uff0c\u751f\u6210\u4e00\u6bb5\u81ea\u7136\u3001\u771f\u8bda\u7684\u534f\u4f5c\u9080\u8bf7\u6587\u6848\u3002\u5305\u542b\uff1a\u9879\u76ee\u7b80\u4ecb\u3001\u4e3a\u4ec0\u4e48\u9009\u5bf9\u65b9\u3001\u5408\u4f5c\u6a21\u5f0f\u5efa\u8bae\u3002',category:'official',author:'CollabAI',tags:['\u9080\u8bf7','\u534f\u4f5c'],installs:6100,version:'1.0',isInstallable:!0},summary:{id:'summary',icon:'📊',name:'\u534f\u4f5c\u5468\u62a5',desktop:'\u81ea\u52a8\u603b\u7ed3\u7fa4\u7ec4\u8fd1\u671f\u8ba8\u8bba\u5185\u5bb9',instruct:'\u8bf7\u603b\u7ed3\u5f53\u524d\u7fa4\u7ec4\u6700\u8fd1\u7684\u8ba8\u8bba\u8981\u70b9\u3002\u6309\u4ee5\u4e0b\u7ed3\u6784\uff1a\u672c\u5468\u8fdb\u5c55\u3001\u5173\u952e\u51b3\u7b56\u3001\u5f85\u89e3\u51b3\u95ee\u9898\u3001\u4e0b\u5468\u8ba1\u5212\u3002\u5982\u679c\u8ba8\u8bba\u5185\u5bb9\u4e0d\u8db3\uff0c\u544a\u77e5\u65e0\u6cd5\u603b\u7ed3\u3002',category:'official',author:'CollabAI',tags:['\u5468\u62a5','\u603b\u7ed3'],installs:5400,version:'1.0',isInstallable:!0},generate_ui:{id:'generate_ui',icon:'🖼️',name:'\u751f\u6210 UI \u539f\u578b',desktop:'\u6839\u636e\u63cf\u8ff0\u751f\u6210\u53ef\u4ea4\u4e92\u7684\u4ea7\u54c1\u754c\u9762\u539f\u578b',instruct:'\u8bf7\u6839\u636e\u7528\u6237\u63cf\u8ff0\u7684\u4ea7\u54c1\u9700\u6c42\uff0c\u8f93\u51fa UI \u539f\u578b\u65b9\u6848\uff1a\u9875\u9762\u7ed3\u6784\u3001\u6838\u5fc3\u7ec4\u4ef6\u3001\u4ea4\u4e92\u6d41\u7a0b\u3001\u8bbe\u8ba1\u5efa\u8bae\uff08\u914d\u8272\u4e0e\u5e03\u5c40\uff09\u3002\u7528 Markdown \u5206\u8282\u63cf\u8ff0\uff0c\u4fbf\u4e8e\u8bbe\u8ba1\u5e08\u843d\u5730\u3002',category:'official',author:'CollabAI',tags:['\u539f\u578b','UI','\u8bbe\u8ba1'],installs:4300,version:'1.0',isInstallable:!0},swot:{id:'swot',icon:'🔍',name:'SWOT \u5206\u6790',desktop:'\u7ade\u54c1 SWOT \u5206\u6790\u77e9\u9635',instruct:'\u8bf7\u5bf9\u7528\u6237\u63cf\u8ff0\u7684\u9879\u76ee\u505a SWOT \u5206\u6790\uff0c\u6309\u4f18\u52bf\u3001\u52a3\u52bf\u3001\u673a\u4f1a\u3001\u5a01\u80c1\u56db\u8c61\u9650\u8f93\u51fa\uff0c\u6bcf\u6761 2-4 \u70b9\uff0c\u5e76\u7ed9\u51fa 1-2 \u6761\u6218\u7565\u5efa\u8bae\u3002',category:'community',author:'\u7b56\u7565\u5927\u5e08',tags:['\u5206\u6790','\u7ade\u54c1','\u5546\u4e1a'],installs:3200,version:'1.0',isInstallable:!0},roadmap:{id:'roadmap',icon:'🗺️',name:'\u4ea7\u54c1\u8def\u7ebf\u56fe',desktop:'\u751f\u6210\u5206\u9636\u6bb5\u4ea7\u54c1\u8def\u7ebf\u56fe',instruct:'\u8bf7\u6839\u636e\u7528\u6237\u9700\u6c42\u751f\u6210\u5206\u9636\u6bb5\u4ea7\u54c1\u8def\u7ebf\u56fe\uff1a\u91cc\u7a0b\u7891\u3001\u65f6\u95f4\u8303\u56f4\u3001\u5173\u952e\u4ea4\u4ed8\u7269\u3001\u4f9d\u8d56\u5173\u7cfb\u3002\u7528\u8868\u683c\u6216\u5217\u8868\u5448\u73b0\u3002',category:'community',author:'PM\u52a9\u624b',tags:['\u89c4\u5212','\u4ea7\u54c1','\u8def\u7ebf\u56fe'],installs:1800,version:'1.0',isInstallable:!0}};
 
 const DOMAIN_SKILL_MAP={tech:['generate_prd','diagnose','optimize','estimate','invite','summary','generate_ui'],design:['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],content:['generate_prd','diagnose','optimize','invite','generate_ui'],education:['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],business:['generate_prd','diagnose','optimize','estimate','invite','generate_ui'],campus:['generate_prd','diagnose','optimize','invite']};
 
-const WORKFLOWS=[{id:'wf1',name:'🚀 从想法到团队',desc:'完整流程：梳理需求 → 匹配协作者 → 组队开始协作',steps:[{skillId:'generate_prd',icon:'📋',title:'生成需求文档'},{skillId:'diagnose',icon:'🎯',title:'诊断需求可行性'},{skillId:'optimize',icon:'✨',title:'优化需求描述'},{skillId:'invite',icon:'📨',title:'生成邀请文案'},{action:'match_forward',skillId:'__action_match_forward__',icon:'🔍',title:'智能匹配协作者'}],tags:['完整流程','推荐']},{id:'wf2',name:'🎨 原型生成器',desc:'需求描述 → UI 原型 → 迭代优化',steps:[{skillId:'generate_prd',icon:'📋',title:'整理需求'},{skillId:'generate_ui',icon:'🖼️',title:'生成 UI 原型'}],tags:['设计','快速原型']},{id:'wf3',name:'📊 项目体检',desc:'多维度评估项目 + 优化 + 重新匹配',steps:[{skillId:'diagnose',icon:'🎯',title:'诊断评估'},{skillId:'optimize',icon:'✨',title:'优化描述'},{skillId:'swot',icon:'🔍',title:'SWOT 分析'}],tags:['评估','优化']}];
+const WORKFLOWS=[{id:'wf1',name:'🚀 \u4ece\u60f3\u6cd5\u5230\u56e2\u961f',desc:'\u5b8c\u6574\u6d41\u7a0b\uff1a\u68b3\u7406\u9700\u6c42 → \u5339\u914d\u534f\u4f5c\u8005 → \u7ec4\u961f\u5f00\u59cb\u534f\u4f5c',steps:[{skillId:'generate_prd',icon:'📋',title:'\u751f\u6210\u9700\u6c42\u6587\u6863'},{skillId:'diagnose',icon:'🎯',title:'\u8bca\u65ad\u9700\u6c42\u53ef\u884c\u6027'},{skillId:'optimize',icon:'\u2728',title:'\u4f18\u5316\u9700\u6c42\u63cf\u8ff0'},{skillId:'invite',icon:'📨',title:'\u751f\u6210\u9080\u8bf7\u6587\u6848'},{action:'match_forward',skillId:'__action_match_forward__',icon:'🔍',title:'\u667a\u80fd\u5339\u914d\u534f\u4f5c\u8005'}],tags:['\u5b8c\u6574\u6d41\u7a0b','\u63a8\u8350']},{id:'wf2',name:'🎨 \u539f\u578b\u751f\u6210\u5668',desc:'\u9700\u6c42\u63cf\u8ff0 → UI \u539f\u578b → \u8fed\u4ee3\u4f18\u5316',steps:[{skillId:'generate_prd',icon:'📋',title:'\u6574\u7406\u9700\u6c42'},{skillId:'generate_ui',icon:'🖼️',title:'\u751f\u6210 UI \u539f\u578b'}],tags:['\u8bbe\u8ba1','\u5feb\u901f\u539f\u578b']},{id:'wf3',name:'📊 \u9879\u76ee\u4f53\u68c0',desc:'\u591a\u7ef4\u5ea6\u8bc4\u4f30\u9879\u76ee + \u4f18\u5316 + \u91cd\u65b0\u5339\u914d',steps:[{skillId:'diagnose',icon:'🎯',title:'\u8bca\u65ad\u8bc4\u4f30'},{skillId:'optimize',icon:'\u2728',title:'\u4f18\u5316\u63cf\u8ff0'},{skillId:'swot',icon:'🔍',title:'SWOT \u5206\u6790'}],tags:['\u8bc4\u4f30','\u4f18\u5316']}];
 
-G('/api/config', ()=>({authMode:'dev',devAuthCode:DEV_AUTH_CODE,domains:{tech:{id:'tech',name:'💻 技术开发',icon:'💻'},design:{id:'design',name:'🎨 创意设计',icon:'🎨'},content:{id:'content',name:'✍️ 内容创作',icon:'✍️'},education:{id:'education',name:'📚 知识教育',icon:'📚'},business:{id:'business',name:'💼 商业运营',icon:'💼'},campus:{id:'campus',name:'🏫 校园生活',icon:'🏫'}}}));
+G('/api/config', ()=>({authMode:'dev',devAuthCode:DEV_AUTH_CODE,domains:{tech:{id:'tech',name:'💻 \u6280\u672f\u5f00\u53d1',icon:'💻'},design:{id:'design',name:'🎨 \u521b\u610f\u8bbe\u8ba1',icon:'🎨'},content:{id:'content',name:'\u270d️ \u5185\u5bb9\u521b\u4f5c',icon:'\u270d️'},education:{id:'education',name:'📚 \u77e5\u8bc6\u6559\u80b2',icon:'📚'},business:{id:'business',name:'💼 \u5546\u4e1a\u8fd0\u8425',icon:'💼'},campus:{id:'campus',name:'🏫 \u6821\u56ed\u751f\u6d3b',icon:'🏫'}}}));
 G('/api/config/domains', ()=>DOMAINS);
 G('/api/config/skills', ()=>({skills:SKILLS,domainSkillMap:DOMAIN_SKILL_MAP}));
 G('/api/config/workflows', ()=>WORKFLOWS);
@@ -45,61 +45,65 @@ G('/api/config/workflows', ()=>WORKFLOWS);
 // ─── Auth ───────────────────────────
 G('/api/auth/config', ()=>{
   const githubEnabled = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
-  return {mode:'dev',emailAuthEnabled:true,githubEnabled};
+  return {mode:'dev',emailAuthEnabled:true,githubEnabled,githubClientId:process.env.GITHUB_CLIENT_ID||''};
 });
 P('/api/auth/sms/send', ()=>({ok:true}));
 P('/api/auth/send-code', ()=>({ok:true}));
 P('/api/auth/login', async (p,b)=>{
   const {phone,code}=b;
-  if(code!==DEV_AUTH_CODE) return err('验证码错误');
+  if(code!==DEV_AUTH_CODE) return err('\u9a8c\u8bc1\u7801\u9519\u8bef');
   let u=await db.collection('users').where({phone}).limit(1).get();
-  if(!u.data.length){ const r=await db.collection('users').add({phone,name:'用户'+phone.slice(-4),skills:[],position:'',createdAt:Date.now()}); u={data:[{_id:r.id,phone,name:'用户'+phone.slice(-4),skills:[],position:''}]}; }
+  if(!u.data.length){ const r=await db.collection('users').add({phone,name:'\u7528\u6237'+phone.slice(-4),skills:[],position:'',createdAt:Date.now()}); u={data:[{_id:r.id,phone,name:'\u7528\u6237'+phone.slice(-4),skills:[],position:''}]}; }
   const token=jwt.sign({userId:u.data[0]._id},JWT_SECRET,{expiresIn:'7d'});
   const user={...u.data[0], id:u.data[0]._id};
   return {token,user};
 });
 P('/api/auth/register', async (p,b)=>{
   const {email,password,name}=b;
-  if(!email||!password||!name) return err('需要 email、password 和 name');
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('邮箱格式不正确');
-  if(password.length<6) return err('密码长度至少 6 位');
+  if(!email||!password||!name) return err('\u9700\u8981 email\u3001password \u548c name');
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('\u90ae\u7bb1\u683c\u5f0f\u4e0d\u6b63\u786e');
+  if(password.length<6) return err('\u5bc6\u7801\u957f\u5ea6\u81f3\u5c11 6 \u4f4d');
   const existing=await db.collection('users').where({email}).limit(1).get();
-  if(existing.data.length) return err('该邮箱已注册',409);
+  if(existing.data.length) return err('\u8be5\u90ae\u7bb1\u5df2\u6ce8\u518c',409);
   const passwordHash=await bcrypt.hash(password,10);
-  const r=await db.collection('users').add({email,passwordHash,name,avatar:name[0]||'用',skills:[],position:'',domain:'tech',collabScore:null,projects:0,resources:[],portfolio:[],createdAt:Date.now(),updatedAt:Date.now()});
+  const r=await db.collection('users').add({email,passwordHash,name,avatar:name[0]||'\u7528',skills:[],position:'',domain:'tech',collabScore:null,projects:0,resources:[],portfolio:[],createdAt:Date.now(),updatedAt:Date.now()});
   const token=jwt.sign({userId:r.id},JWT_SECRET,{expiresIn:'7d'});
-  const user={_id:r.id,id:r.id,email,name,avatar:name[0]||'用',skills:[],position:'',domain:'tech'};
+  const user={_id:r.id,id:r.id,email,name,avatar:name[0]||'\u7528',skills:[],position:'',domain:'tech'};
   return {token,user};
 });
 P('/api/auth/email-login', async (p,b)=>{
   const {email,password}=b;
-  if(!email||!password) return err('需要 email 和 password');
+  if(!email||!password) return err('\u9700\u8981 email \u548c password');
   const u=await db.collection('users').where({email}).limit(1).get();
-  if(!u.data.length||!u.data[0].passwordHash) return err('邮箱或密码错误',401);
+  if(!u.data.length||!u.data[0].passwordHash) return err('\u90ae\u7bb1\u6216\u5bc6\u7801\u9519\u8bef',401);
   const match=await bcrypt.compare(password,u.data[0].passwordHash);
-  if(!match) return err('邮箱或密码错误',401);
+  if(!match) return err('\u90ae\u7bb1\u6216\u5bc6\u7801\u9519\u8bef',401);
   await db.collection('users').doc(u.data[0]._id).update({lastSeenAt:Date.now()});
   const token=jwt.sign({userId:u.data[0]._id},JWT_SECRET,{expiresIn:'7d'});
   const user={...u.data[0],id:u.data[0]._id};
   return {token,user};
 });
+P('/api/auth/reset-password', async (p,b)=>{
+  const {email,code,newPassword}=b;
+  if(!email||!code||!newPassword) return err('\u9700\u8981 email\u3001\u9a8c\u8bc1\u7801\u548c\u65b0\u5bc6\u7801');
+  if(newPassword.length<6) return err('\u5bc6\u7801\u957f\u5ea6\u81f3\u5c11 6 \u4f4d');
+  if(code!==DEV_AUTH_CODE) return err('\u9a8c\u8bc1\u7801\u9519\u8bef');
+  const u=await db.collection('users').where({email}).limit(1).get();
+  if(!u.data.length) return err('\u8be5\u90ae\u7bb1\u672a\u6ce8\u518c');
+  const passwordHash=await bcrypt.hash(newPassword,10);
+  await db.collection('users').doc(u.data[0]._id).update({passwordHash,updatedAt:Date.now()});
+  return {ok:true};
+});
 G('/api/auth/me', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const d=await db.collection('users').doc(u.userId).get(); const user=addId(d.data[0]||{}); return {user}; });
 
-// ─── GitHub OAuth ───────────────────
-G('/api/auth/github', async(p,b,q)=>{
-  const clientId = process.env.GITHUB_CLIENT_ID;
-  if(!clientId) return err('未配置 GitHub OAuth',400);
-  const callbackUrl = process.env.GITHUB_OAUTH_CALLBACK_URL || `https://${q.headers.host}/api/auth/github/callback`;
-  const redirectUri = encodeURIComponent(callbackUrl);
-  return {_redirect: `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`};
-});
-G('/api/auth/github/callback', async(p,b,q)=>{
-  const code = q.code;
-  if(!code) return err('缺少授权码',400);
+// ─── GitHub OAuth: \u524d\u7aef code \u6362 token ──
+P('/api/auth/github/token', async(p,b,q)=>{
+  const code = b.code;
+  if(!code) return err('\u7f3a\u5c11\u6388\u6743\u7801',400);
   const clientId = process.env.GITHUB_CLIENT_ID;
   const clientSecret = process.env.GITHUB_CLIENT_SECRET;
-  if(!clientId||!clientSecret) return err('未配置 GitHub OAuth',400);
-  // 换取 access_token
+  if(!clientId||!clientSecret) return err('\u672a\u914d\u7f6e GitHub OAuth',400);
+  // \u6362\u53d6 access_token
   let tokenData;
   try {
     const https = require('https');
@@ -108,9 +112,9 @@ G('/api/auth/github/callback', async(p,b,q)=>{
         method: 'POST',
         headers: {'Content-Type':'application/json','Accept':'application/json'},
       }, res => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch(e) { reject(e); } });
       });
       req.on('error', reject);
       req.write(JSON.stringify({client_id:clientId,client_secret:clientSecret,code}));
@@ -118,8 +122,8 @@ G('/api/auth/github/callback', async(p,b,q)=>{
     });
   } catch(e) { return err('GitHub token exchange failed',500); }
   const accessToken = tokenData.access_token;
-  if(!accessToken) return err('GitHub 授权失败',401);
-  // 获取用户信息
+  if(!accessToken) return err('GitHub \u6388\u6743\u5931\u8d25',401);
+  // \u83b7\u53d6\u7528\u6237\u4fe1\u606f
   let ghUser;
   try {
     const https = require('https');
@@ -127,16 +131,16 @@ G('/api/auth/github/callback', async(p,b,q)=>{
       const req = https.request('https://api.github.com/user', {
         headers: {'Authorization':`Bearer ${accessToken}`,'Accept':'application/json','User-Agent':'CollabMatch'},
       }, res => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+        const chunks = [];
+        res.on('data', c => chunks.push(c));
+        res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch(e) { reject(e); } });
       });
       req.on('error', reject);
       req.end();
     });
-  } catch(e) { return err('获取 GitHub 用户信息失败',401); }
-  if(!ghUser.id) return err('获取 GitHub 用户信息失败',401);
-  // 获取邮箱
+  } catch(e) { return err('\u83b7\u53d6 GitHub \u7528\u6237\u4fe1\u606f\u5931\u8d25',401); }
+  if(!ghUser.id) return err('\u83b7\u53d6 GitHub \u7528\u6237\u4fe1\u606f\u5931\u8d25',401);
+  // \u83b7\u53d6\u90ae\u7bb1
   let email = ghUser.email || '';
   if(!email) {
     try {
@@ -145,9 +149,9 @@ G('/api/auth/github/callback', async(p,b,q)=>{
         const req = https.request('https://api.github.com/user/emails', {
           headers: {'Authorization':`Bearer ${accessToken}`,'Accept':'application/json','User-Agent':'CollabMatch'},
         }, res => {
-          let body = '';
-          res.on('data', c => body += c);
-          res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+          const chunks = [];
+          res.on('data', c => chunks.push(c));
+          res.on('end', () => { try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch(e) { reject(e); } });
         });
         req.on('error', reject);
         req.end();
@@ -159,7 +163,7 @@ G('/api/auth/github/callback', async(p,b,q)=>{
   const githubId = String(ghUser.id);
   const name = ghUser.name || ghUser.login || `GitHub${ghUser.id}`;
   const avatarUrl = ghUser.avatar_url || '';
-  // 查找或创建用户
+  // \u67e5\u627e\u6216\u521b\u5efa\u7528\u6237
   let u = await db.collection('users').where({githubId}).limit(1).get();
   if(!u.data.length && email) {
     u = await db.collection('users').where({email}).limit(1).get();
@@ -178,8 +182,8 @@ G('/api/auth/github/callback', async(p,b,q)=>{
   }
   await db.collection('users').doc(u.data[0]._id).update({lastSeenAt:Date.now()});
   const token = jwt.sign({userId:u.data[0]._id},JWT_SECRET,{expiresIn:'7d'});
-  const frontendUrl = process.env.GITHUB_OAUTH_CALLBACK_URL ? new URL(process.env.GITHUB_OAUTH_CALLBACK_URL).origin : `https://${q.headers.host}`;
-  return {_redirect: `${frontendUrl}/?github_token=${token}#/`};
+  const user = addId(u.data[0]);
+  return {token, user};
 });
 
 // ─── Users ──────────────────────────
@@ -201,7 +205,7 @@ G('/api/requirements', async(p,b,q)=>{
   const items=addIds(r.data); return {items,total:items.length};
 });
 G('/api/requirements/mine', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const r=await db.collection('requirements').where({author:u.userId}).orderBy('createdAt','desc').get(); const items=addIds(r.data); return {items,total:items.length}; });
-P('/api/requirements', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={...b,author:u.userId,status:'draft','visibility':'public',skills:b.skills||[],matchProgress:0,background:b.background||'',goal:b.goal||'',desc:b.desc||'',timeline:b.timeline||'3-6 个月',outcome:b.outcome||'',createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('requirements').add(data); return {requirement:addId({_id:r.id,...data})}; });
+P('/api/requirements', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={...b,author:u.userId,status:'draft','visibility':'public',skills:b.skills||[],matchProgress:0,background:b.background||'',goal:b.goal||'',desc:b.desc||'',timeline:b.timeline||'3-6 \u4e2a\u6708',outcome:b.outcome||'',createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('requirements').add(data); return {requirement:addId({_id:r.id,...data})}; });
 G('/api/requirements/:id', async(p)=>{ const r=await db.collection('requirements').doc(p.id).get(); const req=addId(r.data[0]); return req?{requirement:req}:err('Not found',404); });
 U('/api/requirements/:id', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); await db.collection('requirements').doc(p.id).update({...b,updatedAt:Date.now()}); return {ok:true}; });
 U('/api/requirements/:id/publish', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); await db.collection('requirements').doc(p.id).update({status:'open','visibility':b.visibility||'public',updatedAt:Date.now()}); return {ok:true}; });
@@ -216,7 +220,7 @@ G('/api/match/reverse', async(p,b,q)=>{ const u=auth(q.headers.authorization); i
 
 // ─── Groups ─────────────────────────
 G('/api/groups', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const r=await db.collection('groups').get(); const items=addIds(r.data).map(g=>({...g,messages:g.messages||[],members:g.members||[]})); return {items,total:items.length}; });
-P('/api/groups', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={name:b.name||'协作群组',creatorId:u.userId,reqId:b.reqId||'',members:[{id:u.userId,name:'',avatar:''}],messages:[],createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('groups').add(data); const group=addId({_id:r.id,...data}); return {group}; });
+P('/api/groups', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={name:b.name||'\u534f\u4f5c\u7fa4\u7ec4',creatorId:u.userId,reqId:b.reqId||'',members:[{id:u.userId,name:'',avatar:''}],messages:[],createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('groups').add(data); const group=addId({_id:r.id,...data}); return {group}; });
 P('/api/groups/create', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={name:b.name,creatorId:u.userId,members:[{id:u.userId,name:'',avatar:''}],messages:[],createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('groups').add(data); const group=addId({_id:r.id,...data}); return {group}; });
 G('/api/groups/:id', async(p)=>{ const r=await db.collection('groups').doc(p.id).get(); const raw=addId(r.data[0]); if(!raw) return err('Not found',404); return {group:{...raw,messages:raw.messages||[],members:raw.members||[]}}; });
 P('/api/groups/:id/messages', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const g=await db.collection('groups').doc(p.id).get(); if(!g.data.length) return err('Not found',404); const msgs=g.data[0].messages||[]; msgs.push({userId:u.userId,content:b.text||b.content||'',createdAt:Date.now()}); await db.collection('groups').doc(p.id).update({messages:msgs,updatedAt:Date.now()}); return {ok:true}; });
@@ -228,18 +232,18 @@ P('/api/ai/chat', async(p,b,q)=>{
   const convId=b.conversationId||'';
   const msg=b.message||'';
   const userLlm=b.llmConfig||null;
-  if(!convId||!msg) return err('缺少 conversationId 或 message');
+  if(!convId||!msg) return err('\u7f3a\u5c11 conversationId \u6216 message');
   const c=await db.collection('conversations').doc(convId).get();
-  if(!c.data.length) return err('对话不存在',404);
+  if(!c.data.length) return err('\u5bf9\u8bdd\u4e0d\u5b58\u5728',404);
   const msgs=c.data[0].messages||[];
   const userMsg={role:'user',content:msg,time:new Date().toISOString()};
   msgs.push(userMsg);
-  // ── LLM 接入（用户自定义 > 豆包 > Hermes > 离线） ──
+  // ── LLM \u63a5\u5165\uff08\u7528\u6237\u81ea\u5b9a\u4e49 > \u8c46\u5305 > Hermes > \u79bb\u7ebf\uff09 ──
   let reply = '';
-  const systemPrompt='你是需求匹配助手。\n职责：理解用户需求，整理成结构化文档，评估可行性，帮找协作者。\n\n## 需求对齐规则\n当用户描述了一个项目想法或需求时，先判断信息是否充分。关键维度：\n1. 做什么 — 项目核心目标\n2. 缺什么 — 需要什么样的协作者\n3. 怎么做 — 协作方式（远程/同城/线下）、时间投入\n\n如果信息不够，先追问再整理。追问时：\n- 一次最多问 2-3 个关键问题，别像审讯\n- 用选择题而非开放式问题，比如"你是想做远程协作还是同城？"\n- 可以给建议，比如"听起来像是个 Side Project，你每周大概能投入多少时间？"\n- 如果用户已经说清楚了大部分，就别追问了，直接整理\n\n只有信息足够时，才生成结构化文档，末尾加一行：<!--REQ:{"title":"...","skills":[],"background":"...","goal":"...","timeline":"3-6 个月","outcome":"..."}-->\n\n说话风格：干脆利落，短句为主，不啰嗦。像聊天不像写报告，别用"首先...其次..."。可以有情绪、有判断。可靠但不死板，偶尔开玩笑。给建议但不push，有自己的主见，敢反对不合理的想法。先处理核心问题，细节看情况补。不确定就直说，不编。中文回复，不超过300字。';
+  const systemPrompt='\u4f60\u662f\u9700\u6c42\u5339\u914d\u52a9\u624b\u3002\n\u804c\u8d23\uff1a\u7406\u89e3\u7528\u6237\u9700\u6c42\uff0c\u6574\u7406\u6210\u7ed3\u6784\u5316\u6587\u6863\uff0c\u8bc4\u4f30\u53ef\u884c\u6027\uff0c\u5e2e\u627e\u534f\u4f5c\u8005\u3002\n\n## \u9700\u6c42\u5bf9\u9f50\u89c4\u5219\n\u5f53\u7528\u6237\u63cf\u8ff0\u4e86\u4e00\u4e2a\u9879\u76ee\u60f3\u6cd5\u6216\u9700\u6c42\u65f6\uff0c\u5148\u5224\u65ad\u4fe1\u606f\u662f\u5426\u5145\u5206\u3002\u5173\u952e\u7ef4\u5ea6\uff1a\n1. \u505a\u4ec0\u4e48 — \u9879\u76ee\u6838\u5fc3\u76ee\u6807\n2. \u7f3a\u4ec0\u4e48 — \u9700\u8981\u4ec0\u4e48\u6837\u7684\u534f\u4f5c\u8005\n3. \u600e\u4e48\u505a — \u534f\u4f5c\u65b9\u5f0f\uff08\u8fdc\u7a0b/\u540c\u57ce/\u7ebf\u4e0b\uff09\u3001\u65f6\u95f4\u6295\u5165\n\n\u5982\u679c\u4fe1\u606f\u4e0d\u591f\uff0c\u5148\u8ffd\u95ee\u518d\u6574\u7406\u3002\u8ffd\u95ee\u65f6\uff1a\n- \u4e00\u6b21\u6700\u591a\u95ee 2-3 \u4e2a\u5173\u952e\u95ee\u9898\uff0c\u522b\u50cf\u5ba1\u8baf\n- \u7528\u9009\u62e9\u9898\u800c\u975e\u5f00\u653e\u5f0f\u95ee\u9898\uff0c\u6bd4\u5982"\u4f60\u662f\u60f3\u505a\u8fdc\u7a0b\u534f\u4f5c\u8fd8\u662f\u540c\u57ce\uff1f"\n- \u53ef\u4ee5\u7ed9\u5efa\u8bae\uff0c\u6bd4\u5982"\u542c\u8d77\u6765\u50cf\u662f\u4e2a Side Project\uff0c\u4f60\u6bcf\u5468\u5927\u6982\u80fd\u6295\u5165\u591a\u5c11\u65f6\u95f4\uff1f"\n- \u5982\u679c\u7528\u6237\u5df2\u7ecf\u8bf4\u6e05\u695a\u4e86\u5927\u90e8\u5206\uff0c\u5c31\u522b\u8ffd\u95ee\u4e86\uff0c\u76f4\u63a5\u6574\u7406\n\n\u53ea\u6709\u4fe1\u606f\u8db3\u591f\u65f6\uff0c\u624d\u751f\u6210\u7ed3\u6784\u5316\u6587\u6863\uff0c\u672b\u5c3e\u52a0\u4e00\u884c\uff1a<!--REQ:{"title":"...","skills":[],"background":"...","goal":"...","timeline":"3-6 \u4e2a\u6708","outcome":"..."}-->\n\n\u8bf4\u8bdd\u98ce\u683c\uff1a\u5e72\u8106\u5229\u843d\uff0c\u77ed\u53e5\u4e3a\u4e3b\uff0c\u4e0d\u5570\u55e6\u3002\u50cf\u804a\u5929\u4e0d\u50cf\u5199\u62a5\u544a\uff0c\u522b\u7528"\u9996\u5148...\u5176\u6b21..."\u3002\u53ef\u4ee5\u6709\u60c5\u7eea\u3001\u6709\u5224\u65ad\u3002\u53ef\u9760\u4f46\u4e0d\u6b7b\u677f\uff0c\u5076\u5c14\u5f00\u73a9\u7b11\u3002\u7ed9\u5efa\u8bae\u4f46\u4e0dpush\uff0c\u6709\u81ea\u5df1\u7684\u4e3b\u89c1\uff0c\u6562\u53cd\u5bf9\u4e0d\u5408\u7406\u7684\u60f3\u6cd5\u3002\u5148\u5904\u7406\u6838\u5fc3\u95ee\u9898\uff0c\u7ec6\u8282\u770b\u60c5\u51b5\u8865\u3002\u4e0d\u786e\u5b9a\u5c31\u76f4\u8bf4\uff0c\u4e0d\u7f16\u3002\u4e2d\u6587\u56de\u590d\uff0c\u4e0d\u8d85\u8fc7300\u5b57\u3002';
   const chatMsgs=[{role:'system',content:systemPrompt},...msgs.filter(m=>m.role==='user'||m.role==='ai').slice(-6).map(m=>({role:m.role==='ai'?'assistant':'user',content:m.content}))];
 
-  // 优先使用用户自定义模型
+  // \u4f18\u5148\u4f7f\u7528\u7528\u6237\u81ea\u5b9a\u4e49\u6a21\u578b
   if (userLlm && userLlm.apiKey && userLlm.baseUrl && userLlm.model) {
     try {
       const userRes = await fetch(userLlm.baseUrl.replace(/\/+$/,'') + '/chat/completions', {
@@ -250,16 +254,16 @@ P('/api/ai/chat', async(p,b,q)=>{
       if (!userRes.ok) {
         const errText = await userRes.text().catch(() => '');
         console.error('[UserLLM] HTTP' + userRes.status + ':', errText.slice(0, 200));
-        reply = '[你的模型返回错误（' + userRes.status + '），已回退到平台模型]';
+        reply = '[\u4f60\u7684\u6a21\u578b\u8fd4\u56de\u9519\u8bef\uff08' + userRes.status + '\uff09\uff0c\u5df2\u56de\u9000\u5230\u5e73\u53f0\u6a21\u578b]';
       } else {
         const d = await userRes.json();
-        reply = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '[模型没有返回有效回复]';
+        reply = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '[\u6a21\u578b\u6ca1\u6709\u8fd4\u56de\u6709\u6548\u56de\u590d]';
       }
     } catch(e) {
       console.error('[UserLLM]', e.message);
-      reply = '[你的模型连接失败：' + e.message.slice(0, 60) + '，已回退到平台模型]';
+      reply = '[\u4f60\u7684\u6a21\u578b\u8fde\u63a5\u5931\u8d25\uff1a' + e.message.slice(0, 60) + '\uff0c\u5df2\u56de\u9000\u5230\u5e73\u53f0\u6a21\u578b]';
     }
-    // 如果用户模型成功，直接跳到保存
+    // \u5982\u679c\u7528\u6237\u6a21\u578b\u6210\u529f\uff0c\u76f4\u63a5\u8df3\u5230\u4fdd\u5b58
     if (reply && !reply.startsWith('[')) {
       // success, skip default LLM
     } else {
@@ -272,7 +276,7 @@ P('/api/ai/chat', async(p,b,q)=>{
   const doubaoBaseUrl = (process.env.DOUBAO_BASE_URL || 'https://ark.cn-beijing.volces.com/api/v3').replace(/\/+$/, '');
 
   if (!reply && doubaoKey && doubaoModel) {
-    // 使用豆包 API
+    // \u4f7f\u7528\u8c46\u5305 API
     try {
       const doubaoRes = await fetch(doubaoBaseUrl + '/chat/completions', {
         method: 'POST',
@@ -290,17 +294,17 @@ P('/api/ai/chat', async(p,b,q)=>{
       if (!doubaoRes.ok) {
         const errText = await doubaoRes.text().catch(() => '');
         console.error('[Doubao] HTTP' + doubaoRes.status + ':', errText.slice(0, 200));
-        reply = '[AI 服务暂时不可用（错误码 ' + doubaoRes.status + '），请稍后重试。]';
+        reply = '[AI \u670d\u52a1\u6682\u65f6\u4e0d\u53ef\u7528\uff08\u9519\u8bef\u7801 ' + doubaoRes.status + '\uff09\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002]';
       } else {
         const d = await doubaoRes.json();
-        reply = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '[AI 没有返回有效回复，能换个方式描述你的问题？]';
+        reply = (d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content) || '[AI \u6ca1\u6709\u8fd4\u56de\u6709\u6548\u56de\u590d\uff0c\u80fd\u6362\u4e2a\u65b9\u5f0f\u63cf\u8ff0\u4f60\u7684\u95ee\u9898\uff1f]';
       }
     } catch(e) {
       console.error('[Doubao]', e.message);
-      reply = '[AI 服务出错：' + e.message.slice(0, 80) + ']';
+      reply = '[AI \u670d\u52a1\u51fa\u9519\uff1a' + e.message.slice(0, 80) + ']';
     }
   } else if (!reply) {
-    // Hermes Agent 回退
+    // Hermes Agent \u56de\u9000
     const hermesUrl = (process.env.HERMES_AGENT_URL||'').replace(/\/+$/,'');
     if (hermesUrl) {
       try {
@@ -320,19 +324,19 @@ P('/api/ai/chat', async(p,b,q)=>{
         if (!hermesRes.ok) {
           const errText = await hermesRes.text().catch(()=>'');
           console.error('[Hermes] HTTP'+hermesRes.status+':', errText.slice(0,200));
-          reply = '[AI 服务暂时不可用（错误码 '+hermesRes.status+'），请稍后重试。你也可以直接去需求广场浏览已发布的需求。]';
+          reply = '[AI \u670d\u52a1\u6682\u65f6\u4e0d\u53ef\u7528\uff08\u9519\u8bef\u7801 '+hermesRes.status+'\uff09\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\u3002\u4f60\u4e5f\u53ef\u4ee5\u76f4\u63a5\u53bb\u9700\u6c42\u5e7f\u573a\u6d4f\u89c8\u5df2\u53d1\u5e03\u7684\u9700\u6c42\u3002]';
         } else {
           const d = await hermesRes.json();
-          reply = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'[AI 没有返回有效回复，能换个方式描述你的问题吗？]';
+          reply = (d.choices&&d.choices[0]&&d.choices[0].message&&d.choices[0].message.content)||'[AI \u6ca1\u6709\u8fd4\u56de\u6709\u6548\u56de\u590d\uff0c\u80fd\u6362\u4e2a\u65b9\u5f0f\u63cf\u8ff0\u4f60\u7684\u95ee\u9898\u5417\uff1f]';
         }
       } catch(e) {
         console.error('[Hermes]', e.message);
-        if (e.name==='AbortError' || String(e).includes('timeout')) reply = '[AI 响应超时，请稍后重试，或尝试更简洁地描述你的问题。]';
-        else if (String(e).includes('ENOTFOUND')||String(e).includes('ECONNREFUSED')) reply = '[无法连接 AI 服务，请确认 Hermes Agent 是否正常运行，并检查云函数环境变量 HERMES_AGENT_URL 是否配置正确。]';
-        else reply = '[AI 服务出错：'+e.message.slice(0,80)+']';
+        if (e.name==='AbortError' || String(e).includes('timeout')) reply = '[AI \u54cd\u5e94\u8d85\u65f6\uff0c\u8bf7\u7a0d\u540e\u91cd\u8bd5\uff0c\u6216\u5c1d\u8bd5\u66f4\u7b80\u6d01\u5730\u63cf\u8ff0\u4f60\u7684\u95ee\u9898\u3002]';
+        else if (String(e).includes('ENOTFOUND')||String(e).includes('ECONNREFUSED')) reply = '[\u65e0\u6cd5\u8fde\u63a5 AI \u670d\u52a1\uff0c\u8bf7\u786e\u8ba4 Hermes Agent \u662f\u5426\u6b63\u5e38\u8fd0\u884c\uff0c\u5e76\u68c0\u67e5\u4e91\u51fd\u6570\u73af\u5883\u53d8\u91cf HERMES_AGENT_URL \u662f\u5426\u914d\u7f6e\u6b63\u786e\u3002]';
+        else reply = '[AI \u670d\u52a1\u51fa\u9519\uff1a'+e.message.slice(0,80)+']';
       }
     } else {
-      reply = '欢迎使用需求匹配！\n\n（当前为离线模式，管理员请在云函数环境变量中配置 DOUBAO_API_KEY 和 DOUBAO_MODEL 以启用 AI 对话功能。）\n\n你可以继续和我对话（离线模式仅返回提示），或者直接去需求广场浏览已发布的需求。';
+      reply = '\u6b22\u8fce\u4f7f\u7528\u9700\u6c42\u5339\u914d\uff01\n\n\uff08\u5f53\u524d\u4e3a\u79bb\u7ebf\u6a21\u5f0f\uff0c\u7ba1\u7406\u5458\u8bf7\u5728\u4e91\u51fd\u6570\u73af\u5883\u53d8\u91cf\u4e2d\u914d\u7f6e DOUBAO_API_KEY \u548c DOUBAO_MODEL \u4ee5\u542f\u7528 AI \u5bf9\u8bdd\u529f\u80fd\u3002\uff09\n\n\u4f60\u53ef\u4ee5\u7ee7\u7eed\u548c\u6211\u5bf9\u8bdd\uff08\u79bb\u7ebf\u6a21\u5f0f\u4ec5\u8fd4\u56de\u63d0\u793a\uff09\uff0c\u6216\u8005\u76f4\u63a5\u53bb\u9700\u6c42\u5e7f\u573a\u6d4f\u89c8\u5df2\u53d1\u5e03\u7684\u9700\u6c42\u3002';
     }
   }
   const aiMsg={role:'ai',content:reply,time:new Date().toISOString()};
@@ -344,16 +348,16 @@ P('/api/ai/skill', async(p,b,q)=>{
   const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401);
   const skillId=b.skillId||'';
   const skill=SKILLS[skillId];
-  if(!skill) return err('技能不存在',404);
-  const reply='已执行「'+skill.name+'」：\n\n根据你的需求，我进行了分析并生成以下结果。你可以查看并进一步完善。';
+  if(!skill) return err('\u6280\u80fd\u4e0d\u5b58\u5728',404);
+  const reply='\u5df2\u6267\u884c\u300c'+skill.name+'\u300d\uff1a\n\n\u6839\u636e\u4f60\u7684\u9700\u6c42\uff0c\u6211\u8fdb\u884c\u4e86\u5206\u6790\u5e76\u751f\u6210\u4ee5\u4e0b\u7ed3\u679c\u3002\u4f60\u53ef\u4ee5\u67e5\u770b\u5e76\u8fdb\u4e00\u6b65\u5b8c\u5584\u3002';
   return {message:{role:'ai',content:reply,time:new Date().toISOString()}};
 });
 
 // ─── Conversations ──────────────────
 G('/api/conversations', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const r=await db.collection('conversations').where({userId:u.userId}).orderBy('updatedAt','desc').get(); const items=addIds(r.data); return {items,total:items.length}; });
-P('/api/conversations', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={userId:u.userId,title:b.title||'新对话',domain:b.domain||'tech',messages:[{role:'ai',content:'嗨！欢迎来到需求匹配 👋\n\n告诉我你想做什么项目，我来帮你整理需求、匹配协作者。\n\n直接说就行，不用想太多。',time:new Date().toISOString()}],requirementId:b.requirementId||'',createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('conversations').add(data); const conv=addId({_id:r.id,...data}); return {conversation:conv}; });
+P('/api/conversations', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const data={userId:u.userId,title:b.title||'\u65b0\u5bf9\u8bdd',domain:b.domain||'tech',messages:[{role:'ai',content:'\u55e8\uff01\u6b22\u8fce\u6765\u5230\u9700\u6c42\u5339\u914d 👋\n\n\u544a\u8bc9\u6211\u4f60\u60f3\u505a\u4ec0\u4e48\u9879\u76ee\uff0c\u6211\u6765\u5e2e\u4f60\u6574\u7406\u9700\u6c42\u3001\u5339\u914d\u534f\u4f5c\u8005\u3002\n\n\u76f4\u63a5\u8bf4\u5c31\u884c\uff0c\u4e0d\u7528\u60f3\u592a\u591a\u3002',time:new Date().toISOString()}],requirementId:b.requirementId||'',createdAt:Date.now(),updatedAt:Date.now()}; const r=await db.collection('conversations').add(data); const conv=addId({_id:r.id,...data}); return {conversation:conv}; });
 G('/api/conversations/:id', async(p)=>{ const r=await db.collection('conversations').doc(p.id).get(); const conv=addId(r.data[0]); return conv?{conversation:conv}:err('Not found',404); });
-P('/api/conversations/:id', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const c=await db.collection('conversations').doc(p.id).get(); if(!c.data.length) return err('Not found',404); const msgs=c.data[0].messages||[]; msgs.push({role:'user',content:b.text||b.content||'',createdAt:Date.now()}); msgs.push({role:'ai',content:b.text?'收到。关于「'+(b.text||'').slice(0,30)+'」，我来帮你分析。':'收到你的消息。',createdAt:Date.now()}); await db.collection('conversations').doc(p.id).update({messages:msgs,updatedAt:Date.now()}); return {ok:true}; });
+P('/api/conversations/:id', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const c=await db.collection('conversations').doc(p.id).get(); if(!c.data.length) return err('Not found',404); const msgs=c.data[0].messages||[]; msgs.push({role:'user',content:b.text||b.content||'',createdAt:Date.now()}); msgs.push({role:'ai',content:b.text?'\u6536\u5230\u3002\u5173\u4e8e\u300c'+(b.text||'').slice(0,30)+'\u300d\uff0c\u6211\u6765\u5e2e\u4f60\u5206\u6790\u3002':'\u6536\u5230\u4f60\u7684\u6d88\u606f\u3002',createdAt:Date.now()}); await db.collection('conversations').doc(p.id).update({messages:msgs,updatedAt:Date.now()}); return {ok:true}; });
 D('/api/conversations/:id', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); await db.collection('conversations').doc(p.id).remove(); return {ok:true}; });
 P('/api/conversations/:id/forward', async(p,b,q)=>{ return {ok:true,message:'Forwarded'}; });
 
@@ -362,7 +366,7 @@ P('/api/conversations/:id/attachments', async(p,b,q)=>{ const u=auth(q.headers.a
 
 // ─── Skills ─────────────────────────
 G('/api/skills/market', async()=>{ const items=Object.values(SKILLS).filter(s=>s.isInstallable); return {items,total:items.length}; });
-G('/api/skills/:skillId', async(p)=>{ const s=SKILLS[p.skillId]; return s?{skill:s}:err('技能不存在',404); });
+G('/api/skills/:skillId', async(p)=>{ const s=SKILLS[p.skillId]; return s?{skill:s}:err('\u6280\u80fd\u4e0d\u5b58\u5728',404); });
 G('/api/users/me/skills', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const d=await db.collection('users').doc(u.userId).get(); return (d.data[0]||{}).skillIds||[]; });
 P('/api/users/me/skills', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const d=await db.collection('users').doc(u.userId).get(); const ids=((d.data[0]||{}).skillIds||[]).filter(id=>id!==b.skillId); if(b.skillId) ids.push(b.skillId); await db.collection('users').doc(u.userId).update({skillIds:ids,updatedAt:Date.now()}); return {ok:true}; });
 
@@ -378,7 +382,7 @@ D('/api/user-workflows/:workflowId', async(p,b,q)=>{ const u=auth(q.headers.auth
 
 // ─── Workflows ──────────────────────
 G('/api/workflows', async()=>WORKFLOWS);
-P('/api/workflows/run', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const wfId=b.workflowId||''; const ctx=b.context||''; const steps=[]; const wf=WORKFLOWS.find(w=>w.id===wfId); if(!wf) return err('工作流不存在',404); for(const s of wf.steps){ if(s.skillId){ const skill=SKILLS[s.skillId]; if(skill) steps.push({title:s.title,result:'已执行「'+skill.name+'」—— 基于上下文：'+ctx.slice(0,50)}); } } return {messages:steps}; });
+P('/api/workflows/run', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const wfId=b.workflowId||''; const ctx=b.context||''; const steps=[]; const wf=WORKFLOWS.find(w=>w.id===wfId); if(!wf) return err('\u5de5\u4f5c\u6d41\u4e0d\u5b58\u5728',404); for(const s of wf.steps){ if(s.skillId){ const skill=SKILLS[s.skillId]; if(skill) steps.push({title:s.title,result:'\u5df2\u6267\u884c\u300c'+skill.name+'\u300d—— \u57fa\u4e8e\u4e0a\u4e0b\u6587\uff1a'+ctx.slice(0,50)}); } } return {messages:steps}; });
 G('/api/users/me/workflows', async(p,b,q)=>{ const u=auth(q.headers.authorization); return []; });
 
 // ─── Resources ──────────────────────
@@ -462,27 +466,27 @@ G('/api/public/users/:id', async(p,b,q)=>{
 
 // ─── MCP (Model Context Protocol) ─────────────────
 const MCP_TOOLS=[
-  {name:'create_requirement',description:'在需求匹配平台创建协作需求',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},title:{type:'string',description:'项目名称'},background:{type:'string',description:'项目背景'},goal:{type:'string',description:'项目目标'},skills:{type:'array',items:{type:'string'},description:'所需技能'},domain:{type:'string',description:'领域: tech/design/content/education/business'},desc:{type:'string',description:'详细描述'},timeline:{type:'string',description:'时间线'},outcome:{type:'string',description:'预期成果'}},required:['token','title']}},
-  {name:'publish_requirement',description:'将草稿需求发布到广场',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'需求 ID'},visibility:{type:'string',description:'可见性: public/match_only'}},required:['token','requirement_id']}},
-  {name:'search_requirements',description:'搜索广场上的协作需求',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},domain:{type:'string',description:'领域筛选'},skills:{type:'array',items:{type:'string'},description:'技能筛选'},keyword:{type:'string',description:'关键词'},limit:{type:'number',description:'返回数量上限'}},required:['token']}},
-  {name:'find_matches',description:'为需求查找匹配的协作者',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'需求 ID'},limit:{type:'number',description:'返回数量上限'}},required:['token','requirement_id']}},
-  {name:'get_requirement',description:'查询需求详情',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'需求 ID'}},required:['token','requirement_id']}}
+  {name:'create_requirement',description:'\u5728\u9700\u6c42\u5339\u914d\u5e73\u53f0\u521b\u5efa\u534f\u4f5c\u9700\u6c42',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},title:{type:'string',description:'\u9879\u76ee\u540d\u79f0'},background:{type:'string',description:'\u9879\u76ee\u80cc\u666f'},goal:{type:'string',description:'\u9879\u76ee\u76ee\u6807'},skills:{type:'array',items:{type:'string'},description:'\u6240\u9700\u6280\u80fd'},domain:{type:'string',description:'\u9886\u57df: tech/design/content/education/business'},desc:{type:'string',description:'\u8be6\u7ec6\u63cf\u8ff0'},timeline:{type:'string',description:'\u65f6\u95f4\u7ebf'},outcome:{type:'string',description:'\u9884\u671f\u6210\u679c'}},required:['token','title']}},
+  {name:'publish_requirement',description:'\u5c06\u8349\u7a3f\u9700\u6c42\u53d1\u5e03\u5230\u5e7f\u573a',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'\u9700\u6c42 ID'},visibility:{type:'string',description:'\u53ef\u89c1\u6027: public/match_only'}},required:['token','requirement_id']}},
+  {name:'search_requirements',description:'\u641c\u7d22\u5e7f\u573a\u4e0a\u7684\u534f\u4f5c\u9700\u6c42',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},domain:{type:'string',description:'\u9886\u57df\u7b5b\u9009'},skills:{type:'array',items:{type:'string'},description:'\u6280\u80fd\u7b5b\u9009'},keyword:{type:'string',description:'\u5173\u952e\u8bcd'},limit:{type:'number',description:'\u8fd4\u56de\u6570\u91cf\u4e0a\u9650'}},required:['token']}},
+  {name:'find_matches',description:'\u4e3a\u9700\u6c42\u67e5\u627e\u5339\u914d\u7684\u534f\u4f5c\u8005',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'\u9700\u6c42 ID'},limit:{type:'number',description:'\u8fd4\u56de\u6570\u91cf\u4e0a\u9650'}},required:['token','requirement_id']}},
+  {name:'get_requirement',description:'\u67e5\u8be2\u9700\u6c42\u8be6\u60c5',inputSchema:{type:'object',properties:{token:{type:'string',description:'API token'},requirement_id:{type:'string',description:'\u9700\u6c42 ID'}},required:['token','requirement_id']}}
 ];
 
 function mcpAuth(token){ try{ const p=jwt.verify(token,JWT_SECRET); return p&&p.userId?p:null; }catch{ return null; } }
 
 async function mcpCreateRequirement(args){
   const u=mcpAuth(args.token); if(!u) return {error:{code:-32001,message:'Unauthorized'}};
-  const data={title:args.title||'Untitled',author:u.userId,status:'draft',visibility:'public',domain:args.domain||'tech',skills:args.skills||[],background:args.background||'',goal:args.goal||'',desc:args.desc||'',timeline:args.timeline||'3-6 个月',outcome:args.outcome||'',matchProgress:0,createdAt:Date.now(),updatedAt:Date.now()};
+  const data={title:args.title||'Untitled',author:u.userId,status:'draft',visibility:'public',domain:args.domain||'tech',skills:args.skills||[],background:args.background||'',goal:args.goal||'',desc:args.desc||'',timeline:args.timeline||'3-6 \u4e2a\u6708',outcome:args.outcome||'',matchProgress:0,createdAt:Date.now(),updatedAt:Date.now()};
   const r=await db.collection('requirements').add(data);
-  return {id:r.id,title:data.title,status:data.status,message:'需求已创建（草稿）。调用 publish_requirement 发布到广场。'};
+  return {id:r.id,title:data.title,status:data.status,message:'\u9700\u6c42\u5df2\u521b\u5efa\uff08\u8349\u7a3f\uff09\u3002\u8c03\u7528 publish_requirement \u53d1\u5e03\u5230\u5e7f\u573a\u3002'};
 }
 async function mcpPublishRequirement(args){
   const u=mcpAuth(args.token); if(!u) return {error:{code:-32001,message:'Unauthorized'}};
   const d=await db.collection('requirements').doc(args.requirement_id).get();
   if(!d.data.length) return {error:{code:-32004,message:'Requirement not found'}};
   await db.collection('requirements').doc(args.requirement_id).update({status:'open',visibility:args.visibility||'public',updatedAt:Date.now()});
-  return {id:args.requirement_id,status:'open',message:'需求已发布到广场。'};
+  return {id:args.requirement_id,status:'open',message:'\u9700\u6c42\u5df2\u53d1\u5e03\u5230\u5e7f\u573a\u3002'};
 }
 async function mcpSearchRequirements(args){
   const u=mcpAuth(args.token); if(!u) return {error:{code:-32001,message:'Unauthorized'}};
@@ -549,7 +553,7 @@ exports.main = async (event) => {
 
   // Find matching route — try exact match first
   let handler = R[method+':'+path];
-  // HTTP 访问服务可能会截掉 /api 前缀，尝试补回
+  // HTTP \u8bbf\u95ee\u670d\u52a1\u53ef\u80fd\u4f1a\u622a\u6389 /api \u524d\u7f00\uff0c\u5c1d\u8bd5\u8865\u56de
   if(!handler && !path.startsWith('/api')) {
     path = '/api' + path;
     handler = R[method+':'+path];
@@ -574,18 +578,18 @@ exports.main = async (event) => {
     }
   }
 
-  if(!handler) return {statusCode:404,headers:{'Content-Type':'application/json'},body:JSON.stringify({error:'Not found',path})};
+  if(!handler) return {statusCode:404,headers:{'Content-Type':'application/json; charset=utf-8'},body:JSON.stringify({error:'Not found',path})};
 
   try {
     const req={headers:event.headers||{},query:event.queryStringParameters||{}};
     const result = await handler(params,body,req);
-    // 处理重定向
+    // \u5904\u7406\u91cd\u5b9a\u5411
     if(result._redirect) {
       return {statusCode:302,headers:{'Location':result._redirect,'Access-Control-Allow-Origin':'*'},body:''};
     }
     const status=result._status||200; delete result._status;
-    return {statusCode:status,headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'},body:JSON.stringify(result)};
+    return {statusCode:status,headers:{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*'},body:JSON.stringify(result)};
   } catch(e) {
-    return {statusCode:500,headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:e.message,stack:e.stack?.split('\n').slice(0,3)})};
+    return {statusCode:500,headers:{'Content-Type':'application/json; charset=utf-8','Access-Control-Allow-Origin':'*'},body:JSON.stringify({error:e.message,stack:e.stack?.split('\n').slice(0,3)})};
   }
 };

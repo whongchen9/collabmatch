@@ -1780,6 +1780,9 @@
         <input type="text" id="login-email" aria-label="账号" data-i18n-aria-label="login.email" placeholder="邮箱或用户名" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
         <label for="login-password" data-i18n="login.password">密码</label>
         <input type="password" id="login-password" aria-label="密码" data-i18n-aria-label="login.password" data-i18n-placeholder="login.passwordPlaceholder" placeholder="至少 6 位" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
+        <div style="text-align:right;margin-top:-4px;margin-bottom:4px;">
+          <button type="button" class="btn btn-ghost" style="font-size:11px;padding:0;color:var(--accent);" onclick="showResetPassword()" data-i18n="login.forgotPassword">忘记密码？</button>
+        </div>
         <label for="login-name" id="login-name-label" style="display:none;" data-i18n="login.nickname">昵称</label>
         <input type="text" id="login-name" aria-label="昵称" data-i18n-aria-label="login.nickname" data-i18n-placeholder="login.nicknamePlaceholder" placeholder="你的昵称" style="display:none;" onkeydown="if(event.key==='Enter')doEmailLogin()"/>
         <div class="login-hint" id="login-hint"></div>
@@ -1803,6 +1806,22 @@
       </div>
 
       <div class="login-error" id="login-error"></div>
+
+      <!-- 重置密码面板 -->
+      <div id="login-reset-form" style="display:none;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;">
+          <button type="button" class="btn btn-ghost" style="padding:0;font-size:13px;color:var(--accent);" onclick="hideResetPassword()" data-i18n="login.backToLogin">← 返回登录</button>
+        </div>
+        <label for="reset-email" data-i18n="login.email">账号</label>
+        <input type="text" id="reset-email" placeholder="注册邮箱" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+        <label for="reset-code" data-i18n="login.code">验证码</label>
+        <input type="text" id="reset-code" placeholder="验证码" maxlength="6" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+        <label for="reset-new-password" data-i18n="login.newPassword">新密码</label>
+        <input type="password" id="reset-new-password" placeholder="至少 6 位" onkeydown="if(event.key==='Enter')doResetPassword()"/>
+        <div class="login-hint" id="reset-hint" style="font-size:11px;color:var(--text-muted);"></div>
+        <button class="btn btn-primary" style="width:100%;" id="reset-btn" onclick="doResetPassword()" data-i18n="login.resetPassword">重置密码</button>
+        <div class="login-error" id="reset-error"></div>
+      </div>
 
       <!-- 快捷登录 -->
       <div style="margin-top:16px;text-align:center;">
@@ -2420,6 +2439,15 @@ const LANG = {
     'login.guestEnter': '以访客身份进入',
     'login.githubFailed': 'GitHub 登录失败',
     'login.enterPreview': '进入预览',
+    'login.forgotPassword': '忘记密码？',
+    'login.backToLogin': '← 返回登录',
+    'login.newPassword': '新密码',
+    'login.resetPassword': '重置密码',
+    'login.resetSuccess': '密码重置成功，请登录',
+    'login.resetFailed': '重置失败',
+    'login.fillAllFields': '请填写所有字段',
+    'login.passwordTooShort': '密码至少 6 位',
+    'login.devCodeHint': '演示验证码：',
     'login.enterPhone': '请输入 11 位手机号',
     'login.codeSent': '验证码已发送',
     'login.sendFailed': '发送失败',
@@ -3188,6 +3216,15 @@ const LANG = {
     'login.guestEnter': 'Enter as guest',
     'login.githubFailed': 'GitHub login failed',
     'login.enterPreview': 'Enter Preview',
+    'login.forgotPassword': 'Forgot password?',
+    'login.backToLogin': '← Back to login',
+    'login.newPassword': 'New password',
+    'login.resetPassword': 'Reset password',
+    'login.resetSuccess': 'Password reset successful, please login',
+    'login.resetFailed': 'Reset failed',
+    'login.fillAllFields': 'Please fill all fields',
+    'login.passwordTooShort': 'Password must be at least 6 characters',
+    'login.devCodeHint': 'Demo code: ',
     'login.enterPhone': 'Please enter an 11-digit phone number',
     'login.codeSent': 'Verification code sent',
     'login.sendFailed': 'Send failed',
@@ -4714,6 +4751,48 @@ async function doEmailLogin() {
   }
 }
 
+function showResetPassword() {
+  document.getElementById('login-email-form').style.display = 'none';
+  document.getElementById('login-reset-form').style.display = '';
+  document.getElementById('login-error').textContent = '';
+  // 预填当前输入的邮箱
+  var emailVal = document.getElementById('login-email').value;
+  if (emailVal) document.getElementById('reset-email').value = emailVal;
+  // 显示验证码提示
+  var hint = document.getElementById('reset-hint');
+  var devCode = window._devAuthCode;
+  if (devCode) hint.textContent = t('login.devCodeHint') + devCode;
+  else hint.textContent = '';
+}
+function hideResetPassword() {
+  document.getElementById('login-reset-form').style.display = 'none';
+  document.getElementById('login-email-form').style.display = '';
+  document.getElementById('reset-error').textContent = '';
+}
+async function doResetPassword() {
+  var email = document.getElementById('reset-email').value.trim();
+  var code = document.getElementById('reset-code').value.trim();
+  var newPassword = document.getElementById('reset-new-password').value;
+  var errEl = document.getElementById('reset-error');
+  var btn = document.getElementById('reset-btn');
+  errEl.textContent = '';
+  if (!email || !code || !newPassword) { errEl.textContent = t('login.fillAllFields'); return; }
+  if (newPassword.length < 6) { errEl.textContent = t('login.passwordTooShort'); return; }
+  btn.disabled = true; btn.textContent = '...';
+  try {
+    await CollabApi.api('/auth/reset-password', { method: 'POST', body: { email, code, newPassword }, auth: false });
+    showToast(t('login.resetSuccess'), 'success');
+    hideResetPassword();
+    document.getElementById('login-email').value = email;
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-password').focus();
+  } catch (e) {
+    errEl.textContent = (e && e.message) ? e.message : t('login.resetFailed');
+  } finally {
+    btn.disabled = false; btn.textContent = t('login.resetPassword');
+  }
+}
+
 async function doRegister() {
   const email = document.getElementById('login-email').value.trim();
   const password = document.getElementById('login-password').value;
@@ -4763,6 +4842,10 @@ async function initLoginAuth() {
   }
   try {
     const cfg = await CollabApi.fetchAuthConfig();
+    // 保存 GitHub Client ID 供前端直接跳转
+    if (cfg.githubEnabled && cfg.githubClientId) {
+      window._githubClientId = cfg.githubClientId;
+    }
     // 根据 GitHub OAuth 配置显示/隐藏 GitHub 按钮
     const githubBtn = document.querySelector('[onclick="doGithubLogin()"]');
     if (githubBtn) githubBtn.style.display = cfg.githubEnabled ? '' : 'none';
@@ -4775,6 +4858,7 @@ async function initLoginAuth() {
     } else {
       subtitle.textContent = t('login.devMode');
       subtitle.dataset.custom = '1';
+      window._devAuthCode = cfg.devAuthCode || '';
       hint.textContent = cfg.devAuthCode
         ? `演示验证码：${cfg.devAuthCode}`
         : t('login.devHint');
@@ -5025,15 +5109,16 @@ function enterGuestMode() {
 }
 
 function doGithubLogin() {
-  // GitHub OAuth: 重定向到后端 /auth/github 路由
-  const apiBase = (typeof CollabApi !== 'undefined' && CollabApi.API_BASE) ? CollabApi.API_BASE.replace(/\/api\/?$/, '') : '';
-  if (!apiBase) {
+  // GitHub OAuth: 前端直接跳转到 GitHub 授权页
+  const clientId = window._githubClientId;
+  if (!clientId) {
     showToast(t('login.githubFailed'), 'warning');
     return;
   }
-  // 保存当前路径用于回调后跳转
-  sessionStorage.setItem('github_oauth_redirect', location.pathname + location.search);
-  location.href = apiBase + '/api/auth/github';
+  const callbackUrl = location.origin + location.pathname;
+  const redirectUri = encodeURIComponent(callbackUrl);
+  sessionStorage.setItem('github_oauth_pending', '1');
+  location.href = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`;
 }
 
 function openModal(id) {
@@ -7982,10 +8067,30 @@ async function aiEnhanceProfile() {
 //  INITIALIZATION
 // ============================================================
 async function init() {
-  // 处理 GitHub OAuth 回调（URL 中带 github_token 参数）
+  // 处理 GitHub OAuth 回调（URL 中带 code 参数）
+  const githubCode = new URLSearchParams(location.search).get('code');
+  if (githubCode && sessionStorage.getItem('github_oauth_pending')) {
+    sessionStorage.removeItem('github_oauth_pending');
+    // 清除 URL 中的 code 参数
+    const cleanUrl = new URL(location.href);
+    cleanUrl.searchParams.delete('code');
+    cleanUrl.searchParams.delete('state');
+    history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
+    // 用 code 换 token
+    try {
+      const data = await CollabApi.api('/auth/github/token', { method: 'POST', body: { code: githubCode }, auth: false });
+      if (data.token) {
+        CollabApi.setToken(data.token);
+        currentUser = data.user ? CollabApi.normalizeUser(data.user) : null;
+      }
+    } catch (e) {
+      console.error('[init] GitHub OAuth token exchange failed:', e);
+    }
+  }
+
+  // 处理旧的 github_token 参数（兼容）
   const githubToken = new URLSearchParams(location.search).get('github_token');
   if (githubToken) {
-    // 清除 URL 中的 token 参数
     const cleanUrl = new URL(location.href);
     cleanUrl.searchParams.delete('github_token');
     history.replaceState({}, '', cleanUrl.pathname + cleanUrl.hash);
