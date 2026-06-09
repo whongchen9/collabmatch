@@ -43,7 +43,10 @@ G('/api/config/skills', ()=>({skills:SKILLS,domainSkillMap:DOMAIN_SKILL_MAP}));
 G('/api/config/workflows', ()=>WORKFLOWS);
 
 // ─── Auth ───────────────────────────
-G('/api/auth/config', ()=>({mode:'dev',emailAuthEnabled:true}));
+G('/api/auth/config', ()=>{
+  const githubEnabled = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET);
+  return {mode:'dev',emailAuthEnabled:true,githubEnabled};
+});
 P('/api/auth/sms/send', ()=>({ok:true}));
 P('/api/auth/send-code', ()=>({ok:true}));
 P('/api/auth/login', async (p,b)=>{
@@ -81,6 +84,103 @@ P('/api/auth/email-login', async (p,b)=>{
   return {token,user};
 });
 G('/api/auth/me', async(p,b,q)=>{ const u=auth(q.headers.authorization); if(!u) return err('Unauthorized',401); const d=await db.collection('users').doc(u.userId).get(); const user=addId(d.data[0]||{}); return {user}; });
+
+// ─── GitHub OAuth ───────────────────
+G('/api/auth/github', async(p,b,q)=>{
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  if(!clientId) return err('未配置 GitHub OAuth',400);
+  const callbackUrl = process.env.GITHUB_OAUTH_CALLBACK_URL || `https://${q.headers.host}/api/auth/github/callback`;
+  const redirectUri = encodeURIComponent(callbackUrl);
+  return {_redirect: `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user:email`};
+});
+G('/api/auth/github/callback', async(p,b,q)=>{
+  const code = q.code;
+  if(!code) return err('缺少授权码',400);
+  const clientId = process.env.GITHUB_CLIENT_ID;
+  const clientSecret = process.env.GITHUB_CLIENT_SECRET;
+  if(!clientId||!clientSecret) return err('未配置 GitHub OAuth',400);
+  // 换取 access_token
+  let tokenData;
+  try {
+    const https = require('https');
+    tokenData = await new Promise((resolve, reject) => {
+      const req = https.request('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {'Content-Type':'application/json','Accept':'application/json'},
+      }, res => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+      });
+      req.on('error', reject);
+      req.write(JSON.stringify({client_id:clientId,client_secret:clientSecret,code}));
+      req.end();
+    });
+  } catch(e) { return err('GitHub token exchange failed',500); }
+  const accessToken = tokenData.access_token;
+  if(!accessToken) return err('GitHub 授权失败',401);
+  // 获取用户信息
+  let ghUser;
+  try {
+    const https = require('https');
+    ghUser = await new Promise((resolve, reject) => {
+      const req = https.request('https://api.github.com/user', {
+        headers: {'Authorization':`Bearer ${accessToken}`,'Accept':'application/json','User-Agent':'CollabMatch'},
+      }, res => {
+        let body = '';
+        res.on('data', c => body += c);
+        res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+      });
+      req.on('error', reject);
+      req.end();
+    });
+  } catch(e) { return err('获取 GitHub 用户信息失败',401); }
+  if(!ghUser.id) return err('获取 GitHub 用户信息失败',401);
+  // 获取邮箱
+  let email = ghUser.email || '';
+  if(!email) {
+    try {
+      const https = require('https');
+      const emails = await new Promise((resolve, reject) => {
+        const req = https.request('https://api.github.com/user/emails', {
+          headers: {'Authorization':`Bearer ${accessToken}`,'Accept':'application/json','User-Agent':'CollabMatch'},
+        }, res => {
+          let body = '';
+          res.on('data', c => body += c);
+          res.on('end', () => { try { resolve(JSON.parse(body)); } catch(e) { reject(e); } });
+        });
+        req.on('error', reject);
+        req.end();
+      });
+      const primary = (Array.isArray(emails) ? emails : []).find(e => e.primary && e.verified);
+      if(primary) email = primary.email;
+    } catch(e) {}
+  }
+  const githubId = String(ghUser.id);
+  const name = ghUser.name || ghUser.login || `GitHub${ghUser.id}`;
+  const avatarUrl = ghUser.avatar_url || '';
+  // 查找或创建用户
+  let u = await db.collection('users').where({githubId}).limit(1).get();
+  if(!u.data.length && email) {
+    u = await db.collection('users').where({email}).limit(1).get();
+    if(u.data.length) {
+      await db.collection('users').doc(u.data[0]._id).update({githubId, avatarUrl: avatarUrl||undefined});
+    }
+  }
+  if(!u.data.length) {
+    const r = await db.collection('users').add({
+      email: email || `gh${githubId}@github.placeholder`,
+      name, avatar: name[0]||'G', avatarUrl, githubId,
+      skills:[], position:'', domain:'tech', collabScore:null, projects:0,
+      resources:[], portfolio:[], createdAt:Date.now(), updatedAt:Date.now()
+    });
+    u = {data:[{_id:r.id, email: email || `gh${githubId}@github.placeholder`, name, avatar: name[0]||'G', avatarUrl, githubId, skills:[], position:'', domain:'tech'}]};
+  }
+  await db.collection('users').doc(u.data[0]._id).update({lastSeenAt:Date.now()});
+  const token = jwt.sign({userId:u.data[0]._id},JWT_SECRET,{expiresIn:'7d'});
+  const frontendUrl = process.env.GITHUB_OAUTH_CALLBACK_URL ? new URL(process.env.GITHUB_OAUTH_CALLBACK_URL).origin : `https://${q.headers.host}`;
+  return {_redirect: `${frontendUrl}/?github_token=${token}#/`};
+});
 
 // ─── Users ──────────────────────────
 G('/api/users', async()=>{ const r=await db.collection('users').limit(50).get(); const items=addIds(r.data); return {items,total:items.length}; });
@@ -479,6 +579,10 @@ exports.main = async (event) => {
   try {
     const req={headers:event.headers||{},query:event.queryStringParameters||{}};
     const result = await handler(params,body,req);
+    // 处理重定向
+    if(result._redirect) {
+      return {statusCode:302,headers:{'Location':result._redirect,'Access-Control-Allow-Origin':'*'},body:''};
+    }
     const status=result._status||200; delete result._status;
     return {statusCode:status,headers:{'Content-Type':'application/json','Access-Control-Allow-Origin':'*'},body:JSON.stringify(result)};
   } catch(e) {
