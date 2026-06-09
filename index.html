@@ -7581,11 +7581,6 @@ document.addEventListener('click', e => {
   if (dd && !e.target.closest('.sidebar-user')) dd.style.display = 'none';
 });
 
-function doLogout() {
-  localStorage.removeItem('cm_token');
-  location.reload();
-}
-
 function switchSettingsTab(tab, el) {
   // 不再需要tab切换，保留函数以防调用报错
 }
