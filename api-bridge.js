@@ -1,5 +1,23 @@
 /** CollabMatch 前端 API 桥接（对接 server/） */
 (function (global) {
+  // 预定义所有函数引用，确保即使内部出错 CollabApi 仍可用
+  let _API_BASE = '';
+  let _getToken, _setToken, _setUnauthorizedHandler, _api, _normalizeUser;
+  let _loadConfig, _fetchAuthConfig, _sendSmsCode, _login, _emailLogin, _register;
+  let _fetchMe, _fetchUploadConfig, _uploadFile, _uploadFileForChat;
+  let _loadRequirements, _loadSquareRequirements, _loadConversations, _loadGroups;
+  let _createConversation, _streamAiChat, _runSkill;
+  let _matchForward, _matchReverse;
+  let _publishRequirement, _createRequirement, _updateRequirement, _applyRequirement;
+  let _saveUserProfile, _saveUserSkills, _saveUserResources;
+  let _createGroup, _sendGroupMessage, _fetchGroup;
+  let _fetchReqApplications, _reviewApplication, _fetchMyApplications;
+  let _fetchMyPortfolio, _createPortfolioItem, _updatePortfolioItem, _deletePortfolioItem;
+  let _aiEnhanceProfile, _deleteConversation, _deleteRequirement;
+  let _resolveFileUrl, _uploadChatAttachment, _forwardMessage, _createGroupMeeting;
+  let _pingPresence, _mergeRequirements;
+
+  try {
   function resolveApiBase() {
     if (global.COLLABMATCH_API) return global.COLLABMATCH_API;
     const host = location.hostname;
@@ -103,7 +121,7 @@
 
   function wrapFetchError(err) {
     const msg = err && err.message ? err.message : String(err);
-    if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg.includes('fetch')) {
+    if (msg === 'Failed to fetch' || msg.includes('NetworkError') || msg.includes('Failed to fetch')) {
       if (location.protocol === 'file:') {
         return new Error(
           '无法从本地文件访问 API。请先执行 cd server && npm run dev，再在浏览器打开 http://localhost:3001/',
@@ -502,58 +520,89 @@
       .replace(/'/g,'&#39;');
   };
 
+  // 赋值给外层变量，确保 catch 中也能访问
+  _API_BASE = API_BASE;
+  _getToken = getToken; _setToken = setToken; _setUnauthorizedHandler = setUnauthorizedHandler;
+  _api = api; _normalizeUser = normalizeUser;
+  _loadConfig = loadConfig; _fetchAuthConfig = fetchAuthConfig; _sendSmsCode = sendSmsCode;
+  _login = login; _emailLogin = emailLogin; _register = register;
+  _fetchMe = fetchMe; _fetchUploadConfig = fetchUploadConfig; _uploadFile = uploadFile;
+  _uploadFileForChat = uploadFileForChat;
+  _loadRequirements = loadRequirements; _loadSquareRequirements = loadSquareRequirements;
+  _loadConversations = loadConversations; _loadGroups = loadGroups;
+  _createConversation = createConversation; _streamAiChat = streamAiChat; _runSkill = runSkill;
+  _matchForward = matchForward; _matchReverse = matchReverse;
+  _publishRequirement = publishRequirement; _createRequirement = createRequirement;
+  _updateRequirement = updateRequirement; _applyRequirement = applyRequirement;
+  _saveUserProfile = saveUserProfile; _saveUserSkills = saveUserSkills;
+  _saveUserResources = saveUserResources;
+  _createGroup = createGroup; _sendGroupMessage = sendGroupMessage; _fetchGroup = fetchGroup;
+  _fetchReqApplications = fetchReqApplications; _reviewApplication = reviewApplication;
+  _fetchMyApplications = fetchMyApplications;
+  _fetchMyPortfolio = fetchMyPortfolio; _createPortfolioItem = createPortfolioItem;
+  _updatePortfolioItem = updatePortfolioItem; _deletePortfolioItem = deletePortfolioItem;
+  _aiEnhanceProfile = aiEnhanceProfile; _deleteConversation = deleteConversation;
+  _deleteRequirement = deleteRequirement;
+  _resolveFileUrl = resolveFileUrl; _uploadChatAttachment = uploadChatAttachment;
+  _forwardMessage = forwardMessage; _createGroupMeeting = createGroupMeeting;
+  _pingPresence = pingPresence; _mergeRequirements = mergeRequirements;
+
+  } catch (initErr) {
+    console.error('[api-bridge] 初始化失败:', initErr);
+  }
+
+  // 无论 try 是否成功，都确保 CollabApi 存在
   global.CollabApi = {
-    API_BASE,
-    getToken,
-    setToken,
-    setUnauthorizedHandler,
-    api,
-    normalizeUser,
-    loadConfig,
-    fetchAuthConfig,
-    sendSmsCode,
-    login,
-    emailLogin,
-    register,
-    fetchMe,
-    fetchUploadConfig,
-    uploadFile,
-    uploadFileForChat,
-    loadRequirements,
-    loadSquareRequirements,
-    loadConversations,
-    loadGroups,
-    createConversation,
-    streamAiChat,
-    runSkill,
-    matchForward,
-    matchReverse,
-    publishRequirement,
-    createRequirement,
-    updateRequirement,
-    applyRequirement,
-    saveUserProfile,
-    saveUserSkills,
-    saveUserResources,
-    createGroup,
-    sendGroupMessage,
-    fetchGroup,
-    // P0 new
-    fetchReqApplications,
-    reviewApplication,
-    fetchMyApplications,
-    fetchMyPortfolio,
-    createPortfolioItem,
-    updatePortfolioItem,
-    deletePortfolioItem,
-    aiEnhanceProfile,
-    deleteConversation,
-    deleteRequirement,
-    resolveFileUrl,
-    uploadChatAttachment,
-    forwardMessage,
-    createGroupMeeting,
-    pingPresence,
-    mergeRequirements,
+    API_BASE: _API_BASE,
+    getToken: _getToken || (() => localStorage.getItem('collabmatch_token')),
+    setToken: _setToken || ((t) => t ? localStorage.setItem('collabmatch_token', t) : localStorage.removeItem('collabmatch_token')),
+    setUnauthorizedHandler: _setUnauthorizedHandler || (() => {}),
+    api: _api,
+    normalizeUser: _normalizeUser || ((u) => u),
+    loadConfig: _loadConfig,
+    fetchAuthConfig: _fetchAuthConfig,
+    sendSmsCode: _sendSmsCode,
+    login: _login,
+    emailLogin: _emailLogin,
+    register: _register,
+    fetchMe: _fetchMe,
+    fetchUploadConfig: _fetchUploadConfig,
+    uploadFile: _uploadFile,
+    uploadFileForChat: _uploadFileForChat,
+    loadRequirements: _loadRequirements,
+    loadSquareRequirements: _loadSquareRequirements,
+    loadConversations: _loadConversations,
+    loadGroups: _loadGroups,
+    createConversation: _createConversation,
+    streamAiChat: _streamAiChat,
+    runSkill: _runSkill,
+    matchForward: _matchForward,
+    matchReverse: _matchReverse,
+    publishRequirement: _publishRequirement,
+    createRequirement: _createRequirement,
+    updateRequirement: _updateRequirement,
+    applyRequirement: _applyRequirement,
+    saveUserProfile: _saveUserProfile,
+    saveUserSkills: _saveUserSkills,
+    saveUserResources: _saveUserResources,
+    createGroup: _createGroup,
+    sendGroupMessage: _sendGroupMessage,
+    fetchGroup: _fetchGroup,
+    fetchReqApplications: _fetchReqApplications,
+    reviewApplication: _reviewApplication,
+    fetchMyApplications: _fetchMyApplications,
+    fetchMyPortfolio: _fetchMyPortfolio,
+    createPortfolioItem: _createPortfolioItem,
+    updatePortfolioItem: _updatePortfolioItem,
+    deletePortfolioItem: _deletePortfolioItem,
+    aiEnhanceProfile: _aiEnhanceProfile,
+    deleteConversation: _deleteConversation,
+    deleteRequirement: _deleteRequirement,
+    resolveFileUrl: _resolveFileUrl || ((u) => u || ''),
+    uploadChatAttachment: _uploadChatAttachment,
+    forwardMessage: _forwardMessage,
+    createGroupMeeting: _createGroupMeeting,
+    pingPresence: _pingPresence || (() => Promise.resolve()),
+    mergeRequirements: _mergeRequirements || ((lists) => []),
   };
 })(window);

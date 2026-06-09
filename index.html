@@ -2325,7 +2325,7 @@
     window.COLLABMATCH_API = 'https://' + envId + '.ap-shanghai.app.tcloudbase.com/collabmatch/api';
   }
 </script>
-<script src="api-bridge.js"></script>
+<script src="api-bridge.js?v=20260609b"></script>
 <script>
 // ============================================================
 //  i18n INTERNATIONALIZATION ENGINE
@@ -2393,6 +2393,7 @@ const LANG = {
     'login.devHint': '开发环境可使用固定验证码登录',
     'login.previewMode': '开发模式（本地预览）',
     'login.previewHint': '后端未连接，点击登录以访客模式预览',
+    'login.bridgeError': 'API 桥接未加载，请刷新页面或检查网络',
     'login.enterPreview': '进入预览',
     'login.enterPhone': '请输入 11 位手机号',
     'login.codeSent': '验证码已发送',
@@ -3155,6 +3156,7 @@ const LANG = {
     'login.devHint': 'You can use a fixed code in dev environment',
     'login.previewMode': 'Dev Mode (Local Preview)',
     'login.previewHint': 'Backend not connected, click login to preview as guest',
+    'login.bridgeError': 'API bridge not loaded, please refresh or check network',
     'login.enterPreview': 'Enter Preview',
     'login.enterPhone': 'Please enter an 11-digit phone number',
     'login.codeSent': 'Verification code sent',
@@ -4649,8 +4651,9 @@ async function doEmailLogin() {
     CollabApi.setToken(data.token);
   } catch (e) {
     const msg = (e && e.message) ? e.message : '';
-    // 只有网络连接失败才进入访客模式，认证错误（密码错/用户不存在）显示错误提示
-    if (msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('fetch') || msg.includes('无法连接') || msg.includes('后端')) {
+    // 只有明确的网络连接失败才进入访客模式，其他错误（认证失败、API未加载等）显示错误提示
+    const isNetworkError = msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('无法连接后端') || msg.includes('ERR_');
+    if (isNetworkError) {
       currentUser = { id: 'guest', name: t('common.guest'), email, avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
       showToast(t('login.guestMode'), 'warning');
       hideLogin(); syncSidebarUser(); renderAllSections();
@@ -4743,16 +4746,31 @@ async function initLoginAuth() {
         : t('login.devHint');
     }
   } catch (e) {
-    // 后端不可用，直接以访客身份进入
-    subtitle.textContent = t('login.previewMode');
-    subtitle.dataset.custom = '1';
-    hint.textContent = t('login.previewHint');
-    document.getElementById('login-email').style.display = 'none';
-    document.querySelector('label[for="login-email"]').style.display = 'none';
-    document.getElementById('login-password').style.display = 'none';
-    document.querySelector('label[for="login-password"]').style.display = 'none';
-    document.getElementById('login-toggle-register').style.display = 'none';
-    document.getElementById('login-btn').textContent = t('login.enterPreview');
+    // 区分 API 桥接未加载 vs 后端不可用
+    const msg = (e && e.message) ? e.message : String(e);
+    const isBridgeError = !CollabApi.emailLogin || msg.includes('is not defined') || msg.includes('is not a function');
+    if (isBridgeError) {
+      subtitle.textContent = t('login.previewMode');
+      subtitle.dataset.custom = '1';
+      hint.textContent = t('login.bridgeError') || 'API 桥接未加载，请刷新页面或检查网络';
+      document.getElementById('login-email').style.display = 'none';
+      document.querySelector('label[for="login-email"]').style.display = 'none';
+      document.getElementById('login-password').style.display = 'none';
+      document.querySelector('label[for="login-password"]').style.display = 'none';
+      document.getElementById('login-toggle-register').style.display = 'none';
+      document.getElementById('login-btn').textContent = t('login.enterPreview');
+    } else {
+      // 后端不可用，直接以访客身份进入
+      subtitle.textContent = t('login.previewMode');
+      subtitle.dataset.custom = '1';
+      hint.textContent = t('login.previewHint');
+      document.getElementById('login-email').style.display = 'none';
+      document.querySelector('label[for="login-email"]').style.display = 'none';
+      document.getElementById('login-password').style.display = 'none';
+      document.querySelector('label[for="login-password"]').style.display = 'none';
+      document.getElementById('login-toggle-register').style.display = 'none';
+      document.getElementById('login-btn').textContent = t('login.enterPreview');
+    }
   }
 }
 
@@ -4812,15 +4830,25 @@ async function doLogin() {
   try {
     currentUser = await CollabApi.login(phone, code);
   } catch (e) {
-    // 后端不可用时，允许以访客身份预览
-    currentUser = { id: 'guest', name: t('common.guest'), phone, avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
-    showToast(t('login.guestMode'), 'warning');
-    hideLogin();
-    syncSidebarUser();
-    renderAllSections();
+    const msg = (e && e.message) ? e.message : '';
+    const isNetworkError = msg.includes('Failed to fetch') || msg.includes('NetworkError') || msg.includes('无法连接后端') || msg.includes('ERR_');
+    if (isNetworkError) {
+      // 后端不可用时，允许以访客身份预览
+      currentUser = { id: 'guest', name: t('common.guest'), phone, avatar: t('common.guest')[0], avatarColor: 'var(--accent)', skills: [], resources: [], weeklyHours: 10, collabIntent: 'open' };
+      showToast(t('login.guestMode'), 'warning');
+      hideLogin();
+      syncSidebarUser();
+      renderAllSections();
+      setAppLoading(false);
+      btn.disabled = false;
+      btn.textContent = t('login.btn');
+      return;
+    }
+    // 认证失败：显示具体错误
     setAppLoading(false);
     btn.disabled = false;
     btn.textContent = t('login.btn');
+    errEl.textContent = msg || t('login.loadFailed');
     return;
   }
   try {
@@ -7904,6 +7932,13 @@ async function aiEnhanceProfile() {
 //  INITIALIZATION
 // ============================================================
 async function init() {
+  // 确保 CollabApi 存在后再初始化
+  if (typeof CollabApi === 'undefined' || !CollabApi.setUnauthorizedHandler) {
+    console.error('[init] CollabApi 未加载，无法初始化应用');
+    showLogin();
+    return;
+  }
+
   CollabApi.setUnauthorizedHandler(() => {
     currentUser = null;
     setAppLoading(false);
