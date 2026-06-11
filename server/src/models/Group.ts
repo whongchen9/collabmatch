@@ -16,7 +16,11 @@ export interface IGroup extends Document {
   emoji: string;
   avatarColor: string;
   desc: string;
-  reqId: Types.ObjectId;
+  reqId?: Types.ObjectId;
+  eventId?: Types.ObjectId;
+  intentId?: string;
+  meetupLocation: string;
+  status: 'forming' | 'ready' | 'ongoing' | 'completed';
   members: Types.ObjectId[];
   messages: IGroupMessage[];
   createdAt: Date;
@@ -41,7 +45,11 @@ const groupSchema = new Schema<IGroup>(
     emoji: { type: String, default: 'rocket' },
     avatarColor: { type: String, default: 'linear-gradient(135deg, #8b5cf6, #6d28d9)' },
     desc: { type: String, default: '' },
-    reqId: { type: Schema.Types.ObjectId, ref: 'Requirement', required: true },
+    reqId: { type: Schema.Types.ObjectId, ref: 'Requirement' },
+    eventId: { type: Schema.Types.ObjectId, ref: 'HikeEvent' },
+    intentId: { type: String },
+    meetupLocation: { type: String, default: '' },
+    status: { type: String, enum: ['forming', 'ready', 'ongoing', 'completed'], default: 'forming' },
     members: [{ type: Schema.Types.ObjectId, ref: 'User' }],
     messages: { type: [groupMessageSchema], default: [] },
   },

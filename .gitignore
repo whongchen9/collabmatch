@@ -4,3 +4,10 @@ dist/
 *.log
 .DS_Store
 server/dist/
+trailmate-app/node_modules/
+trailmate-app/dist/
+.workbuddy/
+nul
+HANDOVER-latest.md
+MERGE_ANALYSIS_REPORT.md
+CHANGELOG.md

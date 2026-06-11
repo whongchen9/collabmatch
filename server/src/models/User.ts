@@ -47,6 +47,14 @@ export interface IUser extends Document {
   collabIntent: string;
   interestedStages: string[];
   lastSeenAt?: Date;
+  city: string;
+  experienceLevel: 'novice' | 'experienced' | 'veteran';
+  preferences: string[];
+  hikeFrequency: 'monthly1' | 'monthly2-3' | 'weekly1' | 'weekly+';
+  emergencyContacts: { name: string; phone: string }[];
+  creditScore: number;
+  hikeCount: number;
+  totalDistance: number;
   /** GitHub OAuth ID */
   githubId: string;
   createdAt: Date;
@@ -76,6 +84,14 @@ const userSchema = new Schema<IUser>(
       default: [],
     },
     lastSeenAt: { type: Date },
+    city: { type: String, default: '' },
+    experienceLevel: { type: String, enum: ['novice', 'experienced', 'veteran'], default: 'novice' },
+    preferences: { type: [String], default: [] },
+    hikeFrequency: { type: String, enum: ['monthly1', 'monthly2-3', 'weekly1', 'weekly+'], default: 'monthly1' },
+    emergencyContacts: { type: [{ name: String, phone: String }], default: [] },
+    creditScore: { type: Number, default: 100 },
+    hikeCount: { type: Number, default: 0 },
+    totalDistance: { type: Number, default: 0 },
     githubId: { type: String, unique: true, sparse: true, index: true },
     portfolio: {
       type: [

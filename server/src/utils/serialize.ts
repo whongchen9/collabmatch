@@ -4,6 +4,7 @@ import type { IRequirement } from '../models/Requirement.js';
 import { toExternalJson } from './xcdIntegration.js';
 import type { IConversation } from '../models/Conversation.js';
 import type { IGroup } from '../models/Group.js';
+import type { IHikeEvent } from '../models/HikeEvent.js';
 import { toPortfolioJson, publicPortfolio } from './portfolio.js';
 
 export function formatRelativeTime(date: Date): string {
@@ -59,6 +60,14 @@ export function toUserJson(
     interestedStages: u.interestedStages ?? [],
     online: isUserOnline(u),
     lastSeenAt: u.lastSeenAt,
+    city: u.city,
+    experienceLevel: u.experienceLevel,
+    preferences: u.preferences,
+    hikeFrequency: u.hikeFrequency,
+    creditScore: u.creditScore,
+    hikeCount: u.hikeCount,
+    totalDistance: u.totalDistance,
+    emergencyContacts: u.emergencyContacts,
     createdAt: u.createdAt,
     updatedAt: u.updatedAt,
   };
@@ -151,6 +160,10 @@ export function toGroupJson(group: IGroup, memberDocs: IUser[]) {
     avatarColor: group.avatarColor,
     desc: group.desc,
     reqId: String(group.reqId),
+    eventId: group.eventId ? String(group.eventId) : null,
+    intentId: group.intentId || null,
+    meetupLocation: group.meetupLocation,
+    status: group.status,
     members: members.map((m) => {
       const base = m && m.name ? toUserJson(m) : { id: String(m) };
       return { ...base, online: m && m.name ? isUserOnline(m) : false };
@@ -169,5 +182,44 @@ export function toGroupJson(group: IGroup, memberDocs: IUser[]) {
         time: formatChatTime(m.time),
       };
     }),
+  };
+}
+
+export function toHikeEventJson(
+  event: IHikeEvent & { author?: IUser | Types.ObjectId },
+  authorDoc?: IUser | null,
+) {
+  const author =
+    authorDoc ||
+    (event.author && typeof event.author === 'object' && 'name' in event.author
+      ? (event.author as IUser)
+      : null);
+  return {
+    id: String(event._id),
+    title: event.title,
+    author: author
+      ? { id: String(author._id), name: author.name, avatar: author.avatar, avatarColor: author.avatarColor, avatarUrl: author.avatarUrl }
+      : { id: String(event.author) },
+    status: event.status,
+    visibility: event.visibility,
+    difficulty: event.difficulty,
+    eventType: event.eventType,
+    startDate: event.startDate,
+    meetupPoint: event.meetupPoint,
+    endPoint: event.endPoint,
+    distance: event.distance,
+    elevation: event.elevation,
+    estimatedHours: event.estimatedHours,
+    maxMembers: event.maxMembers,
+    feeType: event.feeType,
+    feeAmount: event.feeAmount,
+    gearRequired: event.gearRequired,
+    description: event.description,
+    coverImage: event.coverImage,
+    tags: event.tags,
+    invitees: event.invitees.map((id) => String(id)),
+    matchProgress: event.matchProgress,
+    createdAt: event.createdAt,
+    updatedAt: event.updatedAt,
   };
 }
