@@ -1771,7 +1771,7 @@
       <!-- 登录方式切换 -->
       <div class="login-tabs" style="display:flex;gap:4px;margin-bottom:16px;">
         <button class="login-tab active" onclick="switchLoginTab('email')" id="login-tab-email" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:var(--accent-soft);color:#fff;cursor:pointer;transition:var(--transition);" data-i18n="login.emailTab">账号登录</button>
-        <button class="login-tab" onclick="switchLoginTab('phone')" id="login-tab-phone" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:var(--transition);" data-i18n="login.phoneTab">手机验证码</button>
+        <button class="login-tab" onclick="switchLoginTab('phone')" id="login-tab-phone" style="flex:1;padding:8px;border-radius:8px;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;transition:var(--transition);" data-i18n="login.phoneTab">手机验证码 <span style="font-size:10px;color:var(--warning);margin-left:2px;">规划中</span></button>
       </div>
 
       <!-- 账号登录/注册 -->
@@ -1802,7 +1802,7 @@
           <button type="button" class="btn btn-ghost" id="login-sms-btn" onclick="sendLoginSms()" data-i18n="login.getCode">获取验证码</button>
         </div>
         <div class="login-hint" id="login-phone-hint"></div>
-        <button class="btn btn-primary" style="width:100%;" onclick="doLogin()" data-i18n="login.btn">登录</button>
+        <button class="btn btn-primary" style="width:100%;" onclick="doLogin()" data-i18n="login.btn">登录 <span style="font-size:10px;color:var(--warning);font-weight:normal;">规划中</span></button>
       </div>
 
       <div class="login-error" id="login-error"></div>
@@ -5116,6 +5116,7 @@ function convMessages() { return getActiveConv().messages; }
 let activeGroupId = null;
 let currentMatchReqId = null;
 let lastLoadedMatchReqId = null;
+let _groupPollTimer = null;
 
 // ============================================================
 //  UTILITY FUNCTIONS
@@ -5146,6 +5147,7 @@ function doLogout() {
   CollabApi.setToken(null);
   currentUser = null;
   clearPendingChatFiles();
+  stopGroupPoll();
   REQUIREMENTS = [];
   conversations = [];
   GROUPS = [];
@@ -6972,6 +6974,36 @@ function openGroup(gid) {
       <div class="member-status ${m.online ? 'online' : 'offline'}" title="${m.online ? '在线' : '离线'}" style="margin-left:auto;"></div>
     </div>
   `).join('');
+
+  // Start polling for new messages
+  startGroupPoll(gid);
+}
+
+function startGroupPoll(gid) {
+  stopGroupPoll();
+  if (!gid) return;
+  _groupPollTimer = setInterval(async () => {
+    if (activeGroupId !== gid) { stopGroupPoll(); return; }
+    try {
+      const fresh = await CollabApi.fetchGroup(gid);
+      if (!fresh || activeGroupId !== gid) return;
+      const local = GROUPS.find(g => g.id === gid);
+      if (!local) return;
+      const localLen = (local.messages || []).length;
+      const freshLen = (fresh.messages || []).length;
+      if (freshLen > localLen) {
+        local.messages = fresh.messages;
+        local.name = fresh.name;
+        local.members = fresh.members;
+        renderGroupMessages(local, true);
+        renderGroupsList();
+      }
+    } catch (_) { /* ignore poll errors */ }
+  }, 3000);
+}
+
+function stopGroupPoll() {
+  if (_groupPollTimer) { clearInterval(_groupPollTimer); _groupPollTimer = null; }
 }
 
 function renderGroupMessages(group, scrollEnd = false) {
