@@ -833,206 +833,66 @@ function extractDifferencePoints(messages) {
   const seen = new Set();
   return diffs.filter(d => { const k = d.topic + d.userPreference; if (seen.has(k)) return false; seen.add(k); return true; });
 }
-// ─── 匹配引擎 v2（两阶段：硬过滤 + 软排序） ─────────────────
-// 地点 → 城市映射（山名/景点名 → 所在城市）
-const LOCATION_CITY_MAP = {
-  '梧桐山': '深圳', '白云山': '广州', '大南山': '深圳', '泰山': '泰安', '华山': '渭南',
-  '黄山': '黄山', '武功山': '萍乡', '张家界': '张家界', '峨眉山': '乐山', '长白山': '白山',
-  '千岛湖': '杭州', '西湖': '杭州', '阳朔': '桂林', '丽江': '丽江', '香格里拉': '迪庆',
-  '稻城亚丁': '甘孜', '四姑娘山': '阿坝', '贡嘎': '甘孜', '梅里雪山': '迪庆', '雨崩': '迪庆',
-  '虎跳峡': '丽江', '莫干山': '湖州', '雁荡山': '温州', '天目山': '杭州', '武夷山': '南平',
-  '三清山': '上饶', '庐山': '九江', '衡山': '衡阳', '嵩山': '郑州', '恒山': '大同',
-  '青城山': '成都', '都江堰': '成都', '九寨沟': '阿坝', '黄龙': '阿坝', '毕棚沟': '阿坝',
-  '海螺沟': '甘孜', '牛背山': '雅安', '色达': '甘孜', '泸沽湖': '凉山', '大理': '大理',
-  '洱海': '大理', '苍山': '大理', '玉龙雪山': '丽江', '哈巴雪山': '迪庆', '慕士塔格': '喀什',
-  '博格达': '乌鲁木齐', '冈仁波齐': '阿里', '墨脱': '林芝', '独龙江': '怒江', '丙察察': '怒江',
-  '川藏线': '成都', '滇藏线': '丽江', '新藏线': '喀什', '青藏线': '西宁', '318': '成都',
-};
+
+// ─── 匹配算法（Tag Intersection + 查询扩展） ─────────────────};
 
 function locationMatch(loc1, loc2, city1, city2) {
-  if (!loc1 && !loc2) return true;
-  if (!loc1 || !loc2) return false;
-  if (loc1 === loc2) return true;
-  const cityOfLoc1 = LOCATION_CITY_MAP[loc1] || loc1;
-  const cityOfLoc2 = LOCATION_CITY_MAP[loc2] || loc2;
-  if (cityOfLoc1 === loc2 || cityOfLoc2 === loc1) return true;
-  if (city1 && cityOfLoc1 === city1 && city2 && cityOfLoc2 === city2 && city1 === city2) return true;
-  if (city1 && (city1 === loc2 || city1 === cityOfLoc2)) return true;
-  if (city2 && (city2 === loc1 || city2 === cityOfLoc1)) return true;
-  return false;
-}
-
-function dateCompatible(d1, d2) {
-  if (!d1 || !d2) return true;
-  if (d1 === d2) return true;
-  const weekendSet = new Set(['周末', '这周', '下周']);
-  if (weekendSet.has(d1) && weekendSet.has(d2)) return true;
-  if ((d1 === '这周' && d2 === '周末') || (d1 === '周末' && d2 === '这周')) return true;
-  if ((d1 === '下周' && d2 === '周末') || (d1 === '周末' && d2 === '下周')) return true;
-  return false;
-}
-
-function jaccardSimilarity(set1, set2) {
-  if (!set1.length && !set2.length) return 0.5;
-  if (!set1.length || !set2.length) return 0;
-  const s1 = new Set(set1);
-  const s2 = new Set(set2);
-  let intersection = 0;
-  for (const item of s1) { if (s2.has(item)) intersection++; }
-  const union = new Set([...s1, ...s2]).size;
-  return union ? intersection / union : 0;
-}
-
-async function matchIntents(userId, essentials, prompts, db) {
-  const allIntents = await db.collection('intents')
-    .where({ status: db.RegExp({ regexp: 'matching|recruiting' }) })
-    .limit(100).get();
-  const candidates = [];
-  for (const intent of allIntents.data) {
-    if (intent.author && String(intent.author.id) === String(userId)) continue;
-    const iEss = intent.essentials || {};
-    const iPrompts = intent.prompts || [];
-    const authorCity = (await getUserCity(intent.author?.id, db)) || '';
-    const myCity = (await getUserCity(userId, db)) || '';
-    if (!locationMatch(essentials.location, iEss.location, myCity, authorCity)) continue;
-    if (!dateCompatible(essentials.date, iEss.date)) continue;
-    const diffLevels = { casual: 1, moderate: 2, challenge: 3 };
-    const myDiff = diffLevels[essentials.difficulty] || 0;
-    const theirDiff = diffLevels[iEss.difficulty] || 0;
-    if (myDiff && theirDiff && Math.abs(myDiff - theirDiff) > 1) continue;
-    let group = null;
-    if (intent.groupId) {
-      try { const gDoc = await db.collection('groups').doc(intent.groupId).get(); if (gDoc.data.length) group = gDoc.data[0]; } catch (e) {}
-    }
-    if (!group) {
-      const gRes = await db.collection('groups').where({ intentId: intent._id || intent.id }).limit(1).get();
-      if (gRes.data.length) group = gRes.data[0];
-    }
-    if (!group) continue;
-    if ((group.members || []).length >= (group.maxMembers || 6)) continue;
-    if (group.matchingEnabled === false) continue;
-    if ((group.members || []).some(m => String(m.id || m) === String(userId))) continue;
-    let score = 0;
-    let intentScore = 0;
-    if (essentials.location && iEss.location && essentials.location === iEss.location) intentScore += 40;
-    else if (essentials.location && iEss.location) intentScore += 20;
-    else intentScore += 10;
-    if (essentials.date && iEss.date && dateCompatible(essentials.date, iEss.date)) intentScore += 30;
-    else intentScore += 10;
-    if (essentials.eventType && iEss.eventType && essentials.eventType === iEss.eventType) intentScore += 20;
-    else intentScore += 10;
-    if (essentials.difficulty && iEss.difficulty && essentials.difficulty === iEss.difficulty) intentScore += 10;
-    else intentScore += 5;
-    score += (intentScore / 100) * 35;
-    const promptSim = jaccardSimilarity(prompts, iPrompts);
-    score += promptSim * 25;
-    const freqLevels = ['monthly1', 'monthly2-3', 'weekly1', 'weekly+'];
-    const myFreq = essentials.hikeFrequency || '';
-    const theirFreq = iEss.hikeFrequency || '';
-    let freqScore = 50;
-    if (myFreq && theirFreq) {
-      const mi = freqLevels.indexOf(myFreq);
-      const ti = freqLevels.indexOf(theirFreq);
-      if (mi >= 0 && ti >= 0) freqScore = Math.max(0, 100 - Math.abs(mi - ti) * 30);
-      else if (myFreq === theirFreq) freqScore = 100;
-    }
-    score += (freqScore / 100) * 20;
-    const memberCount = (group.members || []).length;
-    const activityScore = Math.min(memberCount * 25, 100);
-    score += (activityScore / 100) * 10;
-    let distScore = 50;
-    if (myCity && authorCity && myCity === authorCity) distScore = 90;
-    else if (essentials.location && iEss.location && essentials.location === iEss.location) distScore = 80;
-    score += (distScore / 100) * 10;
-    const matchPct = Math.min(Math.round(score), 99);
-    if (matchPct < 15) continue;
-    const matchReasons = [];
-    if (essentials.location && iEss.location) matchReasons.push('目的地: ' + iEss.location);
-    if (essentials.date && iEss.date) matchReasons.push('时间: ' + iEss.date);
-    const promptOverlap = prompts.filter(p => iPrompts.includes(p));
-    if (promptOverlap.length) matchReasons.push('共同偏好: ' + promptOverlap.slice(0, 3).join(', '));
-    candidates.push({
-      type: 'team',
-      groupId: group._id || group.id,
-      groupName: group.name || '未命名队伍',
-      groupMembers: (group.members || []).map(m => ({ id: m.id || m, name: m.name || '', avatar: m.avatar || '', avatarUrl: m.avatarUrl || '' })),
-      maxMembers: group.maxMembers || 6,
-      intentId: intent._id || intent.id,
-      intentAuthor: intent.author || {},
-      essentials: iEss,
-      prompts: iPrompts,
-      matchPct,
-      breakdown: { intent: Math.round(intentScore), prompts: Math.round(promptSim * 100), pace: Math.round(freqScore), activity: Math.round(activityScore), distance: Math.round(distScore) },
-      reason: matchReasons.length ? matchReasons.join(' | ') : '基本匹配',
-    });
-  }
-  return candidates.sort((a, b) => b.matchPct - a.matchPct).slice(0, 10);
-}
-
-const _userCityCache = {};
-async function getUserCity(userId, db) {
-  if (!userId) return '';
-  if (_userCityCache[userId]) return _userCityCache[userId];
-  try {
-    const uDoc = await db.collection('users').doc(userId).get();
-    const city = (uDoc.data[0] || {}).city || '';
-    _userCityCache[userId] = city;
-    return city;
-  } catch (e) { return ''; }
-}
-
+//   当前: prompts.includes() 精确字符串匹配 + 查询扩展（方案 A）
+//   未来: 将 prompts 组合转为 768 维 embedding 向量，匹配时用 cosine 相似度
+//   步骤: ① 调 embedding API 为每个用户生成向量 → ② 存入 users 表
+//         ③ 匹配时 cosine(src_embedding, tgt_embedding) → 分数
+//   优势: "不想太累" vs "特种兵达咩" 也能匹配
+//   成本: ~$0.00002/次 embedding，匹配计算纯数学 0 token
 async function matchUsersSimple(userId, essentials, prompts, db) {
   const users = await db.collection('users').limit(50).get();
+  // 出行频率相似度映射
   const freqLevels = ['monthly1', 'monthly2-3', 'weekly1', 'weekly+'];
-  const myCity = await getUserCity(userId, db);
   return users.data.filter(u => String(u._id) !== userId).map(u => {
     let score = 0;
+    // 提示词匹配（含 resources 文本查找）
     const uPrefs = u.preferences || [];
     const uResources = (u.resources || []).map((r) => typeof r === 'string' ? r : r.text).join(' ');
     const promptMatch = prompts.filter(p => uPrefs.includes(p) || (u.bio && u.bio.includes(p)) || uResources.includes(p));
     const promptScore = prompts.length ? promptMatch.length / prompts.length : 0.5;
-    score += promptScore * 25;
+    score += promptScore * 40;
+    // 必要因素匹配
     let eScore = 0;
-    if (essentials.location) {
-      if (u.city === essentials.location) eScore += 25;
-      else if (LOCATION_CITY_MAP[essentials.location] === u.city) eScore += 25;
-      else if (u.city && myCity && u.city === myCity) eScore += 15;
-      else eScore += 5;
-    } else { eScore += 15; }
+    if (essentials.location && u.city === essentials.location) eScore += 25;
     if (essentials.difficulty) {
       const levelMap = { casual: 'novice', advanced: 'experienced', challenge: 'veteran' };
       if (u.experienceLevel === levelMap[essentials.difficulty]) eScore += 25;
       else eScore += 10;
     } else { eScore += 15; }
+    if (!essentials.location && !essentials.date) eScore += 15;
     score += eScore * 0.30;
+    // 出行频率匹配
     const uFreq = u.hikeFrequency || '';
     const qFreq = essentials.hikeFrequency || '';
-    let freqScore = 50;
+    let freqScore = 0;
     if (uFreq && qFreq) {
       const ui = freqLevels.indexOf(uFreq);
       const qi = freqLevels.indexOf(qFreq);
       if (ui >= 0 && qi >= 0) freqScore = Math.max(0, 100 - Math.abs(ui - qi) * 30);
       else if (uFreq === qFreq) freqScore = 100;
-    }
-    score += freqScore * 0.15;
+    } else { freqScore = 50; }
+    score += freqScore * 0.10;
+    // 资源设备匹配（已在 promptMatch 中体现，此处补充重叠分）
     const resMatch = prompts.filter(p => uResources.includes(p)).length;
     const resScore = prompts.length ? Math.round(resMatch / prompts.length * 100) : 50;
     score += resScore * 0.10;
-    let profileScore = 20;
-    if (u.bio) profileScore += 15;
-    if (u.avatar || u.avatarUrl) profileScore += 10;
-    if (u.completedHikes) profileScore += Math.min(u.completedHikes * 3, 25);
-    score += (profileScore / 100) * 20;
+    // 档案匹配
+    const profileScore = 20;
+    score += profileScore * 0.10;
     const matchPct = Math.min(Math.round(score), 99);
     return {
-      type: 'user',
       user: { id: String(u._id), name: u.name || '', avatar: u.avatar || '', avatarColor: u.avatarColor || '', avatarUrl: u.avatarUrl || '' },
       matchPct,
-      breakdown: { essentials: Math.round(eScore), prompts: Math.round(promptScore * 100), profile: Math.round(profileScore) },
-      reason: promptMatch.length ? '匹配提示词: ' + promptMatch.join(', ') : '基本匹配'
+      breakdown: { essentials: Math.round(eScore), prompts: Math.round(promptScore * 100), profile: profileScore },
+      reason: promptMatch.length ? `匹配提示词: ${promptMatch.join(', ')}` : '基本匹配'
     };
   }).sort((a, b) => b.matchPct - a.matchPct).slice(0, 5);
 }
+
 // ─── LLM 调用（复用豆包 API） ─────────────────
 const DOUBAO_API_KEY = process.env.DOUBAO_API_KEY || '';
 const DOUBAO_MODEL = process.env.DOUBAO_MODEL || '';
@@ -1136,71 +996,65 @@ function isMatchCommand(text) {
 }
 
 // ─── TrailMate: Intents & Hike Events ─────────────────
-// 1. POST /api/intents — 一句话创建匹配意图（v2: 同时匹配用户+意图）
+// 1. POST /api/intents — 一句话创建匹配意图
 P('/api/intents', async (p, b, q) => {
   const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
   const rawInput = b.rawInput || '';
   if (!rawInput) return err('缺少 rawInput');
   const { essentials, prompts, essentialsComplete } = extractFromInput(rawInput);
+  // 获取用户信息
   const userDoc = await db.collection('users').doc(u.userId).get();
   const user = userDoc.data[0] || {};
   essentials.hikeFrequency = user.hikeFrequency || '';
   const intentData = {
-    rawInput, essentials, prompts, essentialsComplete,
+    rawInput,
+    essentials,
+    prompts,
+    essentialsComplete,
     status: 'matching',
     author: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-    matchedUsers: [], matchedTeams: [],
-    createdAt: Date.now(), updatedAt: Date.now(),
+    matchedUsers: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
   const r = await db.collection('intents').add(intentData);
+  // 匹配用户
   const matchedUsers = await matchUsersSimple(u.userId, essentials, prompts, db);
-  const matchedTeams = await matchIntents(u.userId, essentials, prompts, db);
-  await db.collection('intents').doc(r.id).update({ matchedUsers, matchedTeams, updatedAt: Date.now() });
+  await db.collection('intents').doc(r.id).update({ matchedUsers, updatedAt: Date.now() });
+  // 自动创建队伍（自己一个人）
   const groupData = {
-    name: (user.name || '我') + '的徒步队',
+    name: `${user.name || '我'}的徒步队`,
     intentId: r.id,
     members: [{ id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '', role: 'leader', joinedAt: Date.now() }],
     maxMembers: essentials.groupSize || 6,
-    essentials, prompts, matchingEnabled: true,
-    status: 'recruiting', likes: 0, hot: false, photos: [],
-    createdBy: u.userId, createdAt: Date.now(), updatedAt: Date.now(),
+    essentials,
+    prompts,
+    status: 'recruiting',
+    likes: 0,
+    hot: false,
+    photos: [],
+    createdBy: u.userId,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
   };
   const gr = await db.collection('groups').add(groupData);
   await db.collection('intents').doc(r.id).update({ groupId: gr.id });
+  // 给匹配到的用户发通知
   for (const mu of matchedUsers) {
-    if (mu.matchPct < 20) continue;
     await safeAdd('matchnotices', {
-      intentId: r.id, groupId: gr.id,
+      intentId: r.id,
       fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-      toUserId: mu.user.id, rawInput, essentials, prompts,
-      matchPct: mu.matchPct, reason: mu.reason, type: 'user_match', status: 'pending', createdAt: Date.now(),
+      toUserId: mu.id,
+      rawInput,
+      essentials,
+      prompts,
+      matchPct: mu.matchPct,
+      reason: mu.reason,
+      status: 'pending',
+      createdAt: Date.now(),
     });
   }
-  for (const mt of matchedTeams) {
-    if (mt.matchPct < 25) continue;
-    const authorId = mt.intentAuthor?.id;
-    if (!authorId) continue;
-    await safeAdd('matchnotices', {
-      intentId: r.id, groupId: mt.groupId, targetGroupId: mt.groupId,
-      fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-      toUserId: authorId, rawInput, essentials, prompts,
-      matchPct: mt.matchPct, reason: mt.reason, type: 'team_match',
-      targetTeamName: mt.groupName, targetTeamMembers: mt.groupMembers.length,
-      status: 'pending', createdAt: Date.now(),
-    });
-  }
-  for (const mt of matchedTeams) {
-    await safeAdd('matchnotices', {
-      intentId: mt.intentId, groupId: mt.groupId, targetGroupId: gr.id,
-      fromUser: mt.intentAuthor, toUserId: u.userId,
-      rawInput: '有队伍想去' + (mt.essentials?.location || '同一地点'),
-      essentials: mt.essentials || {}, prompts: mt.prompts || [],
-      matchPct: mt.matchPct, reason: mt.reason, type: 'team_recommend',
-      targetTeamName: mt.groupName, targetTeamMembers: mt.groupMembers.length,
-      status: 'pending', createdAt: Date.now(),
-    });
-  }
-  return { intent: addId({ _id: r.id, ...intentData, matchedUsers, matchedTeams }) };
+  return { intent: addId({ _id: r.id, ...intentData, matchedUsers }) };
 });
 
 // 2. GET /api/intents/mine — 我的意图列表
@@ -1361,7 +1215,6 @@ G('/api/groups/public', async (p, b, q) => {
   if (type === 'share') col = col.where({ status: 'completed' });
   const r = await col.get();
   let items = addIds(r.data);
-  items = items.filter(g => g.matchingEnabled !== false);
   if (type === 'latest') items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
   else if (type === 'hot') items.sort((a, b) => (b.likes || 0) - (a.likes || 0));
   else items.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
@@ -1779,7 +1632,7 @@ P('/api/groups/:id/sos', async (p, b, q) => {
   return { ok: true, sos: !turningOff };
 });
 
-// PUT /api/intents/notices/:noticeId — 接受/拒绝通知（v2: 支持用户匹配+队伍匹配+队伍推荐）
+// PUT /api/intents/notices/:noticeId — 接受/拒绝通知（修改版：接受时自动加入 Group）
 U('/api/intents/notices/:noticeId', async (p, b, q) => {
   const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
   const { status } = b;
@@ -1789,44 +1642,32 @@ U('/api/intents/notices/:noticeId', async (p, b, q) => {
   if (noticeDoc.data[0].toUserId !== u.userId) return err('无权操作', 403);
   await db.collection('matchnotices').doc(p.noticeId).update({ status, updatedAt: Date.now() });
   let groupId;
+  // 当 status=accepted 时，检查是否已有对应 Group
   if (status === 'accepted') {
     const notice = noticeDoc.data[0];
-    const noticeType = notice.type || 'user_match';
-    let targetGroupId = notice.groupId || notice.targetGroupId || '';
-    if (!targetGroupId && notice.intentId) {
+    const fromUserId = (notice.fromUser || {}).id || notice.fromUserId || '';
+    // 查找 fromUser 的 intent 状态是 confirmed 且有对应 Group
+    if (notice.intentId) {
       const intentDoc = await db.collection('intents').doc(notice.intentId).get();
-      if (intentDoc.data.length) {
-        const intent = intentDoc.data[0];
-        if (noticeType === 'team_recommend') {
-          targetGroupId = notice.targetGroupId || '';
-        } else {
-          if (intent.groupId) targetGroupId = intent.groupId;
-          else {
-            const gRes = await db.collection('groups').where({ intentId: notice.intentId }).limit(1).get();
-            if (gRes.data.length) targetGroupId = gRes.data[0]._id;
-          }
-        }
-      }
-    }
-    if (targetGroupId) {
-      try {
-        const gDoc = await db.collection('groups').doc(targetGroupId).get();
-        if (gDoc.data.length) {
-          const group = gDoc.data[0];
+      if (intentDoc.data.length && intentDoc.data[0].status === 'confirmed') {
+        const groups = await db.collection('groups').where({ intentId: notice.intentId }).limit(1).get();
+        if (groups.data.length) {
+          const group = groups.data[0];
           const members = group.members || [];
+          // 将当前用户加入 Group
           if (!members.find(m => (m.id || m) === u.userId)) {
             const ud = await db.collection('users').doc(u.userId).get();
             const userName = (ud.data[0] || {}).name || '';
             const avatar = (ud.data[0] || {}).avatar || '';
             const avatarUrl = (ud.data[0] || {}).avatarUrl || '';
-            members.push({ id: u.userId, name: userName, avatar, avatarUrl, joinedAt: Date.now() });
+            members.push({ id: u.userId, name: userName, avatar, avatarUrl });
             const msgs = group.messages || [];
             msgs.push({ userId: 'system', userName: '系统', content: userName + ' 加入了队伍', createdAt: Date.now() });
-            await db.collection('groups').doc(targetGroupId).update({ members, messages: msgs, updatedAt: Date.now() });
+            await db.collection('groups').doc(group._id).update({ members, messages: msgs, updatedAt: Date.now() });
           }
-          groupId = targetGroupId;
+          groupId = group._id;
         }
-      } catch (e) {}
+      }
     }
   }
   return { ok: true, groupId };
@@ -2178,6 +2019,490 @@ P('/api/groups/:id/generate-log/:userId', async (p, b, q) => {
   };
   await safeAdd('traillogs', log);
   return { ok: true, log };
+});
+
+// ─── 游戏组队大厅 & 快速匹配 ─────────────────
+
+// 地点→城市映射表（用于模糊匹配）
+const LOCATION_CITY_MAP = {
+  '梧桐山':'深圳','七娘山':'深圳','排牙山':'深圳','大南山':'深圳','塘朗山':'深圳','马峦山':'深圳','银湖山':'深圳','羊台山':'深圳',
+  '凤凰山':'深圳','大笔架山':'深圳','小南山':'深圳','莲花山':'深圳','梅林水库':'深圳','仙湖':'深圳','东湖':'深圳',
+  '白云山':'广州','火炉山':'广州','凤凰山':'广州','大夫山':'广州','龙眼洞':'广州','帽峰山':'广州','越秀山':'广州',
+  '西樵山':'佛山','鼎湖山':'肇庆','丹霞山':'韶关','罗浮山':'惠州','南昆山':'惠州','象头山':'惠州',
+  '阴那山':'梅州','圭峰山':'江门','观音山':'东莞','大岭山':'东莞','黄旗山':'东莞',
+  '五桂山':'中山','凤凰岭':'珠海','板樟山':'珠海',
+  '鼓浪屿':'厦门','武夷山':'南平','太姥山':'宁德','青云山':'福州',
+  '岳麓山':'长沙','衡山':'衡阳','韶山':'湘潭','天门山':'张家界','天子山':'张家界',
+  '庐山':'九江','三清山':'上饶','龙虎山':'鹰潭','井冈山':'吉安',
+  '峨眉山':'乐山','青城山':'成都','贡嘎山':'甘孜','四姑娘山':'阿坝','西岭雪山':'成都',
+  '玉龙雪山':'丽江','苍山':'大理','梅里雪山':'迪庆','高黎贡山':'保山',
+  '黄山':'黄山','九华山':'池州','天柱山':'安庆','齐云山':'休宁',
+  '泰山':'泰安','崂山':'青岛','蒙山':'临沂','沂山':'潍坊',
+  '华山':'渭南','太白山':'宝鸡','终南山':'西安','骊山':'西安',
+  '武当山':'十堰','神农架':'神农架','大别山':'黄冈',
+  '千山':'鞍山','长白山':'延边','张广才岭':'哈尔滨',
+  '阿里山':'嘉义','阳明山':'台北','玉山':'南投','合欢山':'南投',
+  '八仙岭':'香港','大帽山':'香港','凤凰山':'香港','麦理浩径':'香港','龙脊':'香港',
+};
+
+// 地理模糊匹配
+function locationMatch(loc1, loc2, city1, city2) {
+  if (!loc1 || !loc2) return true; // 任一方未填=不限制
+  if (loc1 === loc2) return true; // 精确匹配
+  const c1 = LOCATION_CITY_MAP[loc1] || city1 || '';
+  const c2 = LOCATION_CITY_MAP[loc2] || city2 || '';
+  if (c1 && c2 && c1 === c2) return true; // 同城匹配
+  if (c1 && loc2.includes(c1)) return true; // 地点包含城市
+  if (c2 && loc1.includes(c2)) return true;
+  if (loc1.includes(loc2) || loc2.includes(loc1)) return true; // 包含匹配
+  return false;
+}
+
+// 日期兼容性检查
+function dateCompatible(d1, d2) {
+  if (!d1 || !d2) return true;
+  if (d1 === d2) return true;
+  // 同一周内
+  try {
+    const dt1 = new Date(d1), dt2 = new Date(d2);
+    if (!isNaN(dt1) && !isNaN(dt2)) {
+      const diff = Math.abs(dt1.getTime() - dt2.getTime());
+      if (diff <= 3 * 86400000) return true; // 3天内
+    }
+  } catch {}
+  return false;
+}
+
+// 获取用户城市
+async function getUserCity(userId, db) {
+  try {
+    const ud = await db.collection('users').doc(userId).get();
+    return (ud.data[0] || {}).city || '';
+  } catch { return ''; }
+}
+
+// GET /api/lobby/rooms — 组队大厅：浏览所有开放房间
+G('/api/lobby/rooms', async (p, b, q) => {
+  const location = q.location || '';
+  const date = q.date || '';
+  const difficulty = q.difficulty || '';
+  const page = Math.max(Number(q.page) || 1, 1);
+  const limit = Math.min(Number(q.limit) || 20, 50);
+
+  // 查询所有招募中的队伍
+  let col = db.collection('groups');
+  const r = await col.get();
+  let items = addIds(r.data);
+
+  // 过滤：只显示招募中的房间
+  items = items.filter(g => {
+    if (g.matchingEnabled === false) return false;
+    if (g.hikeStatus === 'hiking' || g.hikeStatus === 'completed') return false;
+    const status = g.status || '';
+    if (status === 'completed') return false;
+    // 必须有成员（空房间不显示）
+    if (!g.members || g.members.length === 0) return false;
+    return true;
+  });
+
+  // 筛选条件
+  if (location) {
+    items = items.filter(g => {
+      const gLoc = (g.essentials || {}).location || (g.essentials || {}).location || '';
+      return locationMatch(location, gLoc, '', '');
+    });
+  }
+  if (date) {
+    items = items.filter(g => {
+      const gDate = (g.essentials || {}).date || '';
+      return dateCompatible(date, gDate);
+    });
+  }
+  if (difficulty) {
+    items = items.filter(g => {
+      const gDiff = (g.essentials || {}).difficulty || '';
+      return !gDiff || gDiff === difficulty;
+    });
+  }
+
+  // 计算房间状态和紧急度
+  items = items.map(g => {
+    const members = g.members || [];
+    const maxMembers = g.maxMembers || g.essentials?.groupSize || 6;
+    const needPeople = maxMembers - members.length;
+    const urgency = needPeople <= 0 ? 'full' : needPeople >= 3 ? 'high' : needPeople >= 2 ? 'mid' : 'low';
+    const leader = members.find(m => m.role === 'leader') || members[0];
+    return {
+      id: g.id,
+      name: g.name || '未命名队伍',
+      emoji: g.emoji || '🥾',
+      avatarColor: g.avatarColor,
+      location: (g.essentials || {}).location || '',
+      date: (g.essentials || {}).date || '',
+      difficulty: (g.essentials || {}).difficulty || '',
+      eventType: (g.essentials || {}).eventType || '',
+      prompts: g.prompts || [],
+      members: members.map(m => ({ id: m.id, name: m.name, avatar: m.avatar, avatarUrl: m.avatarUrl, avatarColor: m.avatarColor, role: m.role })),
+      memberCount: members.length,
+      maxMembers,
+      needPeople,
+      urgency,
+      leader: leader ? { id: leader.id, name: leader.name, avatar: leader.avatar, avatarUrl: leader.avatarUrl } : null,
+      likes: g.likes || 0,
+      hot: (g.likes || 0) > 10,
+      photos: g.photos || [],
+      status: g.status,
+      intentId: g.intentId,
+      createdAt: g.createdAt,
+    };
+  });
+
+  // 排序：招募中优先，然后按紧急度、热度
+  const urgencyOrder = { high: 0, mid: 1, low: 2, full: 3 };
+  items.sort((a, b) => {
+    // 满员排后面
+    if (a.urgency === 'full' && b.urgency !== 'full') return 1;
+    if (b.urgency === 'full' && a.urgency !== 'full') return -1;
+    // 热门优先
+    if (a.hot !== b.hot) return b.hot ? 1 : -1;
+    // 紧急度
+    const ua = urgencyOrder[a.urgency] || 2;
+    const ub = urgencyOrder[b.urgency] || 2;
+    if (ua !== ub) return ua - ub;
+    // 新创建优先
+    return (b.createdAt || 0) - (a.createdAt || 0);
+  });
+
+  const total = items.length;
+  const start = (page - 1) * limit;
+  const paged = items.slice(start, start + limit);
+  return { items: paged, total, hasMore: start + limit < total };
+});
+
+// POST /api/lobby/create-room — 队长开房
+P('/api/lobby/create-room', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const { name, location, date, difficulty, eventType, groupSize, prompts, rawInput } = b;
+  const userDoc = await db.collection('users').doc(u.userId).get();
+  const user = userDoc.data[0] || {};
+
+  // 如果有 rawInput，用 AI 提取
+  let essentials = { location, date, difficulty, eventType, groupSize };
+  let finalPrompts = prompts || [];
+  if (rawInput) {
+    const extracted = extractFromInput(rawInput);
+    essentials = { ...essentials, ...extracted.essentials };
+    finalPrompts = [...new Set([...finalPrompts, ...extracted.prompts])];
+  }
+
+  // 创建意图
+  const intentData = {
+    rawInput: rawInput || `${location || '徒步'} ${date || ''}`,
+    essentials,
+    prompts: finalPrompts,
+    essentialsComplete: !!(essentials.location && essentials.date),
+    status: 'matching',
+    author: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
+    matchedUsers: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  const ir = await db.collection('intents').add(intentData);
+
+  // 创建房间（Group）
+  const groupData = {
+    name: name || `${user.name || '我'}的${essentials.location || '徒步'}队`,
+    intentId: ir.id,
+    members: [{ id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '', role: 'leader', joinedAt: Date.now() }],
+    maxMembers: essentials.groupSize || 6,
+    essentials,
+    prompts: finalPrompts,
+    status: 'recruiting',
+    matchingEnabled: true,
+    likes: 0, hot: false, photos: [],
+    createdBy: u.userId,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  const gr = await db.collection('groups').add(groupData);
+  await db.collection('intents').doc(ir.id).update({ groupId: gr.id });
+
+  // 后台异步匹配（不阻塞返回）
+  matchUsersSimple(u.userId, essentials, finalPrompts, db).then(async matchedUsers => {
+    await db.collection('intents').doc(ir.id).update({ matchedUsers, updatedAt: Date.now() });
+    // 给匹配到的用户发通知
+    for (const mu of matchedUsers) {
+      await safeAdd('matchnotices', {
+        intentId: ir.id,
+        fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
+        toUserId: mu.id,
+        rawInput: intentData.rawInput,
+        essentials,
+        prompts: finalPrompts,
+        matchPct: mu.matchPct,
+        reason: mu.reason,
+        type: 'team_recommend',
+        targetTeamName: groupData.name,
+        targetTeamMembers: 1,
+        status: 'pending',
+        createdAt: Date.now(),
+      });
+    }
+  }).catch(e => console.log('bg match err:', e.message));
+
+  return { ok: true, roomId: gr.id, room: addId({ _id: gr.id, ...groupData }) };
+});
+
+// POST /api/lobby/quick-match — 快速匹配（自动拼队）
+P('/api/lobby/quick-match', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const { location, date, difficulty, eventType, groupSize, prompts, rawInput } = b;
+  const userDoc = await db.collection('users').doc(u.userId).get();
+  const user = userDoc.data[0] || {};
+  const myCity = user.city || '';
+
+  // 如果有 rawInput，用 AI 提取
+  let essentials = { location, date, difficulty, eventType, groupSize };
+  let finalPrompts = prompts || [];
+  if (rawInput) {
+    const extracted = extractFromInput(rawInput);
+    essentials = { ...essentials, ...extracted.essentials };
+    finalPrompts = [...new Set([...finalPrompts, ...extracted.prompts])];
+  }
+
+  // 第一步：查找匹配的已有房间
+  const allGroups = await db.collection('groups').get();
+  let rooms = addIds(allGroups.data).filter(g => {
+    if (g.matchingEnabled === false) return false;
+    if (g.hikeStatus === 'hiking' || g.hikeStatus === 'completed') return false;
+    if ((g.status || '') === 'completed') return false;
+    if (!g.members || g.members.length === 0) return false;
+    // 已在房间里的不推荐
+    if (g.members.some(m => String(m.id || m) === String(u.userId))) return false;
+    // 未满员
+    const max = g.maxMembers || g.essentials?.groupSize || 6;
+    if (g.members.length >= max) return false;
+    return true;
+  });
+
+  // 对每个房间计算匹配度
+  const scoredRooms = [];
+  for (const g of rooms) {
+    const gEss = g.essentials || {};
+    const gPrompts = g.prompts || [];
+    const gCity = await getUserCity((g.members[0] || {}).id, db);
+
+    // 硬过滤
+    if (essentials.location && gEss.location && !locationMatch(essentials.location, gEss.location, myCity, gCity)) continue;
+    if (essentials.date && gEss.date && !dateCompatible(essentials.date, gEss.date)) continue;
+    if (essentials.difficulty && gEss.difficulty) {
+      const diffLevels = { casual: 1, moderate: 2, advanced: 2, challenge: 3 };
+      const myDiff = diffLevels[essentials.difficulty] || 0;
+      const theirDiff = diffLevels[gEss.difficulty] || 0;
+      if (myDiff && theirDiff && Math.abs(myDiff - theirDiff) > 1) continue;
+    }
+
+    // 软评分
+    let score = 0;
+    // 地点匹配（40分）
+    if (essentials.location && gEss.location && locationMatch(essentials.location, gEss.location, myCity, gCity)) score += 40;
+    else if (!essentials.location && !gEss.location) score += 20;
+    // 日期匹配（25分）
+    if (essentials.date && gEss.date && dateCompatible(essentials.date, gEss.date)) score += 25;
+    else if (!essentials.date || !gEss.date) score += 12;
+    // 提示词匹配（20分）
+    if (finalPrompts.length && gPrompts.length) {
+      const overlap = finalPrompts.filter(p => gPrompts.includes(p));
+      score += Math.round((overlap.length / Math.max(finalPrompts.length, 1)) * 20);
+    } else { score += 10; }
+    // 难度匹配（10分）
+    if (essentials.difficulty === gEss.difficulty) score += 10;
+    else if (!essentials.difficulty || !gEss.difficulty) score += 5;
+    // 紧急度加分（缺人多的房间更需要人，优先推荐）
+    const need = (g.maxMembers || 6) - g.members.length;
+    if (need === 1) score += 5; // 只差1人，优先
+
+    const matchPct = Math.min(Math.round(score), 99);
+    if (matchPct >= 30) { // 最低30%才推荐
+      scoredRooms.push({
+        roomId: g.id,
+        name: g.name || '未命名队伍',
+        emoji: g.emoji || '🥾',
+        location: gEss.location || '',
+        date: gEss.date || '',
+        difficulty: gEss.difficulty || '',
+        prompts: gPrompts,
+        members: (g.members || []).map(m => ({ id: m.id, name: m.name, avatar: m.avatar, avatarUrl: m.avatarUrl, avatarColor: m.avatarColor, role: m.role })),
+        memberCount: (g.members || []).length,
+        maxMembers: g.maxMembers || 6,
+        matchPct,
+        reason: buildMatchReason(essentials, gEss, finalPrompts, gPrompts),
+        intentId: g.intentId,
+      });
+    }
+  }
+
+  // 第二步：查找匹配的散人（没有房间的意图）
+  const allIntents = await db.collection('intents')
+    .where({ status: db.RegExp ? db.RegExp({ regexp: 'matching|recruiting' }) : 'matching' })
+    .limit(50).get();
+  const soloPlayers = [];
+  for (const intent of addIds(allIntents.data)) {
+    if (intent.author && String(intent.author.id) === String(u.userId)) continue;
+    const iEss = intent.essentials || {};
+    const iPrompts = intent.prompts || [];
+    const authorCity = await getUserCity(intent.author?.id, db);
+
+    // 硬过滤
+    if (essentials.location && iEss.location && !locationMatch(essentials.location, iEss.location, myCity, authorCity)) continue;
+    if (essentials.date && iEss.date && !dateCompatible(essentials.date, iEss.date)) continue;
+
+    // 软评分
+    let score = 0;
+    if (essentials.location && iEss.location && locationMatch(essentials.location, iEss.location, myCity, authorCity)) score += 40;
+    else if (!essentials.location || !iEss.location) score += 20;
+    if (essentials.date && iEss.date && dateCompatible(essentials.date, iEss.date)) score += 25;
+    else if (!essentials.date || !iEss.date) score += 12;
+    if (finalPrompts.length && iPrompts.length) {
+      const overlap = finalPrompts.filter(p => iPrompts.includes(p));
+      score += Math.round((overlap.length / Math.max(finalPrompts.length, 1)) * 20);
+    } else { score += 10; }
+    if (essentials.difficulty === iEss.difficulty) score += 10;
+    else if (!essentials.difficulty || !iEss.difficulty) score += 5;
+
+    const matchPct = Math.min(Math.round(score), 99);
+    if (matchPct >= 30) {
+      soloPlayers.push({
+        type: 'solo',
+        userId: intent.author?.id,
+        userName: intent.author?.name || '',
+        avatar: intent.author?.avatar || '',
+        avatarUrl: intent.author?.avatarUrl || '',
+        location: iEss.location || '',
+        date: iEss.date || '',
+        difficulty: iEss.difficulty || '',
+        prompts: iPrompts,
+        matchPct,
+        reason: buildMatchReason(essentials, iEss, finalPrompts, iPrompts),
+        intentId: intent.id,
+      });
+    }
+  }
+
+  // 排序
+  scoredRooms.sort((a, b) => b.matchPct - a.matchPct);
+  soloPlayers.sort((a, b) => b.matchPct - a.matchPct);
+
+  // 如果没有匹配到任何房间或散人，自动开房
+  let autoRoom = null;
+  if (scoredRooms.length === 0 && soloPlayers.length === 0) {
+    const intentData = {
+      rawInput: rawInput || `${location || '徒步'} ${date || ''}`,
+      essentials,
+      prompts: finalPrompts,
+      essentialsComplete: !!(essentials.location && essentials.date),
+      status: 'matching',
+      author: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
+      matchedUsers: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const ir = await db.collection('intents').add(intentData);
+    const groupData = {
+      name: `${user.name || '我'}的${essentials.location || '徒步'}队`,
+      intentId: ir.id,
+      members: [{ id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '', role: 'leader', joinedAt: Date.now() }],
+      maxMembers: essentials.groupSize || 6,
+      essentials,
+      prompts: finalPrompts,
+      status: 'recruiting',
+      matchingEnabled: true,
+      likes: 0, hot: false, photos: [],
+      createdBy: u.userId,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    };
+    const gr = await db.collection('groups').add(groupData);
+    await db.collection('intents').doc(ir.id).update({ groupId: gr.id });
+    autoRoom = { roomId: gr.id, name: groupData.name, isNew: true };
+  }
+
+  return {
+    rooms: scoredRooms.slice(0, 10),
+    soloPlayers: soloPlayers.slice(0, 5),
+    autoRoom,
+    totalMatches: scoredRooms.length + soloPlayers.length,
+  };
+});
+
+// 构建匹配理由
+function buildMatchReason(myEss, theirEss, myPrompts, theirPrompts) {
+  const reasons = [];
+  if (myEss.location && theirEss.location && locationMatch(myEss.location, theirEss, '', '')) {
+    reasons.push(`目的地匹配: ${theirEss.location}`);
+  }
+  if (myEss.date && theirEss.date && dateCompatible(myEss.date, theirEss.date)) {
+    reasons.push(`时间合适: ${theirEss.date}`);
+  }
+  if (myPrompts.length && theirPrompts.length) {
+    const overlap = myPrompts.filter(p => theirPrompts.includes(p));
+    if (overlap.length) reasons.push(`共同偏好: ${overlap.slice(0, 3).join('、')}`);
+  }
+  if (myEss.difficulty === theirEss.difficulty && myEss.difficulty) {
+    reasons.push(`难度一致: ${myEss.difficulty}`);
+  }
+  return reasons.length ? reasons.join(' | ') : '基本匹配';
+}
+
+// POST /api/lobby/join/:id — 直接加入房间（大厅一键加入）
+P('/api/lobby/join/:id', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const found = await findGroup(p.id); if (!found) return err('房间不存在', 404);
+  const group = found.doc;
+  const members = group.members || [];
+
+  // 已在房间
+  if (members.some(m => String(m.id || m) === String(u.userId))) return err('你已在该房间', 400);
+
+  // 满员检查
+  const max = group.maxMembers || group.essentials?.groupSize || 6;
+  if (members.length >= max) return err('房间已满员', 400);
+
+  const userDoc = await db.collection('users').doc(u.userId).get();
+  const user = userDoc.data[0] || {};
+
+  // 判断是否需要队长审批
+  const needApproval = group.joinApproval !== false; // 默认需要审批
+  if (needApproval) {
+    // 发送入队申请通知
+    const leader = members.find(m => m.role === 'leader') || members[0];
+    const leaderId = leader ? String(leader.id) : String(group.createdBy || '');
+    await safeAdd('matchnotices', {
+      toUserId: leaderId,
+      type: 'join_request',
+      status: 'pending',
+      title: '入队申请',
+      content: `${user.name || '队友'} 申请加入「${group.name}」`,
+      groupId: p.id,
+      applicantUserId: u.userId,
+      applicantName: user.name || '',
+      createdAt: Date.now(),
+    });
+    const msgs = group.messages || [];
+    msgs.push({ userId: 'system', userName: '系统', content: `${user.name || '队友'} 申请加入队伍，等待队长确认`, createdAt: Date.now() });
+    await db.collection('groups').doc(found.docId).update({ messages: msgs, updatedAt: Date.now() });
+    return { ok: true, status: 'pending_approval', message: '入队申请已发送，等待队长确认' };
+  } else {
+    // 直接加入
+    members.push({
+      id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '',
+      role: 'member', joinedAt: Date.now()
+    });
+    const msgs = group.messages || [];
+    msgs.push({ userId: 'system', userName: '系统', content: `${user.name || '队友'} 加入了队伍`, createdAt: Date.now() });
+    await db.collection('groups').doc(found.docId).update({ members, messages: msgs, updatedAt: Date.now() });
+    return { ok: true, status: 'joined', groupId: p.id };
+  }
 });
 
 // ─── Router ─────────────────────────
