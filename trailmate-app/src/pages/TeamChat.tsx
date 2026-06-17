@@ -1,424 +1,398 @@
-import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Send, MapPin, AlertTriangle, UserMinus, RefreshCw, Check, Sparkles } from 'lucide-react';
-import { groupsApi, eventsApi, intentApi } from '@/api';
-import { useStore } from '@/store';
-import type { Group, GroupMessage, Intent } from '@/types';
-
-/** 预览结果 */
-interface PreviewResult {
-  preview: boolean;
-  differencePoints: string[];
-  myPreferences: { topic: string; preference: string }[];
-  otherPreferences: { topic: string; preference: string; userName: string }[];
-  message: string;
-}
-
-/** 解散结果 */
-interface DissolveResult {
-  dissolved: boolean;
-  differencePoints: string[];
-  myPreferences: { topic: string; preference: string }[];
-  otherPreferences: { topic: string; preference: string; userName: string }[];
-  selectedPreferences: string[];
-  newPrompts: string[];
-  newIntent: Intent;
-  message: string;
-}
-
-/** AI 对话阶段 */
-type AIStage = 'idle' | 'analyzing' | 'selecting' | 'matching' | 'done';
+import { useTeamChat } from '@/hooks/useTeamChat';
+import InlinePanel from '@/components/InlinePanel';
+import ChatHeader from '@/components/team-chat/ChatHeader';
+import ChatMessages from '@/components/team-chat/ChatMessages';
+import SidebarButtons from '@/components/team-chat/SidebarButtons';
+import MemberPanel, { MemberModal } from '@/components/team-chat/MemberPanel';
+import PlanPanel from '@/components/team-chat/PlanPanel';
+import PhotoPanel from '@/components/team-chat/PhotoPanel';
+import MatchPanel from '@/components/team-chat/MatchPanel';
+import LocationPanel from '@/components/team-chat/LocationPanel';
+import GoModal from '@/components/team-chat/GoModal';
+import CompleteModal from '@/components/team-chat/CompleteModal';
+import NoCheckpointModal from '@/components/team-chat/NoCheckpointModal';
+import PromptsConfirmModal from '@/components/team-chat/PromptsConfirmModal';
 
 export default function TeamChat() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useStore();
-  const [group, setGroup] = useState<Group | null>(null);
-  const [msg, setMsg] = useState('');
-  const [sending, setSending] = useState(false);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const pollRef = useRef<number>(0);
+  const chat = useTeamChat(id);
 
-  // AI 对话式解散
-  const [aiStage, setAiStage] = useState<AIStage>('idle');
-  const [previewResult, setPreviewResult] = useState<PreviewResult | null>(null);
-  const [selectedPrefs, setSelectedPrefs] = useState<Set<string>>(new Set());
-  const [dissolveResult, setDissolveResult] = useState<DissolveResult | null>(null);
-
-  const loadGroup = async () => {
-    if (!id) return;
-    try {
-      const g = await groupsApi.get(id);
-      setGroup(g);
-    } catch (e) {
-      console.error('Failed to load group:', e);
-    }
-  };
-
-  useEffect(() => {
-    loadGroup();
-    pollRef.current = window.setInterval(loadGroup, 3000);
-    return () => clearInterval(pollRef.current);
-  }, [id]);
-
-  // AI 消息出现时自动滚到底部
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [group?.messages?.length, aiStage, previewResult, dissolveResult]);
-
-  const handleSend = async () => {
-    if (!msg.trim() || !id || sending) return;
-    setSending(true);
-    try {
-      await groupsApi.sendMessage(id, msg.trim());
-      setMsg('');
-      await loadGroup();
-    } catch (e) {
-      console.error('Failed to send message:', e);
-    } finally {
-      setSending(false);
-    }
-  };
-
-  const handleCheckin = async (type: 'start' | 'finish') => {
-    if (!group?.eventId) return;
-    try {
-      await eventsApi.checkin(group.eventId, type);
-      alert(type === 'start' ? '起点签到成功！' : '终点签到成功！');
-    } catch (err: any) {
-      alert(err.message || '签到失败');
-    }
-  };
-
-  const handleSOS = async () => {
-    if (!group?.eventId) return;
-    if (!confirm('确认发送 SOS 紧急求助？')) return;
-    try {
-      await eventsApi.sos(group.eventId);
-      alert('SOS 已发送！紧急联系人将收到通知。');
-    } catch (err: any) {
-      alert(err.message || 'SOS 发送失败');
-    }
-  };
-
-  /** 构造聊天消息 */
-  const buildChatMessages = () => {
-    return (group?.messages || [])
-      .filter((m: GroupMessage) => m.type !== 'system' && m.user?.name)
-      .map((m: GroupMessage) => ({
-        content: m.content,
-        userName: m.user?.name || '未知',
-      }));
-  };
-
-  /** 点击解散 → AI 开始分析 */
-  const handleDissolve = async () => {
-    if (!group?.intentId) return;
-    setAiStage('analyzing');
-    try {
-      const chatMessages = buildChatMessages();
-      const result = await intentApi.dissolvePreview(group.intentId, chatMessages);
-      setPreviewResult(result);
-      // 默认全选自己的偏好
-      setSelectedPrefs(new Set(result.myPreferences.map(p => p.preference)));
-      setAiStage('selecting');
-    } catch (err: any) {
-      alert(err.message || '分析失败');
-      setAiStage('idle');
-    }
-  };
-
-  /** 切换偏好选择 */
-  const togglePref = (pref: string) => {
-    setSelectedPrefs(prev => {
-      const next = new Set(prev);
-      if (next.has(pref)) next.delete(pref);
-      else next.add(pref);
-      return next;
-    });
-  };
-
-  /** 确认选择 → 解散并匹配 */
-  const handleConfirmDissolve = async () => {
-    if (!group?.intentId) return;
-    setAiStage('matching');
-    try {
-      const chatMessages = buildChatMessages();
-      const result = await intentApi.dissolve(
-        group.intentId,
-        chatMessages,
-        Array.from(selectedPrefs),
-      );
-      setDissolveResult(result);
-      setAiStage('done');
-    } catch (err: any) {
-      alert(err.message || '解散失败');
-      setAiStage('selecting');
-    }
-  };
-
-  /** 继续匹配 */
-  const handleContinueMatch = () => {
-    navigate('/');
-  };
-
-  /** 暂不匹配 */
-  const handleSkipMatch = () => {
-    navigate('/teams');
-  };
-
-  if (!group) return <div className="flex items-center justify-center h-screen" style={{ background: '#faf7f2' }}><p className="text-gray-400">加载中...</p></div>;
+  if (!chat.group) return (
+    <div className="flex flex-col items-center justify-center h-screen gap-3 bg-[#faf7f2] dark:bg-gray-950">
+      {chat.loadError ? (
+        <>
+          <p className="text-red-400 text-sm">{chat.loadError}</p>
+          <button onClick={() => { chat.loadGroup(); }} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm">重试</button>
+          <button onClick={() => navigate('/')} className="text-gray-400 dark:text-gray-500 text-xs">返回首页</button>
+        </>
+      ) : (
+        <p className="text-gray-400 dark:text-gray-500">加载中...</p>
+      )}
+    </div>
+  );
 
   return (
-    <div className="flex flex-col h-screen" style={{ background: '#faf7f2' }}>
+    <div className="flex flex-col h-screen bg-[#faf7f2] dark:bg-gray-950">
       {/* Header */}
-      <div className="px-5 pt-6 pb-3 bg-white sticky top-0 z-10 shadow-sm flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-gray-500"><ArrowLeft className="w-5 h-5" /></button>
-        <div className="flex-1 min-w-0">
-          <h1 className="font-bold text-gray-800 text-sm truncate">{group.name}</h1>
-          <p className="text-xs text-gray-400">{group.members?.length || 0} 位成员</p>
-        </div>
-        <div className="flex gap-2">
-          {group.eventId && (
-            <>
-              <button onClick={() => handleCheckin('start')} className="px-3 py-1.5 bg-green-50 text-green-600 rounded-lg text-xs font-medium">
-                <MapPin className="w-3.5 h-3.5 inline mr-1" />签到
-              </button>
-              <button onClick={handleSOS} className="px-3 py-1.5 bg-red-50 text-red-600 rounded-lg text-xs font-medium">
-                <AlertTriangle className="w-3.5 h-3.5 inline mr-1" />SOS
-              </button>
-            </>
-          )}
-          {aiStage === 'idle' && (
-            <button
-              onClick={handleDissolve}
-              className="px-3 py-1.5 bg-orange-50 text-orange-600 rounded-lg text-xs font-medium"
-            >
-              <UserMinus className="w-3.5 h-3.5 inline mr-1" />解散
-            </button>
-          )}
-        </div>
-      </div>
+      <ChatHeader
+        group={chat.group}
+        isLeader={chat.isLeader}
+        isVisitor={chat.isVisitor}
+        hikeStatus={chat.hikeStatus}
+        checkpoints={chat.checkpoints}
+        checkedInCount={chat.checkedInCount}
+        photos={chat.photos}
+        members={chat.members}
+        went={chat.hikeStatus === 'hiking'}
+        showGoModal={chat.showGoModal}
+        showNoCheckpointModal={chat.showNoCheckpointModal}
+        hikingActionLoading={chat.hikingActionLoading}
+        showCheckpointGuide={chat.showCheckpointGuide}
+        onGo={chat.handleGo}
+        onComplete={chat.handleComplete}
+        onDismissGuide={() => {
+          localStorage.setItem('trailmate_guide_checkpoints', 'dismissed');
+          chat.setShowCheckpointGuide(false);
+        }}
+        onNavigate={(path) => navigate(path)}
+        onGoBack={() => navigate(-1)}
+        onApplyJoin={async () => {
+          const ok = await chat.confirmDialog({ title: '申请加入', message: `确认申请加入「${chat.group?.name || '未命名'}」？` });
+          if (!ok) return;
+          try {
+            const res = await (await import('@/api')).groupsApi.applyJoin(chat.id!);
+            chat.showToast(res.message || '申请已发送');
+            navigate('/teams');
+          } catch (err: any) { chat.showToast(err.message || '申请失败'); }
+        }}
+        merging={chat.merging}
+        showToast={chat.showToast}
+        sidebarExpanded={chat.sidebarExpanded}
+        onToggleSidebar={() => chat.setSidebarExpanded(!chat.sidebarExpanded)}
+      />
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
-        {group.messages?.map((m: GroupMessage, i: number) => {
-          const isMe = m.user?.id === user?.id;
-          const isSystem = m.type === 'system';
-          if (isSystem) {
-            return (
-              <div key={i} className="text-center">
-                <span className="text-xs text-gray-400 bg-gray-100 px-3 py-1 rounded-full">{m.content}</span>
-              </div>
-            );
-          }
-          return (
-            <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[75%] ${isMe ? 'order-1' : ''}`}>
-                {!isMe && <p className="text-xs text-gray-400 mb-1 ml-1">{m.user?.name || '未知'}</p>}
-                <div className={`px-4 py-2.5 rounded-2xl text-sm ${
-                  isMe ? 'bg-green-600 text-white rounded-br-md' : 'bg-white text-gray-800 rounded-bl-md shadow-sm'
-                }`}>
-                  {m.content}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-
-        {/* ── AI 对话式解散消息 ── */}
-
-        {/* 阶段 1：分析中 */}
-        {aiStage === 'analyzing' && (
-          <div className="flex justify-start">
-            <div className="max-w-[85%]">
-              <p className="text-xs text-blue-400 mb-1 ml-1 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> TrailMate AI
-              </p>
-              <div className="px-4 py-3 bg-blue-50 rounded-2xl rounded-bl-md text-sm text-blue-700">
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  正在分析你们的聊天记录，提取差异点...
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 阶段 2：展示差异点 + 选择 */}
-        {aiStage === 'selecting' && previewResult && (
-          <div className="space-y-3">
-            {/* AI 消息：分析完成 */}
-            <div className="flex justify-start">
-              <div className="max-w-[85%]">
-                <p className="text-xs text-blue-400 mb-1 ml-1 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> TrailMate AI
-                </p>
-                <div className="px-4 py-3 bg-blue-50 rounded-2xl rounded-bl-md text-sm text-blue-700">
-                  {previewResult.differencePoints.length > 0
-                    ? `我分析了你们的聊天，发现 ${previewResult.differencePoints.length} 个差异点。选择你想加入新匹配条件的偏好：`
-                    : '我分析了你们的聊天，未发现明显差异点。你可以直接重新匹配。'}
-                </div>
-              </div>
-            </div>
-
-            {/* 可选择的偏好卡片 */}
-            {previewResult.myPreferences.length > 0 && (
-              <div className="ml-2 space-y-2">
-                <p className="text-xs text-green-600 font-medium pl-1">你的偏好（点击选择）</p>
-                {previewResult.myPreferences.map((p, i) => {
-                  const isSelected = selectedPrefs.has(p.preference);
-                  return (
-                    <button
-                      key={i}
-                      onClick={() => togglePref(p.preference)}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-left transition-all ${
-                        isSelected
-                          ? 'bg-green-50 border-2 border-green-300 shadow-sm'
-                          : 'bg-white border-2 border-gray-100'
-                      }`}
-                    >
-                      <div className={`w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSelected ? 'bg-green-500' : 'bg-gray-200'
-                      }`}>
-                        {isSelected && <Check className="w-3 h-3 text-white" />}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-800">{p.topic}</p>
-                        <p className="text-xs text-gray-400">{p.preference}</p>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {/* 对方偏好（仅展示） */}
-            {previewResult.otherPreferences.length > 0 && (
-              <div className="ml-2 space-y-2">
-                <p className="text-xs text-orange-500 font-medium pl-1">对方的偏好（不会影响你的新匹配）</p>
-                {previewResult.otherPreferences.map((p, i) => (
-                  <div
-                    key={i}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-orange-50/50 border border-orange-100"
-                  >
-                    <div className="w-5 h-5 rounded-md flex items-center justify-center flex-shrink-0 bg-orange-200">
-                      <span className="text-orange-500 text-xs">~</span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-700">{p.userName}：{p.topic}</p>
-                      <p className="text-xs text-gray-400">{p.preference}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* 操作按钮（内联在聊天流中） */}
-            <div className="flex gap-3 px-1 pt-1">
-              <button
-                onClick={() => { setAiStage('idle'); setPreviewResult(null); setSelectedPrefs(new Set()); }}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600"
-              >
-                取消解散
-              </button>
-              <button
-                onClick={handleConfirmDissolve}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white flex items-center justify-center gap-2 shadow-md shadow-green-200"
-              >
-                <RefreshCw className="w-4 h-4" />
-                {selectedPrefs.size > 0
-                  ? `加入 ${selectedPrefs.size} 个条件并匹配`
-                  : '直接重新匹配'}
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 阶段 3：匹配中 */}
-        {aiStage === 'matching' && (
-          <div className="flex justify-start">
-            <div className="max-w-[85%]">
-              <p className="text-xs text-blue-400 mb-1 ml-1 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> TrailMate AI
-              </p>
-              <div className="px-4 py-3 bg-blue-50 rounded-2xl rounded-bl-md text-sm text-blue-700">
-                <span className="inline-flex items-center gap-2">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  队伍已解散，正在根据新条件为你匹配队友...
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* 阶段 4：匹配完成 */}
-        {aiStage === 'done' && dissolveResult && (
-          <div className="space-y-3">
-            {/* AI 消息：匹配结果 */}
-            <div className="flex justify-start">
-              <div className="max-w-[85%]">
-                <p className="text-xs text-blue-400 mb-1 ml-1 flex items-center gap-1">
-                  <Sparkles className="w-3 h-3" /> TrailMate AI
-                </p>
-                <div className="px-4 py-3 bg-blue-50 rounded-2xl rounded-bl-md text-sm text-blue-700">
-                  {dissolveResult.message}
-                </div>
-              </div>
-            </div>
-
-            {/* 已加入的匹配条件 */}
-            {dissolveResult.selectedPreferences && dissolveResult.selectedPreferences.length > 0 && (
-              <div className="ml-2 p-3 bg-green-50 rounded-xl">
-                <p className="text-xs text-green-600 font-medium mb-2">已加入的匹配条件</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {dissolveResult.selectedPreferences.map((p, i) => (
-                    <span key={i} className="px-2.5 py-1 bg-white text-green-700 rounded-full text-xs font-medium shadow-sm">
-                      {p}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* 操作按钮 */}
-            <div className="flex gap-3 px-1 pt-1">
-              <button
-                onClick={handleSkipMatch}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-gray-100 text-gray-600"
-              >
-                暂不匹配
-              </button>
-              <button
-                onClick={handleContinueMatch}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium bg-green-600 text-white flex items-center justify-center gap-2 shadow-md shadow-green-200"
-              >
-                <RefreshCw className="w-4 h-4" />
-                继续匹配
-              </button>
-            </div>
-          </div>
-        )}
-
-        <div ref={bottomRef} />
-      </div>
-
-      {/* Input — 解散流程中隐藏输入框 */}
-      {aiStage === 'idle' && (
-        <div className="px-4 py-3 bg-white border-t border-gray-100 flex items-center gap-2">
-          <input
-            type="text" value={msg} onChange={e => setMsg(e.target.value)}
-            onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleSend()}
-            placeholder="输入消息..." className="flex-1 px-4 py-2.5 bg-gray-50 rounded-xl text-sm outline-none focus:ring-1 focus:ring-green-500"
+      {/* 聊天区 + 左侧浮动按钮 — 仅队员可见 */}
+      {chat.isVisitor ? (
+        <PlanPanel
+          group={chat.group}
+          isLeader={false}
+          isMember={false}
+          editingPlan={false}
+          planEditorRef={chat.planEditorRef}
+          onSavePlan={() => {}}
+          onCancelPlan={() => {}}
+          editingPrompts={false}
+          editPromptsText=""
+          setEditPromptsText={() => {}}
+          onSavePrompts={() => {}}
+          onCancelPrompts={() => {}}
+          onShowPromptsConfirm={() => {}}
+          groupPrompts={chat.groupPrompts}
+          intentRawInput={chat.intentRawInput}
+          matchingEnabled={false}
+          onToggleMatching={() => {}}
+          matchedUsers={[]}
+          matchTeams={[]}
+          onInvite={() => {}}
+          onApplyJoin={() => {}}
+          onBack={() => navigate('/')}
+          onCompleteTeam={() => {}}
+        />
+      ) : (
+      <div className="flex-1 min-h-0 relative flex flex-col">
+        {!chat.isVisitor && (
+          <SidebarButtons
+            sidebarPanel={chat.sidebarPanel}
+            onToggle={(panel) => chat.setSidebarPanel(panel as any)}
+            memberCount={chat.members.length}
+            photoCount={(chat.group?.photos || []).length}
+            hikeStatus={chat.hikeStatus}
+            isLeader={chat.isLeader}
+            onSOS={chat.handleSOS}
+            onLeave={chat.handleLeave}
+            closeAllModals={chat.closeAllModals}
+            expanded={chat.sidebarExpanded}
           />
+        )}
+        <ChatMessages
+          messages={chat.group.messages || []}
+          user={chat.user}
+          msg={chat.msg}
+          setMsg={chat.setMsg}
+          onSend={chat.handleSend}
+          sending={chat.sending}
+          bottomRef={chat.bottomRef}
+          onAiAssistant={chat.handleAiAssistant}
+          aiAssistantLoading={chat.aiAssistantLoading}
+          pendingBulletin={chat.pendingBulletin}
+          onConfirmBulletin={chat.confirmBulletin}
+          onDismissBulletin={() => chat.setPendingBulletin(null)}
+          onImageUpload={chat.handleImageUpload}
+          imageInputRef={chat.imageInputRef}
+          hikeStatus={chat.hikeStatus}
+          isVisitor={chat.isVisitor}
+        />
+      </div>
+      )}
+
+      {/* ═══ 侧边栏 ═══ */}
+      <InlinePanel title={`成员 (${chat.members.length})`} visible={chat.sidebarPanel === 'members'} onClose={() => chat.setSidebarPanel(null)}>
+        <MemberPanel
+          members={chat.members}
+          checkpoints={chat.checkpoints}
+          hikeStatus={chat.hikeStatus}
+          user={chat.user}
+          isLeader={chat.isLeader}
+          onSelectMember={(member) => { chat.setSelectedMember(member); chat.setShowMemberModal(true); }}
+        />
+      </InlinePanel>
+
+      {/* PlanPanel 自带头部，直接渲染不用 InlinePanel 包装 */}
+      {chat.sidebarPanel === 'plan' && (
+        <div
+          className="absolute z-30 bg-[#faf7f2] dark:bg-gray-950 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-in-right"
+          style={{
+            right: '52px',
+            top: '60px',
+            bottom: '80px',
+            left: '12px',
+            maxWidth: 'calc(100% - 60px)',
+          }}
+        >
+          <PlanPanel
+            group={chat.group}
+            isLeader={chat.isLeader}
+            isMember={chat.isMember}
+            editingPlan={chat.editingPlan}
+            planEditorRef={chat.planEditorRef}
+            onSavePlan={chat.handleSavePlan}
+            onCancelPlan={() => chat.setEditingPlan(!chat.editingPlan)}
+            editingPrompts={chat.editingPrompts}
+            editPromptsText={chat.editPromptsText}
+            setEditPromptsText={chat.setEditPromptsText}
+            onSavePrompts={chat.handleSavePrompts}
+            onCancelPrompts={() => chat.setEditingPrompts(false)}
+            onShowPromptsConfirm={() => chat.setShowPromptsConfirm(true)}
+            groupPrompts={chat.groupPrompts}
+            intentRawInput={chat.intentRawInput}
+            matchingEnabled={chat.matchingEnabled}
+            onToggleMatching={async (v) => {
+              chat.setMatchingEnabled(v);
+              try { await (await import('@/api')).groupsApi.update(chat.id!, { matchingEnabled: v }); } catch {}
+            }}
+            matchedUsers={chat.matchedUsers}
+            matchTeams={chat.matchTeams}
+            onInvite={async (userId: string) => {
+              if (!chat.group?.intentId) return;
+              try {
+                await (await import('@/api')).intentApi.confirmTeam(chat.group.intentId, [userId]);
+                chat.showToast('邀请已发送！');
+                chat.loadGroup();
+              } catch (err: any) { chat.showToast(err.message || '邀请失败'); }
+            }}
+            onApplyJoin={async (team: any) => {
+              const ok = await chat.confirmDialog({ title: '申请加入', message: `确认申请加入「${team.name || '未命名'}」？` });
+              if (!ok) return;
+              try {
+                const res = await (await import('@/api')).groupsApi.applyJoin(team.id);
+                chat.showToast(res.message || '申请已发送');
+                if (chat.members.length <= 1) {
+                  try { await (await import('@/api')).groupsApi.leave(chat.id!); } catch {}
+                  navigate('/teams');
+                }
+              } catch (err: any) { chat.showToast(err.message || '申请失败'); }
+            }}
+            onBack={() => chat.setSidebarPanel(null)}
+            onCompleteTeam={() => chat.setSidebarPanel(null)}
+            onClose={() => chat.setSidebarPanel(null)}
+          />
+        </div>
+      )}
+      {/* PhotoPanel 相册 */}
+      {chat.sidebarPanel === 'photo' && (
+        <div
+          className="absolute z-30 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl overflow-hidden flex flex-col animate-slide-in-right"
+          style={{
+            right: '52px',
+            top: '60px',
+            bottom: '80px',
+            left: '12px',
+            maxWidth: 'calc(100% - 60px)',
+          }}
+        >
+          <PhotoPanel
+            photos={chat.photos}
+            uploading={chat.uploadingPhoto}
+            isLeader={chat.isLeader}
+            onUpload={async (file) => {
+              chat.setUploadingPhoto(true);
+              try {
+                // canvas 压缩到 800px
+                const compressed = await new Promise<string>((resolve) => {
+                  const img = new Image();
+                  img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let w = img.width, h = img.height;
+                    if (w > 800) { h = (h / w) * 800; w = 800; }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
+                  };
+                  img.src = URL.createObjectURL(file);
+                });
+                const newPhotos = [...(chat.group?.photos || []), compressed];
+                await (await import('@/api')).groupsApi.update(chat.id!, { photos: newPhotos });
+                await chat.loadGroup();
+              } catch (err: any) {
+                chat.showToast(err.message || '上传失败');
+              } finally {
+                chat.setUploadingPhoto(false);
+              }
+            }}
+            onDelete={async (index) => {
+              const ok = await chat.confirmDialog({ title: '删除照片', message: '确定要删除这张照片吗？' });
+              if (!ok) return;
+              try {
+                const newPhotos = chat.photos.filter((_, j) => j !== index);
+                await (await import('@/api')).groupsApi.update(chat.id!, { photos: newPhotos });
+                await chat.loadGroup();
+              } catch (err: any) {
+                chat.showToast(err.message || '删除失败');
+              }
+            }}
+          />
+          {/* 关闭按钮 */}
           <button
-            onClick={handleSend} disabled={sending || !msg.trim()}
-            className="w-10 h-10 bg-green-600 rounded-xl flex items-center justify-center disabled:opacity-50 shadow-md shadow-green-200"
+            onClick={() => chat.setSidebarPanel(null)}
+            className="absolute top-3 right-3 w-7 h-7 rounded-lg bg-black/20 dark:bg-white/10 flex items-center justify-center text-white hover:bg-black/40 transition-colors z-10"
           >
-            <Send className="w-4 h-4 text-white" />
+            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
           </button>
         </div>
       )}
+
+      <InlinePanel title="匹配" visible={chat.sidebarPanel === 'match'} onClose={() => chat.setSidebarPanel(null)}>
+        <MatchPanel
+          matchTab={chat.matchTab}
+          setMatchTab={chat.setMatchTab}
+          matchedUsers={chat.matchedUsers}
+          matchTeams={chat.matchTeams}
+          matchingEnabled={chat.matchingEnabled}
+          onToggleMatching={async (v) => {
+            chat.setMatchingEnabled(v);
+            try { await (await import('@/api')).groupsApi.update(chat.id!, { matchingEnabled: v }); } catch {}
+          }}
+          isLeader={chat.isLeader}
+          onInvite={async (userId: string) => {
+            if (!chat.group?.intentId) return;
+            try {
+              await (await import('@/api')).intentApi.confirmTeam(chat.group.intentId, [userId]);
+              chat.showToast('邀请已发送！');
+              chat.loadGroup();
+            } catch (err: any) { chat.showToast(err.message || '邀请失败'); }
+          }}
+          onMergeTeam={(team) => chat.handleMergeTeam(team)}
+          onApplyJoin={async (team: any) => {
+            const ok = await chat.confirmDialog({ title: '申请加入', message: `确认申请加入「${team.name || '未命名'}」？` });
+            if (!ok) return;
+            try {
+              const res = await (await import('@/api')).groupsApi.applyJoin(team.id);
+              chat.showToast(res.message || '申请已发送');
+              // 如果当前队伍只有自己一人，自动退出旧队伍
+              if (chat.members.length <= 1) {
+                try { await (await import('@/api')).groupsApi.leave(chat.id!); } catch {}
+                navigate('/teams');
+              }
+            } catch (err: any) { chat.showToast(err.message || '申请失败'); }
+          }}
+          merging={chat.merging}
+          mergeConfirmTeam={chat.mergeConfirmTeam}
+          myLeaderTeams={chat.myLeaderTeams}
+          selectedFromTeamId={chat.selectedFromTeamId}
+          setSelectedFromTeamId={chat.setSelectedFromTeamId}
+          doApplyMerge={chat.doApplyMerge}
+          onCancelMerge={() => { chat.setMergeConfirmTeam(null); }}
+          editingPrompts={chat.editingPrompts}
+          editPromptsText={chat.editPromptsText}
+          setEditPromptsText={chat.setEditPromptsText}
+          onSavePrompts={chat.handleSavePrompts}
+          onCancelPrompts={() => chat.setEditingPrompts(false)}
+          onShowPromptsConfirm={() => chat.setShowPromptsConfirm(true)}
+          groupPrompts={chat.groupPrompts}
+        />
+      </InlinePanel>
+
+      <InlinePanel title="位置分享" visible={chat.sidebarPanel === 'location'} onClose={() => chat.setSidebarPanel(null)}>
+        <LocationPanel
+          checkpoints={chat.checkpoints}
+          members={chat.members}
+          userPos={chat.userPos}
+          hikeStatus={chat.hikeStatus}
+          user={chat.user}
+          isMember={chat.isMember}
+          onOpenFullMap={() => { chat.setSidebarPanel(null); navigate(`/location/${id}`); }}
+        />
+      </InlinePanel>
+
+      {/* ═══ 弹窗 ═══ */}
+      {chat.showGoModal && (
+        <GoModal
+          checkpoints={chat.checkpoints}
+          members={chat.members}
+          countdown={chat.countdown}
+          hikingActionLoading={chat.hikingActionLoading}
+          isLeader={chat.isLeader}
+          onStartCountdown={chat.startCountdown}
+          onCancelCountdown={chat.cancelCountdown}
+          onClose={() => { chat.setShowGoModal(false); chat.closeAllModals(); }}
+        />
+      )}
+
+      {chat.showCompleteModal && (
+        <CompleteModal
+          checkpoints={chat.checkpoints}
+          photos={chat.photos}
+          completeTrackStats={chat.completeTrackStats}
+          hikingActionLoading={chat.hikingActionLoading}
+          isLeader={chat.isLeader}
+          onConfirm={chat.doComplete}
+          onClose={() => chat.setShowCompleteModal(false)}
+        />
+      )}
+
+      {chat.showNoCheckpointModal && (
+        <NoCheckpointModal
+          onClose={() => chat.setShowNoCheckpointModal(false)}
+          onGoToMap={() => { chat.setShowNoCheckpointModal(false); navigate(`/location/${id}`); }}
+        />
+      )}
+
+      {chat.showPromptsConfirm && (
+        <PromptsConfirmModal
+          editPromptsText={chat.editPromptsText}
+          onConfirm={chat.handleSavePrompts}
+          onCancel={() => chat.setShowPromptsConfirm(false)}
+        />
+      )}
+
+      {chat.showMemberModal && chat.selectedMember && (
+        <MemberModal
+          member={chat.selectedMember}
+          isLeader={chat.isLeader}
+          userId={chat.user?.id}
+          onTransferLeader={chat.handleTransferLeader}
+          onViewProfile={(userId) => {
+            navigate(`/profile/${userId}`);
+            chat.setShowMemberModal(false);
+            chat.setSelectedMember(null);
+          }}
+          onClose={() => { chat.setShowMemberModal(false); chat.setSelectedMember(null); }}
+        />
+      )}
+
+      {chat.ConfirmDialog}
     </div>
   );
 }

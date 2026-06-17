@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate Home · 户外探险深色风</title>
+<style>
+  /* ═══════════════════════════════════════════
+     Design Tokens
+     ═══════════════════════════════════════════ */
+  :root {
+    --bg:           #07090f;
+    --bg-2:         #0d1220;
+    --surface:      #131a2c;
+    --surface-2:    #1a2238;
+    --border:       #243049;
+    --border-soft:  #1c2740;
+
+    --text:         #f1f5f9;
+    --text-2:       #94a3b8;
+    --text-3:       #64748b;
+
+    --peak:         #4ade80;   /* 主品牌霓虹绿 */
+    --peak-bright:  #86efac;
+    --peak-deep:    #16a34a;
+    --peak-glow:    rgba(74, 222, 128, .45);
+
+    --amber:        #fbbf24;   /* 凯旋/完成 */
+    --sky:          #38bdf8;   /* 信息/路线 */
+    --rose:         #fb7185;   /* 警示/退出 */
+    --violet:       #a78bfa;   /* AI 匹配 */
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+    background: radial-gradient(ellipse at top, #0d1220 0%, #050810 70%);
+    color: var(--text);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 32px 12px 60px; gap: 56px;
+  }
+  .page-title {
+    text-align: center; color: var(--text-2);
+    font-size: 12px; letter-spacing: 4px; font-weight: 800;
+    text-transform: uppercase;
+  }
+  .page-title strong { color: var(--peak); font-size: 14px; }
+
+  /* ═══════════════════════════════════════════
+     Phone Frame
+     ═══════════════════════════════════════════ */
+  .phones { display: flex; gap: 32px; flex-wrap: wrap; justify-content: center; }
+  .phone {
+    width: 390px; min-height: 860px; background: var(--bg);
+    border-radius: 44px; overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow:
+      0 40px 80px rgba(0,0,0,.6),
+      0 0 0 8px #0a0e1a,
+      0 0 60px rgba(74,222,128,.08);
+    display: flex; flex-direction: column;
+    position: relative;
+  }
+  .phone::before {
+    content: ''; position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 28px; background: #000; border-radius: 0 0 18px 18px;
+    z-index: 100;
+  }
+  .phone-label {
+    position: absolute; bottom: -28px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; color: var(--text-3); font-weight: 800; letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .status-bar {
+    height: 50px; display: flex; align-items: flex-end; justify-content: space-between;
+    padding: 0 28px 6px; font-size: 13px; font-weight: 700;
+    background: transparent;
+  }
+  .status-bar .right { display: flex; gap: 6px; align-items: center; }
+  .scroll { flex:1; overflow-y: auto; padding-bottom: 90px; }
+  .scroll::-webkit-scrollbar { display: none; }
+
+  /* ═══════════════════════════════════════════
+     1. Hero · 沉浸式地图 + 品牌
+     ═══════════════════════════════════════════ */
+  .hero {
+    position: relative; height: 280px; overflow: hidden;
+    background:
+      radial-gradient(circle at 20% 30%, rgba(74,222,128,.15), transparent 40%),
+      radial-gradient(circle at 80% 70%, rgba(56,189,248,.10), transparent 40%),
+      linear-gradient(180deg, #0a1224 0%, #050810 100%);
+  }
+  /* 等高线地图网格 */
+  .hero::before {
+    content:''; position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(74,222,128,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(74,222,128,.05) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse at center, #000 30%, transparent 75%);
+  }
+  /* 山脊 SVG */
+  .hero svg { position: absolute; bottom: 0; left: 0; right: 0; width: 100%; opacity: .9; }
+  .hero-top {
+    position: relative; z-index: 2;
+    padding: 6px 18px 0; display: flex; align-items: center; justify-content: space-between;
+  }
+  .brand { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 900; letter-spacing: 1px; }
+  .brand .mark {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--peak), var(--peak-deep));
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 0 16px var(--peak-glow);
+    font-size: 14px;
+  }
+  .brand span { color: var(--peak); }
+  .hero-actions { display: flex; gap: 8px; }
+  .icon-btn {
+    width: 32px; height: 32px; border-radius: 10px;
+    background: rgba(255,255,255,.06); border: 1px solid var(--border-soft);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2); font-size: 14px; cursor: pointer;
+    backdrop-filter: blur(8px);
+  }
+  .icon-btn.has-dot::after {
+    content:''; position: absolute; top: 6px; right: 6px;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--peak); box-shadow: 0 0 8px var(--peak);
+  }
+  .icon-btn { position: relative; }
+
+  .hero-stats {
+    position: absolute; bottom: 56px; left: 18px; right: 18px; z-index: 2;
+    display: flex; gap: 10px;
+  }
+  .stat {
+    flex:1; padding: 10px 12px;
+    background: rgba(13,18,32,.7); border: 1px solid var(--border-soft);
+    border-radius: 14px; backdrop-filter: blur(12px);
+  }
+  .stat-val { font-size: 20px; font-weight: 900; color: var(--peak); text-shadow: 0 0 12px var(--peak-glow); }
+  .stat-val.amber { color: var(--amber); text-shadow: 0 0 12px rgba(251,191,36,.4); }
+  .stat-val.sky { color: var(--sky); text-shadow: 0 0 12px rgba(56,189,248,.4); }
+  .stat-label { font-size: 9px; color: var(--text-3); font-weight: 800; letter-spacing: 1px; margin-top: 2px; }
+
+  .hero-tag {
+    position: absolute; top: 58px; left: 18px; z-index: 2;
+    display: flex; align-items: center; gap: 6px;
+    padding: 5px 10px 5px 8px;
+    background: rgba(74,222,128,.12); border: 1px solid rgba(74,222,128,.3);
+    border-radius: 100px; font-size: 9px; font-weight: 800; color: var(--peak-bright);
+    letter-spacing: 1px;
+  }
+  .hero-tag .pulse {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--peak);
+    box-shadow: 0 0 8px var(--peak);
+    animation: pulse 1.4s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; transform: scale(1); }
+    50%     { opacity: .4; transform: scale(.7); }
+  }
+
+  /* ═══════════════════════════════════════════
+     2. 征途中状态条 (hiking live)
+     ═══════════════════════════════════════════ */
+  .live-banner {
+    margin: -32px 14px 14px; position: relative; z-index: 3;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, rgba(74,222,128,.18), rgba(22,163,74,.10));
+    border: 1px solid rgba(74,222,128,.4);
+    border-radius: 16px;
+    box-shadow: 0 0 24px rgba(74,222,128,.15);
+  }
+  .live-banner::before {
+    content:''; position: absolute; inset: 0; border-radius: 16px;
+    background: linear-gradient(90deg, transparent, rgba(74,222,128,.1), transparent);
+    animation: sweep 3s linear infinite;
+  }
+  @keyframes sweep { 0%{transform:translateX(-100%)} 100%{transform:translateX(100%)} }
+  .live-row { display: flex; align-items: center; justify-content: space-between; position: relative; }
+  .live-info { display: flex; align-items: center; gap: 10px; }
+  .live-dot {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--peak);
+    box-shadow: 0 0 12px var(--peak); animation: pulse 1.4s infinite;
+  }
+  .live-title { font-size: 13px; font-weight: 900; }
+  .live-title small { color: var(--peak-bright); font-size: 10px; margin-left: 4px; }
+  .live-sub { font-size: 10px; color: var(--text-3); margin-top: 2px; }
+  .live-btn {
+    padding: 7px 14px; background: var(--peak); color: #04150a;
+    border: none; border-radius: 10px; font-size: 11px; font-weight: 900;
+    box-shadow: 0 0 16px var(--peak-glow); cursor: pointer;
+  }
+  .live-progress {
+    margin-top: 10px; height: 4px; background: rgba(255,255,255,.08);
+    border-radius: 100px; overflow: hidden;
+  }
+  .live-progress-bar {
+    height: 100%; width: 40%;
+    background: linear-gradient(90deg, var(--peak), var(--peak-bright));
+    box-shadow: 0 0 8px var(--peak-glow);
+    border-radius: 100px;
+  }
+
+  /* ═══════════════════════════════════════════
+     3. AI 匹配输入卡
+     ═══════════════════════════════════════════ */
+  .match-card {
+    margin: 0 14px 14px; padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border-soft);
+    border-radius: 18px;
+    position: relative; overflow: hidden;
+  }
+  .match-card::before {
+    content:''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, transparent, var(--peak), transparent);
+    opacity: .5;
+  }
+  .match-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .match-title { font-size: 14px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+  .match-title .ai {
+    color: var(--violet); font-size: 10px;
+    padding: 2px 6px; background: rgba(167,139,250,.12); border-radius: 6px;
+  }
+  .match-sub { font-size: 10px; color: var(--text-3); }
+
+  .intents { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .intent {
+    padding: 5px 11px; border-radius: 100px;
+    background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.25);
+    color: var(--peak-bright); font-size: 10px; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .intent::after { content: '▸'; opacity: .5; font-size: 8px; }
+  .intent.add {
+    background: transparent; border-style: dashed; border-color: var(--border);
+    color: var(--text-3);
+  }
+  .intent.add::after { content: '+'; font-size: 12px; opacity: 1; }
+
+  .quick { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 12px; }
+  .quick-pill {
+    padding: 4px 10px; border-radius: 100px;
+    background: var(--bg-2); border: 1px solid var(--border-soft);
+    color: var(--text-2); font-size: 9px; font-weight: 700; cursor: pointer;
+  }
+  .quick-pill:hover { color: var(--peak-bright); border-color: rgba(74,222,128,.3); }
+
+  .input-row { display: flex; gap: 8px; align-items: center; }
+  .input-box {
+    flex: 1; padding: 11px 16px;
+    background: var(--bg-2); border: 1px solid var(--border);
+    border-radius: 14px; color: var(--text); font-size: 12px; outline: none;
+  }
+  .input-box::placeholder { color: var(--text-3); }
+  .input-box:focus { border-color: rgba(74,222,128,.4); box-shadow: 0 0 0 3px rgba(74,222,128,.08); }
+  .mode-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border);
+    background: var(--bg-2); color: var(--text-2); display: flex;
+    align-items: center; justify-content: center; cursor: pointer; font-size: 14px;
+  }
+  .mode-btn.active { background: rgba(74,222,128,.15); border-color: rgba(74,222,128,.3); color: var(--peak-bright); }
+  .send-btn {
+    width: 40px; height: 40px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, var(--peak), var(--peak-deep));
+    color: #04150a; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; font-weight: 900;
+    box-shadow: 0 0 16px var(--peak-glow);
+  }
+
+  /* ═══════════════════════════════════════════
+     4. 匹配结果
+     ═══════════════════════════════════════════ */
+  .section { margin: 0 14px 18px; }
+  .section-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 4px 10px;
+  }
+  .section-title { font-size: 13px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+  .section-title .count {
+    font-size: 9px; color: var(--violet); background: rgba(167,139,250,.12);
+    padding: 2px 7px; border-radius: 6px; font-weight: 800;
+  }
+  .section-more { font-size: 10px; color: var(--text-3); cursor: pointer; }
+
+  .result-card {
+    background: var(--surface); border: 1px solid var(--border-soft);
+    border-radius: 16px; padding: 4px 0;
+  }
+  .result-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px; border-bottom: 1px solid var(--border-soft);
+  }
+  .result-item:last-child { border-bottom: none; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 900; color: #fff; flex-shrink: 0;
+    position: relative;
+  }
+  .avatar.online::after {
+    content:''; position: absolute; bottom: 0; right: 0;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--peak); border: 2px solid var(--surface);
+  }
+  .result-info { flex: 1; min-width: 0; }
+  .result-name { font-size: 12px; font-weight: 800; color: var(--text); display: flex; align-items: center; gap: 6px; }
+  .pct {
+    font-size: 9px; color: var(--peak-bright);
+    background: rgba(74,222,128,.12); padding: 1px 6px; border-radius: 5px;
+    font-weight: 800;
+  }
+  .persona {
+    font-size: 8px; padding: 1px 6px; border-radius: 5px; font-weight: 800;
+  }
+  .persona.nav { background: rgba(56,189,248,.15); color: var(--sky); }
+  .persona.enj { background: rgba(74,222,128,.15); color: var(--peak-bright); }
+  .persona.cha { background: rgba(251,113,133,.15); color: var(--rose); }
+  .result-reason { font-size: 10px; color: var(--text-3); margin-top: 2px; line-height: 1.4; }
+  .invite-btn {
+    padding: 7px 14px; border-radius: 100px; border: 1px solid var(--peak);
+    background: rgba(74,222,128,.12); color: var(--peak-bright);
+    font-size: 10px; font-weight: 800; cursor: pointer; flex-shrink: 0;
+  }
+
+  /* ═══════════════════════════════════════════
+     5. 我的队伍 (横向卡片)
+     ═══════════════════════════════════════════ */
+  .team-scroll { display: flex; gap: 10px; overflow-x: auto; padding: 0 4px 4px; }
+  .team-scroll::-webkit-scrollbar { display: none; }
+  .team-card {
+    flex-shrink: 0; width: 140px; height: 160px;
+    border-radius: 16px; overflow: hidden; position: relative; cursor: pointer;
+    background: var(--surface); border: 1px solid var(--border-soft);
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .team-card.active {
+    border-color: rgba(74,222,128,.5);
+    box-shadow: 0 0 20px rgba(74,222,128,.2);
+  }
+  .team-card.completed {
+    border-color: rgba(251,191,36,.4);
+  }
+  .team-bg {
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, #1a4d3a 0%, #0d2818 100%);
+  }
+  .team-bg::after {
+    content:''; position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(74,222,128,.3), transparent 60%);
+  }
+  .team-card.completed .team-bg {
+    background: linear-gradient(135deg, #4a3818 0%, #2a1d08 100%);
+  }
+  .team-card.completed .team-bg::after {
+    background: radial-gradient(ellipse at 30% 20%, rgba(251,191,36,.3), transparent 60%);
+  }
+  .team-card.idle .team-bg {
+    background: linear-gradient(135deg, #1a2845 0%, #0d1525 100%);
+  }
+  .team-card.idle .team-bg::after {
+    background: radial-gradient(ellipse at 30% 20%, rgba(56,189,248,.3), transparent 60%);
+  }
+  .team-info {
+    position: relative; z-index: 2; padding: 10px 12px;
+    background: linear-gradient(180deg, transparent, rgba(0,0,0,.7));
+  }
+  .team-name { font-size: 12px; font-weight: 900; color: #fff; }
+  .team-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 4px; }
+  .team-status {
+    font-size: 8px; padding: 2px 6px; border-radius: 5px; font-weight: 800;
+    letter-spacing: 1px;
+  }
+  .team-status.live {
+    background: rgba(74,222,128,.2); color: var(--peak-bright);
+    border: 1px solid rgba(74,222,128,.4);
+    display: flex; align-items: center; gap: 4px;
+  }
+  .team-status.live::before {
+    content:''; width: 5px; height: 5px; border-radius: 50%;
+    background: var(--peak); box-shadow: 0 0 6px var(--peak);
+    animation: pulse 1.4s infinite;
+  }
+  .team-status.wait { background: rgba(56,189,248,.15); color: var(--sky); }
+  .team-status.done { background: rgba(251,191,36,.15); color: var(--amber); }
+  .team-count { font-size: 9px; color: rgba(255,255,255,.7); font-weight: 800; }
+  .team-progress {
+    position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2;
+    height: 3px; background: rgba(255,255,255,.15); border-radius: 100px; overflow: hidden;
+  }
+  .team-progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--peak), var(--peak-bright));
+    box-shadow: 0 0 6px var(--peak-glow);
+  }
+
+  /* ═══════════════════════════════════════════
+     6. 广场
+     ═══════════════════════════════════════════ */
+  .lobby-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .lobby-card {
+    background: var(--surface); border: 1px solid var(--border-soft);
+    border-radius: 14px; padding: 12px; cursor: pointer;
+    position: relative; overflow: hidden;
+  }
+  .lobby-card::before {
+    content:''; position: absolute; top: 0; right: 0;
+    width: 60px; height: 60px;
+    background: radial-gradient(circle, rgba(74,222,128,.1), transparent 70%);
+  }
+  .lobby-img {
+    width: 100%; height: 70px; border-radius: 10px; margin-bottom: 8px;
+    background:
+      linear-gradient(135deg, rgba(56,189,248,.2), rgba(74,222,128,.15)),
+      repeating-linear-gradient(45deg, transparent 0 4px, rgba(255,255,255,.03) 4px 8px);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; position: relative; overflow: hidden;
+  }
+  .lobby-img::after {
+    content:''; position: absolute; inset: 0;
+    background: linear-gradient(135deg, transparent 40%, rgba(74,222,128,.15) 60%, transparent);
+  }
+  .lobby-name { font-size: 12px; font-weight: 900; color: var(--text); }
+  .lobby-meta { display: flex; align-items: center; justify-content: space-between; margin-top: 6px; }
+  .lobby-distance { font-size: 9px; color: var(--text-3); display: flex; align-items: center; gap: 3px; }
+  .lobby-people {
+    font-size: 9px; padding: 2px 6px; border-radius: 5px; font-weight: 800;
+    background: rgba(74,222,128,.1); color: var(--peak-bright);
+  }
+  .lobby-people.full { background: rgba(251,191,36,.1); color: var(--amber); }
+
+  /* ═══════════════════════════════════════════
+     7. 底部 Tab
+     ═══════════════════════════════════════════ */
+  .tabbar {
+    position: absolute; bottom: 12px; left: 14px; right: 14px;
+    height: 64px; background: rgba(13,18,32,.85);
+    border: 1px solid var(--border); border-radius: 20px;
+    display: flex; align-items: center; justify-content: space-around;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 -10px 30px rgba(0,0,0,.4);
+  }
+  .tab {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    color: var(--text-3); font-size: 9px; font-weight: 800;
+    padding: 6px 10px; cursor: pointer; position: relative;
+  }
+  .tab .ic { font-size: 18px; }
+  .tab.active { color: var(--peak); }
+  .tab.active::after {
+    content:''; position: absolute; top: -1px; left: 50%; transform: translateX(-50%);
+    width: 24px; height: 2px; background: var(--peak);
+    border-radius: 0 0 4px 4px;
+    box-shadow: 0 0 8px var(--peak-glow);
+  }
+</style>
+</head>
+<body>
+
+<div class="page-title">TRAILMATE · HOME REDESIGN · <strong>DARK TRAIL</strong></div>
+
+<div class="phones">
+
+  <!-- ═══════════ STATE A: IDLE ═══════════ -->
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="right"><span style="font-size:11px;">●●●●●</span> 5G ⌃ 100%</span>
+    </div>
+    <div class="scroll">
+
+      <!-- Hero -->
+      <div class="hero">
+        <svg viewBox="0 0 390 100" preserveAspectRatio="none" style="height:80px;">
+          <defs>
+            <linearGradient id="ridge" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#1a2238" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#050810" stop-opacity="1"/>
+            </linearGradient>
+          </defs>
+          <path d="M0,80 L40,50 L80,65 L120,30 L160,55 L200,25 L240,50 L280,20 L320,45 L360,30 L390,55 L390,100 L0,100 Z" fill="url(#ridge)" />
+          <path d="M0,80 L40,50 L80,65 L120,30 L160,55 L200,25 L240,50 L280,20 L320,45 L360,30 L390,55" fill="none" stroke="#4ade80" stroke-width="1" stroke-opacity=".4" />
+        </svg>
+        <div class="hero-tag">
+          <span class="pulse"></span>NIGHT MODE
+        </div>
+        <div class="hero-top">
+          <div class="brand"><div class="mark">⛰</div>Trail<span>MATE</span></div>
+          <div class="hero-actions">
+            <div class="icon-btn has-dot">🔍</div>
+            <div class="icon-btn has-dot">🔔</div>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-val">3</div>
+            <div class="stat-label">MY TEAMS</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val sky">12</div>
+            <div class="stat-label">MATCHES</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val amber">5</div>
+            <div class="stat-label">LOBBY</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- AI 匹配卡 -->
+      <div class="match-card">
+        <div class="match-head">
+          <div class="match-title">一句话找队友 <span class="ai">✦ AI</span></div>
+          <div class="match-sub">深圳 · 多云 24°</div>
+        </div>
+
+        <div class="intents">
+          <div class="intent">梧桐山日归</div>
+          <div class="intent">深圳湾晨跑</div>
+          <div class="intent">银湖山探路</div>
+          <div class="intent add">添加</div>
+        </div>
+
+        <div class="quick">
+          <div class="quick-pill">🏔 周末出行</div>
+          <div class="quick-pill">🚭 不抽烟</div>
+          <div class="quick-pill">🎒 轻松强度</div>
+          <div class="quick-pill">⚡ 3天长线</div>
+        </div>
+
+        <div class="input-row">
+          <div class="mode-btn active">⚔</div>
+          <input class="input-box" placeholder="说一句话找队友...  (例: 想周末去梧桐山)" />
+          <div class="send-btn">✦</div>
+        </div>
+      </div>
+
+      <!-- 匹配结果 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">✦ 智能匹配 <span class="count">5 人</span></div>
+          <div class="section-more">查看全部 ›</div>
+        </div>
+        <div class="result-card">
+          <div class="result-item">
+            <div class="avatar online" style="background:linear-gradient(135deg,#f59e0b,#d97706);">张</div>
+            <div class="result-info">
+              <div class="result-name">张山峰 <span class="pct">95%</span> <span class="persona nav">🦅 领航</span></div>
+              <div class="result-reason">偏好相同路线 · 周末同步 · 都去过黄山</div>
+            </div>
+            <div class="invite-btn">邀请</div>
+          </div>
+          <div class="result-item">
+            <div class="avatar online" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);">李</div>
+            <div class="result-info">
+              <div class="result-name">李小溪 <span class="pct">89%</span> <span class="persona enj">🐢 享受</span></div>
+              <div class="result-reason">对"梧桐山"有兴趣 · 时间同步 · 配速相近</div>
+            </div>
+            <div class="invite-btn">邀请</div>
+          </div>
+          <div class="result-item">
+            <div class="avatar" style="background:linear-gradient(135deg,#fb7185,#e11d48);">王</div>
+            <div class="result-info">
+              <div class="result-name">王大力 <span class="pct">74%</span> <span class="persona cha">🐺 挑战</span></div>
+              <div class="result-reason">经验等级相当 · 配速相近 · 偏好一致</div>
+            </div>
+            <div class="invite-btn">邀请</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 我的队伍 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">👥 我的队伍</div>
+          <div class="section-more">全部 ›</div>
+        </div>
+        <div class="team-scroll">
+          <div class="team-card idle">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">深圳湾晨跑</div>
+              <div class="team-meta">
+                <span class="team-status wait">⏳ 等待</span>
+                <span class="team-count">2/4</span>
+              </div>
+            </div>
+          </div>
+          <div class="team-card idle">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">阳台山观鸟</div>
+              <div class="team-meta">
+                <span class="team-status wait">⏳ 等待</span>
+                <span class="team-count">2/8</span>
+              </div>
+            </div>
+          </div>
+          <div class="team-card idle">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">梅林水库环线</div>
+              <div class="team-meta">
+                <span class="team-status wait">⏳ 等待</span>
+                <span class="team-count">1/4</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 广场：完成分享 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">🏁 完成分享</div>
+          <div class="section-more">更多 ›</div>
+        </div>
+        <div class="team-scroll">
+          <div class="team-card completed">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">银湖山凯旋</div>
+              <div class="team-meta">
+                <span class="team-status done">🏁 完成</span>
+                <span class="team-count">5/6</span>
+              </div>
+            </div>
+          </div>
+          <div class="team-card completed">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">东西涌穿越</div>
+              <div class="team-meta">
+                <span class="team-status done">🏁 完成</span>
+                <span class="team-count">8/10</span>
+              </div>
+            </div>
+          </div>
+          <div class="team-card completed">
+            <div class="team-bg"></div>
+            <div class="team-info">
+              <div class="team-name">塘朗山日归</div>
+              <div class="team-meta">
+                <span class="team-status done">🏁 完成</span>
+                <span class="team-count">3/6</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 广场：探索 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">🗺 探索广场</div>
+          <div class="section-more">更多 ›</div>
+        </div>
+        <div class="lobby-grid">
+          <div class="lobby-card">
+            <div class="lobby-img">🏔</div>
+            <div class="lobby-name">梧桐山日归</div>
+            <div class="lobby-meta">
+              <div class="lobby-distance">📍 8.2 km</div>
+              <div class="lobby-people">2/6</div>
+            </div>
+          </div>
+          <div class="lobby-card">
+            <div class="lobby-img">🌊</div>
+            <div class="lobby-name">深圳湾晨跑</div>
+            <div class="lobby-meta">
+              <div class="lobby-distance">📍 5.0 km</div>
+              <div class="lobby-people">1/4</div>
+            </div>
+          </div>
+          <div class="lobby-card">
+            <div class="lobby-img">🌲</div>
+            <div class="lobby-name">马峦山探路</div>
+            <div class="lobby-meta">
+              <div class="lobby-distance">📍 12 km</div>
+              <div class="lobby-people">3/6</div>
+            </div>
+          </div>
+          <div class="lobby-card">
+            <div class="lobby-img">🌅</div>
+            <div class="lobby-name">阳台山日落</div>
+            <div class="lobby-meta">
+              <div class="lobby-distance">📍 6.5 km</div>
+              <div class="lobby-people full">8/8</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <!-- Tab Bar -->
+    <div class="tabbar">
+      <div class="tab active"><span class="ic">🏠</span>主页</div>
+      <div class="tab"><span class="ic">👥</span>队伍</div>
+      <div class="tab"><span class="ic">🗺</span>广场</div>
+      <div class="tab"><span class="ic">🔔</span>消息</div>
+      <div class="tab"><span class="ic">👤</span>我</div>
+    </div>
+    <div class="phone-label">STATE · IDLE</div>
+  </div>
+
+  <!-- ═══════════ STATE B: HIKING LIVE ═══════════ -->
+  <div class="phone">
+    <div class="status-bar">
+      <span>9:41</span>
+      <span class="right"><span style="font-size:11px;">●●●●●</span> 5G ⌃ 87%</span>
+    </div>
+    <div class="scroll">
+
+      <!-- Hero (glowing live) -->
+      <div class="hero" style="background: radial-gradient(circle at 50% 40%, rgba(74,222,128,.25), transparent 50%), linear-gradient(180deg, #0a1810 0%, #050810 100%);">
+        <svg viewBox="0 0 390 100" preserveAspectRatio="none" style="height:80px;">
+          <path d="M0,80 L40,50 L80,65 L120,30 L160,55 L200,25 L240,50 L280,20 L320,45 L360,30 L390,55 L390,100 L0,100 Z" fill="url(#ridge2)" />
+          <path d="M0,80 L40,50 L80,65 L120,30 L160,55 L200,25 L240,50 L280,20 L320,45 L360,30 L390,55" fill="none" stroke="#4ade80" stroke-width="1.5" stroke-opacity=".9" filter="drop-shadow(0 0 4px #4ade80)" />
+          <defs>
+            <linearGradient id="ridge2" x1="0" x2="0" y1="0" y2="1">
+              <stop offset="0%" stop-color="#1a4d3a" stop-opacity="0"/>
+              <stop offset="100%" stop-color="#04150a" stop-opacity="1"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <div class="hero-tag" style="background:rgba(74,222,128,.2); border-color:var(--peak);">
+          <span class="pulse"></span>LIVE · 征途进行中
+        </div>
+        <div class="hero-top">
+          <div class="brand"><div class="mark">⛰</div>Trail<span>MATE</span></div>
+          <div class="hero-actions">
+            <div class="icon-btn has-dot">📍</div>
+            <div class="icon-btn has-dot">🔔</div>
+          </div>
+        </div>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-val">2/5</div>
+            <div class="stat-label">CHECKPOINTS</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val sky">3.2 km</div>
+            <div class="stat-label">DISTANCE</div>
+          </div>
+          <div class="stat">
+            <div class="stat-val amber">01:42</div>
+            <div class="stat-label">ELAPSED</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 征途实时横幅 -->
+      <div class="live-banner">
+        <div class="live-row">
+          <div class="live-info">
+            <div class="live-dot"></div>
+            <div>
+              <div class="live-title">梧桐山小分队 <small>· 征途 40%</small></div>
+              <div class="live-sub">下一站：好汉坡 · 距您 1.2 km</div>
+            </div>
+          </div>
+          <div class="live-btn">回队伍 →</div>
+        </div>
+        <div class="live-progress"><div class="live-progress-bar"></div></div>
+      </div>
+
+      <!-- 队伍打卡点 (compact) -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">📍 征途进度</div>
+          <div class="section-more">查看地图 ›</div>
+        </div>
+        <div class="result-card" style="padding: 6px 14px;">
+          <div class="result-item" style="border-bottom-color: rgba(74,222,128,.15);">
+            <div class="avatar" style="background:linear-gradient(135deg,#4ade80,#16a34a);">✓</div>
+            <div class="result-info">
+              <div class="result-name">① 梧桐山北门 <span class="persona enj" style="background:rgba(74,222,128,.2);">已签到</span></div>
+              <div class="result-reason">4/4 队员 · 9:02 完成</div>
+            </div>
+          </div>
+          <div class="result-item" style="border-bottom-color: rgba(74,222,128,.15);">
+            <div class="avatar" style="background:linear-gradient(135deg,#4ade80,#16a34a);">✓</div>
+            <div class="result-info">
+              <div class="result-name">② 好汉坡 <span class="persona enj" style="background:rgba(74,222,128,.2);">已签到</span></div>
+              <div class="result-reason">3/4 队员 · 10:18 完成</div>
+            </div>
+          </div>
+          <div class="result-item">
+            <div class="avatar" style="background:var(--bg-2); border:1px dashed var(--border); color:var(--peak);">3</div>
+            <div class="result-info">
+              <div class="result-name">③ 大梧桐山顶 <span class="persona" style="background:rgba(251,191,36,.12); color:var(--amber);">下一站 · 1.2 km</span></div>
+              <div class="result-reason">您是首个到达 · 点击签到</div>
+            </div>
+            <div class="invite-btn">签到</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 队友位置 -->
+      <div class="section">
+        <div class="section-head">
+          <div class="section-title">🧭 队友位置</div>
+          <div class="section-more">实时 ›</div>
+        </div>
+        <div class="result-card">
+          <div class="result-item">
+            <div class="avatar online" style="background:linear-gradient(135deg,#a78bfa,#7c3aed);">李</div>
+            <div class="result-info">
+              <div class="result-name">李小溪 <span class="pct" style="background:rgba(56,189,248,.12); color:var(--sky);">领先 0.3 km</span></div>
+              <div class="result-reason">已在大梧桐山顶 · 9 分钟前</div>
+            </div>
+          </div>
+          <div class="result-item">
+            <div class="avatar online" style="background:linear-gradient(135deg,#f59e0b,#d97706);">张</div>
+            <div class="result-info">
+              <div class="result-name">张山峰 <span class="pct" style="background:rgba(74,222,128,.12); color:var(--peak-bright);">同行中</span></div>
+              <div class="result-reason">距您 50m · 好汉坡山顶</div>
+            </div>
+          </div>
+          <div class="result-item">
+            <div class="avatar" style="background:linear-gradient(135deg,#fb7185,#e11d48);">王</div>
+            <div class="result-info">
+              <div class="result-name">王大力 <span class="pct" style="background:rgba(251,113,133,.12); color:var(--rose);">落后 0.8 km</span></div>
+              <div class="result-reason">好汉坡 80% · 正在攀登</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="tabbar">
+      <div class="tab"><span class="ic">🏠</span>主页</div>
+      <div class="tab active"><span class="ic">👥</span>队伍</div>
+      <div class="tab"><span class="ic">🗺</span>广场</div>
+      <div class="tab"><span class="ic">🔔</span>消息</div>
+      <div class="tab"><span class="ic">👤</span>我</div>
+    </div>
+    <div class="phone-label">STATE · HIKING LIVE</div>
+  </div>
+
+</div>
+
+<!-- ═══════════ Design Notes ═══════════ -->
+<div style="max-width:840px; margin-top:32px; padding:24px 28px; background:#0d1220; border:1px solid #243049; border-radius:20px; color:#94a3b8; font-size:12px; line-height:1.7;">
+  <div style="color:#4ade80; font-size:11px; font-weight:900; letter-spacing:3px; margin-bottom:12px;">✦ DESIGN PRINCIPLES</div>
+  <div style="display:grid; grid-template-columns:1fr 1fr; gap:18px;">
+    <div>
+      <div style="color:#f1f5f9; font-weight:900; margin-bottom:6px;">🌑 深色基底</div>
+      <code style="color:#4ade80;">#07090f</code> 主背景 → <code style="color:#4ade80;">#131a2c</code> 卡片层 → <code style="color:#4ade80;">#1a2238</code> 抬起层。三个明度阶梯，户外夜间模式省电。
+    </div>
+    <div>
+      <div style="color:#f1f5f9; font-weight:900; margin-bottom:6px;">⚡ 霓虹绿主色</div>
+      <code style="color:#4ade80;">#4ade80</code> peak 绿，仅在 3 处发光：CTA 按钮、状态脉冲、进度条。避免视觉污染。
+    </div>
+    <div>
+      <div style="color:#f1f5f9; font-weight:900; margin-bottom:6px;">🗺 地图元素发光</div>
+      Hero 用 SVG 山脊线 + 1px 绿色描边 + drop-shadow 滤镜，模拟 AllTrails Pro 暗色等高线。
+    </div>
+    <div>
+      <div style="color:#f1f5f9; font-weight:900; margin-bottom:6px;">💓 实时脉冲</div>
+      hiking live 用 <code style="color:#4ade80;">@keyframes pulse</code> + 扫描光带 <code style="color:#4ade80;">sweep</code>，强化"此刻正在发生"的临场感。
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

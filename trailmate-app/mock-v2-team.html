@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate V2 — Team Detail</title>
+<style>
+  :root {
+    --bg-page: #faf7f2; --bg-card: #ffffff;
+    --text-primary: #1e293b; --text-secondary: #64748b; --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --brand-500: #10b981; --brand-600: #059669; --brand-700: #047857;
+    --brand-bg: #d1fae5;
+    --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+    --success-bg: #d1fae5; --warning-bg: #fef3c7; --danger-bg: #fee2e2; --info-bg: #dbeafe;
+    --purple: #8b5cf6; --purple-bg: #ede9fe;
+    --radius: 16px; --radius-sm: 12px; --radius-xs: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    --font: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: var(--font); background: #e8e5df; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:20px 0; }
+
+  .phone {
+    width: 390px; min-height: 844px; background: var(--bg-page);
+    border-radius: 32px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15), 0 0 0 2px #1e293b;
+    position: relative; display:flex; flex-direction:column;
+  }
+
+  /* Header */
+  .chat-header {
+    background: linear-gradient(160deg, #059669, #047857);
+    padding: 12px 16px; color: white;
+    display: flex; align-items: center; gap: 10px;
+    flex-shrink: 0;
+  }
+  .back-btn {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.15); border: none; color: white; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .header-info { flex: 1; min-width: 0; }
+  .header-team-name { font-size: 16px; font-weight: 800; }
+  .header-team-meta { font-size: 12px; opacity: .8; display: flex; align-items: center; gap: 8px; }
+  .header-team-meta span { display: flex; align-items: center; gap: 3px; }
+  .header-actions { display: flex; gap: 6px; }
+  .header-action {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.15); border: none; color: white; cursor: pointer;
+  }
+  .hike-status-badge {
+    padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;
+    margin-left: 4px;
+  }
+  .hike-status-badge.idle { background: var(--info-bg); color: #1d4ed8; }
+  .hike-status-badge.hiking { background: var(--warning-bg); color: #92400e; }
+  .hike-status-badge.completed { background: var(--success-bg); color: #047857; }
+
+  /* Tab Bar */
+  .tab-bar {
+    display: flex; background: white; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .tab-btn {
+    flex: 1; padding: 12px 8px; font-size: 13px; font-weight: 600;
+    border: none; background: none; cursor: pointer; font-family: var(--font);
+    color: var(--text-secondary); position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
+  }
+  .tab-btn.active {
+    color: var(--brand-600);
+  }
+  .tab-btn.active::after {
+    content: ''; position: absolute; bottom: 0; left: 25%; right: 25%;
+    height: 2px; background: var(--brand-600); border-radius: 1px;
+  }
+  .tab-count {
+    width: 18px; height: 18px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 700;
+    background: var(--brand-600); color: white;
+  }
+
+  /* Content Area */
+  .content { flex: 1; overflow-y: auto; }
+
+  /* === CHAT TAB === */
+  .chat-messages { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+
+  .system-msg {
+    text-align: center; padding: 6px 0;
+  }
+  .system-msg-inner {
+    display: inline-block; padding: 4px 12px; border-radius: 12px;
+    font-size: 11px; font-weight: 500; color: var(--text-secondary);
+    background: #f1f5f9;
+  }
+  .system-msg-inner.success { background: var(--success-bg); color: var(--brand-700); }
+  .system-msg-inner.warning { background: var(--warning-bg); color: #92400e; }
+  .system-msg-inner.info { background: var(--info-bg); color: #1d4ed8; }
+
+  .msg-row { display: flex; gap: 8px; align-items: flex-end; }
+  .msg-row.mine { flex-direction: row-reverse; }
+  .msg-avatar {
+    width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: white;
+  }
+  .msg-bubble {
+    max-width: 70%; padding: 10px 14px; border-radius: 16px;
+    font-size: 14px; line-height: 1.4;
+  }
+  .msg-row:not(.mine) .msg-bubble {
+    background: white; box-shadow: var(--shadow);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-row.mine .msg-bubble {
+    background: var(--brand-600); color: white;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-name { font-size: 11px; color: var(--text-secondary); margin-bottom: 2px; }
+
+  .ai-suggestion {
+    background: linear-gradient(135deg, #ede9fe, #dbeafe);
+    border-radius: var(--radius-sm); padding: 14px; margin: 4px 0;
+    border-left: 3px solid var(--purple);
+  }
+  .ai-suggestion-label {
+    font-size: 11px; font-weight: 700; color: var(--purple);
+    margin-bottom: 6px; display: flex; align-items: center; gap: 4px;
+  }
+  .ai-suggestion p { font-size: 13px; color: var(--text-primary); line-height: 1.5; margin-bottom: 8px; }
+  .ai-suggestion-actions { display: flex; gap: 8px; }
+  .ai-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 600;
+    border: none; cursor: pointer; font-family: var(--font);
+  }
+  .ai-btn-accept { background: var(--purple); color: white; }
+  .ai-btn-ignore { background: white; color: var(--text-secondary); border: 1px solid var(--border); }
+
+  /* Chat input */
+  .chat-input-bar {
+    display: flex; gap: 8px; padding: 12px 16px; background: white;
+    border-top: 1px solid var(--border); align-items: center; flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; padding: 10px 14px; border: 1px solid var(--border);
+    border-radius: 20px; font-size: 14px; font-family: var(--font); outline: none;
+  }
+  .chat-input:focus { border-color: var(--brand-500); }
+  .input-action {
+    width: 38px; height: 38px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: none; cursor: pointer; flex-shrink: 0;
+  }
+  .input-action.send { background: var(--brand-600); color: white; }
+
+  /* === MEMBERS TAB === */
+  .members-grid { padding: 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .member-card {
+    background: white; border-radius: var(--radius-sm); padding: 14px;
+    box-shadow: var(--shadow); display: flex; flex-direction: column; align-items: center;
+    gap: 8px; text-align: center;
+  }
+  .member-avatar {
+    width: 52px; height: 52px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; color: white;
+  }
+  .member-name { font-size: 14px; font-weight: 700; }
+  .member-role {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 600;
+  }
+  .member-role.leader { background: var(--warning-bg); color: #92400e; }
+  .member-role.member { background: #f1f5f9; color: var(--text-secondary); }
+  .member-loc { font-size: 11px; color: var(--text-tertiary); }
+  .invite-slot {
+    border: 2px dashed var(--border); border-radius: var(--radius-sm);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px; padding: 14px; cursor: pointer; color: var(--text-tertiary);
+    font-size: 13px; font-weight: 600;
+  }
+  .invite-slot:hover { border-color: var(--brand-500); color: var(--brand-600); }
+
+  /* === PLAN TAB === */
+  .plan-content { padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .plan-card {
+    background: white; border-radius: var(--radius); padding: 16px;
+    box-shadow: var(--shadow);
+  }
+  .plan-card h3 {
+    font-size: 14px; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .plan-card h3 .icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .checkpoint-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    border-bottom: 1px solid #f8fafc;
+  }
+  .checkpoint-item:last-child { border-bottom: none; }
+  .cp-index {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+    background: var(--brand-100); color: var(--brand-700);
+  }
+  .cp-index.done { background: var(--brand-600); color: white; }
+  .cp-index.next { background: var(--warning-bg); color: #92400e; box-shadow: 0 0 0 3px rgba(245,158,11,.3); }
+  .cp-info { flex: 1; }
+  .cp-name { font-size: 14px; font-weight: 600; }
+  .cp-dist { font-size: 11px; color: var(--text-secondary); }
+  .cp-checkin { font-size: 11px; color: var(--brand-600); font-weight: 600; }
+
+  .plan-prompts {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px;
+  }
+  .prompt-tag {
+    padding: 4px 10px; border-radius: 8px; font-size: 11px; font-weight: 500;
+    background: var(--purple-bg); color: #6d28d9;
+  }
+
+  /* === MAP TAB === */
+  .map-content { position: relative; }
+  .map-placeholder {
+    height: 300px; background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 30%, #fef3c7 60%, #e2e8f0 100%);
+    position: relative; display: flex; align-items: center; justify-content: center;
+  }
+  .map-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(transparent, rgba(0,0,0,.5));
+    padding: 20px 16px; color: white;
+  }
+  .map-stats { display: flex; gap: 16px; font-size: 12px; }
+  .map-stats span { display: flex; align-items: center; gap: 4px; }
+  .track-chips {
+    display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto;
+  }
+  .track-chips::-webkit-scrollbar { display: none; }
+  .track-chip {
+    padding: 8px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    background: white; box-shadow: var(--shadow); white-space: nowrap;
+    cursor: pointer; border: 1px solid var(--border); font-family: var(--font);
+  }
+  .track-chip.active { background: var(--brand-600); color: white; border-color: var(--brand-600); }
+  .track-chip.done { background: var(--brand-bg); color: var(--brand-700); border-color: var(--brand-300); }
+
+  .gps-info {
+    margin: 16px; background: white; border-radius: var(--radius);
+    padding: 16px; box-shadow: var(--shadow);
+  }
+  .gps-info h3 { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+  .gps-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .gps-stat { text-align: center; }
+  .gps-stat-value { font-size: 22px; font-weight: 800; color: var(--brand-600); }
+  .gps-stat-label { font-size: 11px; color: var(--text-secondary); }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Header -->
+  <div class="chat-header">
+    <button class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-info">
+      <div class="header-team-name">白云山徒步小分队</div>
+      <div class="header-team-meta">
+        <span>4人</span>
+        <span>·</span>
+        <span>6/21 周六</span>
+        <span class="hike-status-badge hiking">征途中</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-action" title="更多">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      聊天
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      成员
+      <span class="tab-count">4</span>
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      计划
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      地图
+    </button>
+  </div>
+
+  <!-- Content - Chat Tab -->
+  <div class="content">
+    <div class="chat-messages">
+
+      <!-- System message: team created -->
+      <div class="system-msg">
+        <span class="system-msg-inner success">队伍已创建 · 6月17日</span>
+      </div>
+
+      <!-- AI Suggestion -->
+      <div class="ai-suggestion">
+        <div class="ai-suggestion-label">🤖 AI 组队建议</div>
+        <p>检测到队伍已有4人，推荐路线「白云山穿越线」15km。预计出发时间6/21早上8:00最合适，已为你生成打卡点计划。</p>
+        <div class="ai-suggestion-actions">
+          <button class="ai-btn ai-btn-accept">采纳</button>
+          <button class="ai-btn ai-btn-ignore">忽略</button>
+        </div>
+      </div>
+
+      <!-- System message: member joined -->
+      <div class="system-msg">
+        <span class="system-msg-inner info">李四 加入了队伍</span>
+      </div>
+
+      <!-- Message: other -->
+      <div class="msg-row">
+        <div class="msg-avatar" style="background:#3b82f6;">李</div>
+        <div>
+          <div class="msg-name">李四</div>
+          <div class="msg-bubble">大家周六早上8点白云山南门集合可以吗？</div>
+        </div>
+      </div>
+
+      <!-- Message: me -->
+      <div class="msg-row mine">
+        <div class="msg-avatar" style="background:#059669;">我</div>
+        <div class="msg-bubble">没问题，我带登山杖和急救包</div>
+      </div>
+
+      <!-- Message: other -->
+      <div class="msg-row">
+        <div class="msg-avatar" style="background:#f59e0b;">王</div>
+        <div>
+          <div class="msg-name">王五</div>
+          <div class="msg-bubble">我准备一些能量棒和水，谁有对讲机？</div>
+        </div>
+      </div>
+
+      <!-- System message: hike started -->
+      <div class="system-msg">
+        <span class="system-msg-inner warning">⚡ 队伍已出发！征途开始</span>
+      </div>
+
+      <!-- Message: other -->
+      <div class="msg-row">
+        <div class="msg-avatar" style="background:#8b5cf6;">赵</div>
+        <div>
+          <div class="msg-name">赵六</div>
+          <div class="msg-bubble">到第一个打卡点了！拍张合照</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Chat Input -->
+  <div class="chat-input-bar">
+    <button class="input-action" style="background:#f1f5f9;color:var(--text-secondary);">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+    </button>
+    <input class="chat-input" placeholder="输入消息...">
+    <button class="input-action send">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+
+</div>
+
+<!-- Second phone showing Members Tab -->
+<div class="phone" style="margin-left:20px;">
+
+  <div class="chat-header">
+    <button class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-info">
+      <div class="header-team-name">白云山徒步小分队</div>
+      <div class="header-team-meta">
+        <span>4人</span>
+        <span>·</span>
+        <span>6/21 周六</span>
+        <span class="hike-status-badge hiking">征途中</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-action">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      聊天
+    </button>
+    <button class="tab-btn active">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      成员
+      <span class="tab-count">4</span>
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      计划
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      地图
+    </button>
+  </div>
+
+  <div class="content">
+    <!-- Team info bar -->
+    <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;font-size:13px;">
+      <span style="color:var(--text-secondary);">队伍上限 5人 · 已加入 4人</span>
+      <button style="padding:6px 14px;background:var(--brand-600);color:white;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);">邀请队友</button>
+    </div>
+
+    <div class="members-grid">
+      <!-- Leader -->
+      <div class="member-card">
+        <div class="member-avatar" style="background:linear-gradient(135deg,#059669,#10b981);">张</div>
+        <div class="member-name">张三</div>
+        <span class="member-role leader">队长</span>
+        <span class="member-loc">距起点 0.5km</span>
+      </div>
+
+      <!-- Member -->
+      <div class="member-card">
+        <div class="member-avatar" style="background:linear-gradient(135deg,#3b82f6,#60a5fa);">李</div>
+        <div class="member-name">李四</div>
+        <span class="member-role member">队员</span>
+        <span class="member-loc">打卡点2</span>
+      </div>
+
+      <!-- Member -->
+      <div class="member-card">
+        <div class="member-avatar" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">王</div>
+        <div class="member-name">王五</div>
+        <span class="member-role member">队员</span>
+        <span class="member-loc">打卡点1</span>
+      </div>
+
+      <!-- Member -->
+      <div class="member-card">
+        <div class="member-avatar" style="background:linear-gradient(135deg,#8b5cf6,#a78bfa);">赵</div>
+        <div class="member-name">赵六</div>
+        <span class="member-role member">队员</span>
+        <span class="member-loc">打卡点3</span>
+      </div>
+
+      <!-- Invite slot -->
+      <div class="invite-slot">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span>邀请队友</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-bar" style="visibility:hidden;height:0;padding:0;border:none;"></div>
+</div>
+
+<!-- Third phone showing Plan Tab -->
+<div class="phone" style="margin-left:20px;">
+
+  <div class="chat-header">
+    <button class="back-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="header-info">
+      <div class="header-team-name">白云山徒步小分队</div>
+      <div class="header-team-meta">
+        <span>4人</span>
+        <span>·</span>
+        <span>6/21 周六</span>
+        <span class="hike-status-badge hiking">征途中</span>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="header-action">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      聊天
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      成员
+      <span class="tab-count">4</span>
+    </button>
+    <button class="tab-btn active">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      计划
+    </button>
+    <button class="tab-btn">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
+      地图
+    </button>
+  </div>
+
+  <div class="content">
+    <div class="plan-content">
+      <!-- Route info -->
+      <div class="plan-card">
+        <h3>
+          <span class="icon" style="background:var(--brand-bg);">📍</span>
+          行动计划
+        </h3>
+        <div style="display:flex;gap:16px;font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+          <span>白云山穿越线</span>
+          <span>15km</span>
+          <span>4-5小时</span>
+          <span>380m爬升</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);">
+          📅 6月21日 周六 08:00 · 南门集合
+        </div>
+      </div>
+
+      <!-- Checkpoints -->
+      <div class="plan-card">
+        <h3>
+          <span class="icon" style="background:var(--info-bg);">🏁</span>
+          打卡点进度 <span style="margin-left:auto;font-size:13px;color:var(--brand-600);">3/6</span>
+        </h3>
+
+        <div class="checkpoint-item">
+          <div class="cp-index done">✓</div>
+          <div class="cp-info">
+            <div class="cp-name">南门入口</div>
+            <div class="cp-dist">起点 · 0km</div>
+          </div>
+          <div class="cp-checkin">已签到</div>
+        </div>
+
+        <div class="checkpoint-item">
+          <div class="cp-index done">✓</div>
+          <div class="cp-info">
+            <div class="cp-name">能仁寺</div>
+            <div class="cp-dist">2.5km</div>
+          </div>
+          <div class="cp-checkin">已签到</div>
+        </div>
+
+        <div class="checkpoint-item">
+          <div class="cp-index done">✓</div>
+          <div class="cp-info">
+            <div class="cp-name">山顶广场</div>
+            <div class="cp-dist">5.0km</div>
+          </div>
+          <div class="cp-checkin">已签到</div>
+        </div>
+
+        <div class="checkpoint-item">
+          <div class="cp-index next">4</div>
+          <div class="cp-info">
+            <div class="cp-name">摩星岭</div>
+            <div class="cp-dist">7.5km</div>
+          </div>
+          <div style="font-size:11px;color:var(--warning);font-weight:600;">← 下一站</div>
+        </div>
+
+        <div class="checkpoint-item">
+          <div class="cp-index">5</div>
+          <div class="cp-info">
+            <div class="cp-name">明珠楼</div>
+            <div class="cp-dist">10.0km</div>
+          </div>
+          <span style="font-size:11px;color:var(--text-tertiary)">待签到</span>
+        </div>
+
+        <div class="checkpoint-item" style="border-bottom:none;">
+          <div class="cp-index">6</div>
+          <div class="cp-info">
+            <div class="cp-name">西门出口</div>
+            <div class="cp-dist">15.0km · 终点</div>
+          </div>
+          <span style="font-size:11px;color:var(--text-tertiary)">待签到</span>
+        </div>
+      </div>
+
+      <!-- AI Prompts -->
+      <div class="plan-card">
+        <h3>
+          <span class="icon" style="background:var(--purple-bg);">🤖</span>
+          AI 匹配提示词
+        </h3>
+        <div class="plan-prompts">
+          <span class="prompt-tag">休闲徒步</span>
+          <span class="prompt-tag">周末早晨</span>
+          <span class="prompt-tag">3-5人小队</span>
+          <span class="prompt-tag">摄影打卡</span>
+          <span class="prompt-tag">初级友好</span>
+          <span class="prompt-tag">广州周边</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chat-input-bar" style="visibility:hidden;height:0;padding:0;border:none;"></div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate — Notebook Style</title>
+<style>
+  :root {
+    --paper: #faf8f3;
+    --ink: #2c2c2c;
+    --ink-light: #6b6b6b;
+    --ink-faint: #b8b5ad;
+    --accent: #2d6a4f;
+    --accent-light: #52b788;
+    --warn: #e07a5f;
+    --highlight: #fff3b0;
+    --dot: #ddd9ce;
+    --line: #e8e4da;
+    --tape: rgba(255,235,180,.55);
+    --font: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: "SF Mono", "Cascadia Code", "JetBrains Mono", monospace;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--font);
+    background: #e0ddd5;
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh; padding: 24px 0;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .phone {
+    width: 390px; min-height: 844px;
+    background: var(--paper);
+    border-radius: 28px; overflow: hidden;
+    box-shadow: 0 20px 50px rgba(0,0,0,.18), 0 0 0 1.5px #2c2c2c;
+    position: relative;
+  }
+
+  /* ─── Dot Grid Background ─── */
+  .dot-grid {
+    position: absolute; inset: 0; z-index: 0; pointer-events: none;
+    background-image: radial-gradient(circle, var(--dot) 0.8px, transparent 0.8px);
+    background-size: 20px 20px;
+  }
+
+  /* ─── Content Layer ─── */
+  .content {
+    position: relative; z-index: 1;
+    padding-bottom: 80px;
+  }
+
+  /* ─── Spine / Top Bar ─── */
+  .spine {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 10px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .spine-date {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--ink-light);
+    letter-spacing: .5px;
+  }
+  .spine-title {
+    font-size: 13px; font-weight: 700; color: var(--ink);
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .spine-page {
+    font-family: var(--font-mono);
+    font-size: 12px; color: var(--ink-light);
+  }
+
+  /* ─── Section ─── */
+  .section {
+    padding: 0 20px; margin-bottom: 28px;
+  }
+  .section-head {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .section-num {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-light);
+    border: 1.5px solid var(--line); border-radius: 4px;
+    padding: 2px 6px; flex-shrink: 0;
+  }
+  .section-title {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    letter-spacing: .3px;
+  }
+  .section-more {
+    margin-left: auto; font-size: 12px; font-weight: 600;
+    color: var(--accent); cursor: pointer; text-decoration: none;
+    border-bottom: 1.5px dotted var(--accent-light);
+    padding-bottom: 1px;
+  }
+
+  /* ─── Hero Card ─── */
+  .hero-note {
+    margin: 20px; padding: 24px 20px;
+    background: var(--paper);
+    border: 1.5px solid var(--ink);
+    border-radius: 0; position: relative;
+    box-shadow: 3px 3px 0 rgba(0,0,0,.05);
+  }
+  .hero-note::before {
+    content: ''; position: absolute; top: -1px; left: -1px; right: -1px;
+    height: 3px; background: var(--accent);
+  }
+  .hero-greeting {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-light);
+    letter-spacing: 1px; margin-bottom: 6px;
+  }
+  .hero-question {
+    font-size: 22px; font-weight: 800; color: var(--ink);
+    line-height: 1.25; margin-bottom: 4px;
+  }
+  .hero-sub {
+    font-size: 13px; color: var(--ink-light);
+    line-height: 1.4; margin-bottom: 16px;
+  }
+
+  /* stat pills */
+  .stat-pills {
+    display: flex; gap: 8px;
+  }
+  .stat-pill {
+    flex: 1; text-align: center;
+    padding: 8px 6px; border: 1.5px solid var(--line);
+    border-radius: 3px; background: var(--paper);
+  }
+  .pill-val {
+    font-family: var(--font-mono);
+    font-size: 18px; font-weight: 700; color: var(--ink);
+  }
+  .pill-label {
+    font-size: 10px; color: var(--ink-faint);
+    margin-top: 2px;
+  }
+
+  /* ─── Quick Actions ─── */
+  .quick-actions {
+    display: flex; gap: 10px; padding: 0 20px; margin-top: -8px; margin-bottom: 28px;
+  }
+  .action-note {
+    flex: 1; text-align: center; padding: 16px 10px;
+    border: 1.5px solid var(--ink);
+    background: var(--paper); cursor: pointer;
+    position: relative; transition: transform .15s;
+  }
+  .action-note:hover { transform: translateY(-2px); }
+  .action-note.primary {
+    background: var(--ink); color: var(--paper);
+  }
+  .action-note.primary .action-icon { color: var(--paper); }
+  .action-note.primary .action-label { color: var(--paper); }
+  .action-note.primary .action-hint { color: var(--ink-faint); }
+
+  /* tape effect on primary */
+  .action-note.primary::after {
+    content: ''; position: absolute; top: -4px; left: 18px;
+    width: 32px; height: 10px; background: var(--tape);
+    transform: rotate(-2deg); opacity: .7;
+  }
+
+  .action-icon {
+    font-size: 22px; color: var(--ink); margin-bottom: 6px;
+    display: block;
+  }
+  .action-label {
+    font-size: 14px; font-weight: 700; color: var(--ink);
+    margin-bottom: 2px;
+  }
+  .action-hint {
+    font-size: 10px; color: var(--ink-faint);
+  }
+
+  /* ─── Intent Note (sticky-style) ─── */
+  .sticky-note {
+    background: var(--highlight); border: 1.5px solid #e0d499;
+    padding: 16px; position: relative;
+    box-shadow: 2px 2px 0 rgba(0,0,0,.06);
+  }
+  .sticky-note::after {
+    content: ''; position: absolute; top: -3px; right: 16px;
+    width: 26px; height: 8px; background: var(--tape);
+    transform: rotate(3deg);
+  }
+  .note-header {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 10px;
+  }
+  .note-icon {
+    font-size: 18px;
+  }
+  .note-title {
+    font-size: 15px; font-weight: 700; color: var(--ink);
+  }
+  .note-badge {
+    margin-left: auto; font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600; color: var(--warn);
+    border: 1.5px solid var(--warn); padding: 2px 8px; border-radius: 3px;
+    background: var(--paper);
+  }
+  .note-meta {
+    font-size: 12px; color: var(--ink-light); margin-bottom: 10px;
+    line-height: 1.4;
+  }
+  .note-tags {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;
+  }
+  .note-tag {
+    font-size: 11px; padding: 2px 8px;
+    border: 1px solid var(--line); border-radius: 3px;
+    color: var(--ink-light); background: var(--paper);
+  }
+
+  .note-progress {
+    height: 3px; background: #e0d9b8; margin-bottom: 10px;
+  }
+  .note-progress-bar {
+    height: 100%; background: var(--accent);
+  }
+
+  .note-footer {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .note-avatars {
+    display: flex;
+  }
+  .note-avatars .na {
+    width: 22px; height: 22px; border-radius: 2px;
+    margin-left: -4px; border: 1.5px solid var(--highlight);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--paper);
+  }
+  .note-avatars .na:first-child { margin-left: 0; }
+  .note-count {
+    font-family: var(--font-mono);
+    font-size: 11px; color: var(--ink-light); font-weight: 600;
+  }
+
+  /* ─── Team Ruled Note ─── */
+  .ruled-note {
+    background: var(--paper);
+    background-image: repeating-linear-gradient(
+      transparent, transparent 27px, var(--line) 27px, var(--line) 28px
+    );
+    border: 1.5px solid var(--ink);
+    padding: 20px 20px 20px 36px;
+    position: relative;
+    box-shadow: 3px 3px 0 rgba(0,0,0,.05);
+    cursor: pointer;
+  }
+  .ruled-note::before {
+    content: ''; position: absolute; left: 20px; top: 0; bottom: 0;
+    width: 1.5px; background: #e8c4c4;
+  }
+  .ruled-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 0; height: 27px;
+  }
+  .ruled-avatar {
+    width: 20px; height: 20px; border-radius: 2px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 700; color: var(--paper);
+    flex-shrink: 0;
+  }
+  .ruled-name {
+    font-size: 14px; font-weight: 600; color: var(--ink);
+  }
+  .ruled-status {
+    font-family: var(--font-mono);
+    font-size: 10px; font-weight: 600; color: var(--warn);
+    margin-left: auto;
+    border: 1.5px solid var(--warn); padding: 1px 6px; border-radius: 3px;
+    background: var(--paper);
+  }
+  .ruled-meta {
+    font-size: 12px; color: var(--ink-light);
+  }
+  .ruled-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--accent); flex-shrink: 0;
+  }
+
+  /* ─── Route List ─── */
+  .route-item {
+    display: flex; gap: 12px; align-items: center;
+    padding: 14px 0; border-bottom: 1px dashed var(--line);
+    cursor: pointer;
+  }
+  .route-item:last-child { border-bottom: none; }
+
+  .route-num {
+    font-family: var(--font-mono);
+    font-size: 20px; font-weight: 700; color: var(--ink-faint);
+    width: 28px; flex-shrink: 0;
+  }
+  .route-info { flex: 1; min-width: 0; }
+  .route-name {
+    font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 3px;
+  }
+  .route-desc {
+    font-size: 12px; color: var(--ink-light); margin-bottom: 4px;
+  }
+  .route-stats {
+    display: flex; gap: 12px;
+    font-family: var(--font-mono);
+    font-size: 10px; color: var(--ink-faint);
+  }
+  .route-arrow {
+    font-size: 16px; color: var(--ink-faint); flex-shrink: 0;
+  }
+
+  /* ─── Bottom Tab (notebook tab style) ─── */
+  .bottom-tabs {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+    display: flex; background: var(--paper);
+    border-top: 1.5px solid var(--ink);
+  }
+  .tab {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 10px 0 22px;
+    font-size: 10px; font-weight: 600; color: var(--ink-faint);
+    cursor: pointer; border: none; background: none;
+    font-family: var(--font);
+    position: relative;
+  }
+  .tab.active { color: var(--ink); }
+  .tab.active::after {
+    content: ''; position: absolute; top: -1.5px; left: 25%; right: 25%;
+    height: 2px; background: var(--ink);
+  }
+  .tab svg { width: 20px; height: 20px; }
+
+  /* ─── Page curl shadow bottom-right ─── */
+  .page-curl {
+    position: absolute; bottom: 0; right: 0; width: 20px; height: 20px; z-index: 3;
+    background: linear-gradient(135deg, transparent 50%, rgba(0,0,0,.04) 50%);
+    border-radius: 0 0 28px 0; pointer-events: none;
+  }
+
+  /* ─── Scribble underline ─── */
+  .scribble {
+    background: linear-gradient(180deg, transparent 65%, var(--highlight) 65%);
+    padding: 0 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="phone">
+
+  <!-- Dot Grid -->
+  <div class="dot-grid"></div>
+  <div class="page-curl"></div>
+
+  <!-- Content -->
+  <div class="content">
+
+    <!-- Spine -->
+    <div class="spine">
+      <span class="spine-date">6月17日</span>
+      <span class="spine-title">征途笔记</span>
+      <span class="spine-page">p.1</span>
+    </div>
+
+    <!-- Hero Note -->
+    <div class="hero-note">
+      <div class="hero-greeting">下午好，张三</div>
+      <div class="hero-question">今天去<span class="scribble">哪里</span>？</div>
+      <div class="hero-sub">12 支队伍正在招募队友，有人已经出发。</div>
+      <div class="stat-pills">
+        <div class="stat-pill">
+          <div class="pill-val">8</div>
+          <div class="pill-label">完成</div>
+        </div>
+        <div class="stat-pill">
+          <div class="pill-val">126km</div>
+          <div class="pill-label">里程</div>
+        </div>
+        <div class="stat-pill">
+          <div class="pill-val">92</div>
+          <div class="pill-label">信用</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="action-note primary">
+        <span class="action-icon">+</span>
+        <span class="action-label">发起组队</span>
+        <span class="action-hint">写下你的计划</span>
+      </button>
+      <button class="action-note">
+        <span class="action-icon">→</span>
+        <span class="action-label">快速匹配</span>
+        <span class="action-hint">AI 帮你找人</span>
+      </button>
+    </div>
+
+    <!-- Active Intent (sticky note) -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">01</span>
+        <span class="section-title">当前意图</span>
+        <a class="section-more">查看全部 →</a>
+      </div>
+
+      <div class="sticky-note">
+        <div class="note-header">
+          <span class="note-icon">⛰</span>
+          <span class="note-title">周末白云山轻徒步</span>
+          <span class="note-badge">匹配中</span>
+        </div>
+        <div class="note-meta">
+          广州白云山 · 6月21日 周六 · 3—5人 · 初级
+        </div>
+        <div class="note-tags">
+          <span class="note-tag">休闲</span>
+          <span class="note-tag">摄影</span>
+          <span class="note-tag">新手友好</span>
+        </div>
+        <div class="note-progress">
+          <div class="note-progress-bar" style="width:60%"></div>
+        </div>
+        <div class="note-footer">
+          <div class="note-avatars">
+            <div class="na" style="background:#3b82b0;">李</div>
+            <div class="na" style="background:#e07a5f;">王</div>
+            <div class="na" style="background:#7c6f9e;">+2</div>
+          </div>
+          <span class="note-count">3/5 已匹配</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Team (ruled note) -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">02</span>
+        <span class="section-title">我的队伍</span>
+        <a class="section-more">全部 →</a>
+      </div>
+
+      <div class="ruled-note">
+        <div class="ruled-row">
+          <div class="ruled-avatar" style="background:var(--accent);">白</div>
+          <span class="ruled-name">白云山徒步小分队</span>
+          <span class="ruled-status">征途中</span>
+        </div>
+        <div class="ruled-row">
+          <span class="ruled-meta" style="padding-left:30px">4人 · 6月21日 08:00出发</span>
+        </div>
+        <div class="ruled-row" style="height:14px;"></div>
+        <div class="ruled-row">
+          <div class="ruled-dot" style="margin-left:4px;"></div>
+          <span class="ruled-meta">3/6 打卡点已完成</span>
+        </div>
+        <div class="ruled-row">
+          <div class="ruled-dot" style="margin-left:4px;"></div>
+          <span class="ruled-meta">摩星岭 · 下一站</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Routes -->
+    <div class="section">
+      <div class="section-head">
+        <span class="section-num">03</span>
+        <span class="section-title">推荐路线</span>
+        <a class="section-more">探索 →</a>
+      </div>
+
+      <div class="ruled-note" style="cursor:pointer;">
+        <div class="route-item">
+          <span class="route-num">01</span>
+          <div class="route-info">
+            <div class="route-name">白云山穿越线</div>
+            <div class="route-desc">广东广州 · 城市森林步道</div>
+            <div class="route-stats">
+              <span>15km</span><span>4—5h</span><span>380m↑</span><span>中级</span>
+            </div>
+          </div>
+          <span class="route-arrow">→</span>
+        </div>
+
+        <div class="route-item">
+          <span class="route-num">02</span>
+          <div class="route-info">
+            <div class="route-name">丹霞山穿越</div>
+            <div class="route-desc">广东韶关 · 丹霞地貌奇观</div>
+            <div class="route-stats">
+              <span>22km</span><span>7—8h</span><span>680m↑</span><span>高级</span>
+            </div>
+          </div>
+          <span class="route-arrow">→</span>
+        </div>
+
+        <div class="route-item">
+          <span class="route-num">03</span>
+          <div class="route-info">
+            <div class="route-name">梧桐山休闲线</div>
+            <div class="route-desc">广东深圳 · 海景亲子步道</div>
+            <div class="route-stats">
+              <span>8km</span><span>2—3h</span><span>200m↑</span><span>初级</span>
+            </div>
+          </div>
+          <span class="route-arrow">→</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Tabs -->
+  <div class="bottom-tabs">
+    <button class="tab active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+      首页
+    </button>
+    <button class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10"/>
+        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+      </svg>
+      探索
+    </button>
+    <button class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+        <circle cx="9" cy="7" r="4"/>
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+      </svg>
+      队伍
+    </button>
+    <button class="tab">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+        <circle cx="12" cy="7" r="4"/>
+      </svg>
+      我的
+    </button>
+  </div>
+
+</div>
+
+</body>
+</html>

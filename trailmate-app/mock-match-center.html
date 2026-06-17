@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>意图卡片匹配 Mockup v2</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f0ede7; display:flex; flex-direction:column; align-items:center; padding:20px 12px; gap:40px; }
+  .phone { width:390px; min-height:860px; background:#f5f3ef; border-radius:36px; overflow:hidden; box-shadow:0 30px 60px rgba(0,0,0,.12); display:flex; flex-direction:column; }
+  .ph { height:40px; background:#f5f3ef; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#9ca3af; }
+  .scroll { flex:1; overflow-y:auto; padding:0 12px 12px; }
+
+  .hero { background:linear-gradient(135deg,#10b981,#059669); color:#fff; border-radius:20px; padding:18px 16px 14px; margin:8px 0 12px; box-shadow:0 4px 18px rgba(16,185,129,.15); }
+  .hero-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; }
+  .hero-brand { font-size:17px; font-weight:900; display:flex; align-items:center; gap:6px; }
+  .hero-stats { display:flex; gap:16px; }
+  .hs { text-align:center; }
+  .hs-v { font-size:15px; font-weight:900; }
+  .hs-l { font-size:9px; opacity:.55; margin-top:1px; }
+
+  .card { background:#fff; border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:12px; }
+  .card-h { display:flex; align-items:center; justify-content:space-between; padding:12px 14px; font-size:11px; font-weight:800; color:#374151; border-left:3px solid; }
+  .card-h.green { border-left-color:#10b981; }
+  .card-h.purple { border-left-color:#8b5cf6; }
+
+  /* ── 意图卡片 ── */
+  .intent-card {
+    margin: 0 14px; border-radius: 16px; overflow:hidden; margin-bottom:8px;
+    transition:.15s;
+  }
+  .intent-card:first-child { margin-top: 14px; }
+  .intent-card:last-child { margin-bottom: 14px; }
+
+  /* 卡片头部（始终可见） */
+  .ic-head {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px 14px; cursor: pointer;
+  }
+  .intent-card.active .ic-head { background: #f0fdf4; border: 2px solid #a7f3d0; border-bottom: none; border-radius: 16px 16px 0 0; }
+  .intent-card.inactive .ic-head { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 16px; }
+  .intent-card.expanded-active .ic-head { background: #f0fdf4; border: 2px solid #a7f3d0; border-bottom: none; border-radius: 16px 16px 0 0; }
+  .intent-card.expanded-inactive .ic-head { background: #f9fafb; border: 1px solid #e5e7eb; border-bottom: none; border-radius: 16px 16px 0 0; }
+
+  .ic-icon {
+    width: 38px; height: 38px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; font-size: 18px; flex-shrink: 0;
+  }
+  .ic-content { flex:1; min-width:0; }
+  .ic-name { font-size: 13px; font-weight: 900; color: #1e293b; }
+  .ic-status-row { display: flex; align-items: center; gap: 6px; margin-top: 3px; }
+  .ic-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .intent-card.active .ic-dot { background: #10b981; animation: pulse 1.5s infinite; }
+  .intent-card.inactive .ic-dot { background: #d1d5db; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .ic-status-text { font-size: 10px; color: #9ca3af; }
+  .ic-mode {
+    font-size: 8px; font-weight: 800; padding: 2px 7px; border-radius: 5px; white-space: nowrap;
+  }
+  .intent-card.active .ic-mode { background: #d1fae5; color: #065f46; }
+  .intent-card.inactive .ic-mode { background: #f3f4f6; color: #9ca3af; }
+
+  .ic-controls { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+  .ic-edit {
+    width: 28px; height: 28px; border-radius: 8px; border: none;
+    background: #f3f4f6; color: #9ca3af; cursor: pointer; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ic-edit:hover { background: #e5e7eb; color: #6b7280; }
+  .ic-toggle {
+    width: 40px; height: 22px; border-radius: 11px; border: none; cursor: pointer;
+    position: relative; transition: .2s;
+  }
+  .ic-toggle.on { background: #10b981; }
+  .ic-toggle.off { background: #d1d5db; }
+  .ic-toggle .knob {
+    position: absolute; top: 2px; width: 18px; height: 18px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.15); transition: .2s;
+  }
+  .ic-toggle.on .knob { left: 20px; }
+  .ic-toggle.off .knob { left: 2px; }
+
+  /* 卡片展开区 */
+  .ic-expand {
+    padding: 0 14px 12px; display: none;
+    border: 2px solid #a7f3d0; border-top: none; border-radius: 0 0 16px 16px;
+  }
+  .intent-card.active .ic-expand { display: block; border-color: #a7f3d0; }
+  .intent-card.expanded-active .ic-expand { display: block; border-color: #a7f3d0; }
+  .intent-card.expanded-inactive .ic-expand { display: block; border-color: #e5e7eb; }
+
+  .ic-expand .ic-section-label {
+    font-size: 9px; font-weight: 700; color: #9ca3af; margin-bottom: 4px; margin-top: 8px;
+  }
+  .ic-prompt-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+  .ic-prompt {
+    padding: 2px 8px; border-radius: 12px; font-size: 9px; font-weight: 700;
+    background: #fffbeb; color: #92400e; border: 1px solid #fde68a;
+    display: flex; align-items: center; gap: 3px;
+  }
+  .ic-prompt .remove { cursor: pointer; opacity: .5; font-size: 10px; }
+  .ic-prompt .remove:hover { opacity: 1; color: #ef4444; }
+
+  .ic-add-prompt {
+    display: flex; gap: 4px; margin-top: 6px;
+  }
+  .ic-add-prompt input {
+    flex:1; padding: 5px 10px; border-radius: 10px; border: 1px solid #e5e7eb;
+    font-size: 10px; outline: none;
+  }
+  .ic-add-prompt button {
+    padding: 5px 10px; border-radius: 10px; border: none;
+    background: #10b981; color: #fff; font-size: 10px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ── 推荐的人 ── */
+  .input-row { display: flex; gap: 8px; padding: 10px 14px 14px; align-items: center; }
+  .input-field { flex:1; padding: 9px 16px; border-radius: 24px; border:1px solid #e5e7eb; font-size:12px; outline:none; background:#f9fafb; }
+  .input-field::placeholder { color:#d1d5db; }
+  .send-btn { width:38px; height:38px; border-radius:19px; border:none; background:#10b981; color:#fff; cursor:pointer; font-size:13px; display:flex; align-items:center; justify-content:center; }
+
+  .person { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid #f3f4f6; }
+  .person:last-child { border-bottom:none; }
+  .p-av { width:42px; height:42px; border-radius:13px; display:flex; align-items:center; justify-content:center; font-size:15px; font-weight:900; color:#fff; flex-shrink:0; position:relative; }
+  .p-pct { position:absolute; top:-3px; right:-3px; width:19px; height:19px; border-radius:50%; border:2px solid #fff; display:flex; align-items:center; justify-content:center; font-size:8px; font-weight:900; color:#fff; }
+  .p-pct.high { background:#059669; }
+  .p-pct.mid { background:#f59e0b; }
+  .p-info { flex:1; min-width:0; }
+  .p-name { font-size:12px; font-weight:800; color:#1e293b; display:flex; align-items:center; gap:6px; }
+  .p-tag { font-size:8px; padding:1px 6px; border-radius:6px; font-weight:700; }
+  .p-team { font-size:8px; color:#8b5cf6; background:#f5f3ff; padding:1px 6px; border-radius:6px; font-weight:700; margin-left:2px; }
+  .p-reason { font-size:9px; color:#9ca3af; margin-top:1px; }
+  .p-act { padding:6px 14px; border-radius:20px; border:none; font-size:10px; font-weight:800; cursor:pointer; flex-shrink:0; color:#fff; }
+  .p-act.invite { background:#10b981; }
+  .p-act.merge { background:#7c3aed; }
+  .p-act.join { background:#3b82f6; }
+
+  .new-intent {
+    margin: 0 14px 14px; padding: 10px; border-radius: 14px;
+    border: 2px dashed #d1d5db; display: flex; align-items: center;
+    justify-content: center; gap: 6px; cursor: pointer;
+    color: #9ca3af; font-size: 11px; font-weight: 700;
+  }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="ph">🏠 匹配中心</div>
+  <div class="scroll">
+    <div class="hero">
+      <div class="hero-top">
+        <div class="hero-brand">
+          <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:18px;">🏔</div>
+          TrailMate
+        </div>
+        <div style="width:34px;height:34px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:15px;">🔔</div>
+      </div>
+      <div class="hero-stats">
+        <div class="hs"><div class="hs-v">3</div><div class="hs-l">我的队伍</div></div>
+        <div class="hs"><div class="hs-v">8</div><div class="hs-l">匹配待定</div></div>
+        <div class="hs"><div class="hs-v">87%</div><div class="hs-l">平均匹配</div></div>
+      </div>
+    </div>
+
+    <!-- ═══ 我的意图 ═══ -->
+    <div class="card">
+      <div class="card-h green">
+        <span style="display:flex;align-items:center;gap:6px;">🧭 我的意图</span>
+        <span style="font-size:9px;color:#10b981;background:#ecfdf5;padding:2px 8px;border-radius:8px;font-weight:700;">3个</span>
+      </div>
+
+      <!-- 意图 1：匹配中 + 被选中 + 展开 -->
+      <div class="intent-card active">
+        <div class="ic-head">
+          <div class="ic-icon" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">🌲</div>
+          <div class="ic-content">
+            <div class="ic-name">周末梧桐山日归</div>
+            <div class="ic-status-row">
+              <span class="ic-dot"></span>
+              <span class="ic-status-text">匹配中 · 5人待定</span>
+              <span class="ic-mode">徒步 · 自由</span>
+            </div>
+          </div>
+          <div class="ic-controls">
+            <button class="ic-edit" title="修改意图">✎</button>
+            <button class="ic-toggle on"><span class="knob"></span></button>
+          </div>
+        </div>
+        <div class="ic-expand">
+          <div class="ic-section-label">匹配提示词</div>
+          <div class="ic-prompt-tags">
+            <span class="ic-prompt">不抽烟 <span class="remove">×</span></span>
+            <span class="ic-prompt">有经验优先 <span class="remove">×</span></span>
+            <span class="ic-prompt">慢行拍照 <span class="remove">×</span></span>
+            <span class="ic-prompt">周末出发 <span class="remove">×</span></span>
+          </div>
+          <div class="ic-add-prompt">
+            <input placeholder="添加提示词..." />
+            <button>添加</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 意图 2：关闭 + 折叠（点击展开看详情） -->
+      <div class="intent-card inactive">
+        <div class="ic-head">
+          <div class="ic-icon" style="background:linear-gradient(135deg,#c7d2fe,#818cf8);">🏃</div>
+          <div class="ic-content">
+            <div class="ic-name">深圳湾晨跑</div>
+            <div class="ic-status-row">
+              <span class="ic-dot"></span>
+              <span class="ic-status-text">已暂停 · 2人待定</span>
+              <span class="ic-mode">跑步 · 自由</span>
+            </div>
+          </div>
+          <div class="ic-controls">
+            <button class="ic-edit" title="修改意图">✎</button>
+            <button class="ic-toggle off"><span class="knob"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 意图 3：关闭 + 折叠 -->
+      <div class="intent-card inactive">
+        <div class="ic-head">
+          <div class="ic-icon" style="background:linear-gradient(135deg,#fed7aa,#fb923c);">🌿</div>
+          <div class="ic-content">
+            <div class="ic-name">银湖山探索</div>
+            <div class="ic-status-row">
+              <span class="ic-dot"></span>
+              <span class="ic-status-text">未开始</span>
+              <span class="ic-mode">其他 · 队长</span>
+            </div>
+          </div>
+          <div class="ic-controls">
+            <button class="ic-edit" title="修改意图">✎</button>
+            <button class="ic-toggle off"><span class="knob"></span></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="new-intent">+ 新建意图</div>
+    </div>
+
+    <!-- ═══ 追加条件 ═══ -->
+    <div class="card">
+      <div class="input-row">
+        <input class="input-field" placeholder="追加匹配条件..." />
+        <button class="send-btn">✨</button>
+      </div>
+    </div>
+
+    <!-- ═══ 推荐的人（基于当前选中意图） ═══ -->
+    <div class="card">
+      <div class="card-h purple">
+        <span style="display:flex;align-items:center;gap:6px;">✨ 推荐的人</span>
+        <span style="font-size:9px;color:#8b5cf6;background:#f5f3ff;padding:2px 8px;border-radius:8px;font-weight:700;">5人</span>
+      </div>
+
+      <div class="person">
+        <div class="p-av" style="background:#f59e0b;">张<span class="p-pct high">95</span></div>
+        <div class="p-info">
+          <div class="p-name">张山峰 <span class="p-tag" style="background:#ede9fe;color:#7c3aed;">🦅 领航者</span></div>
+          <div class="p-reason">偏好相同路线，曾去过黄山</div>
+        </div>
+        <button class="p-act invite">组队</button>
+      </div>
+
+      <div class="person">
+        <div class="p-av" style="background:#2563eb;">王<span class="p-pct high">89</span></div>
+        <div class="p-info">
+          <div class="p-name">王大力 <span class="p-team">在「塘朗山慢摇」</span></div>
+          <div class="p-reason">经验等级相当，配速相近</div>
+        </div>
+        <button class="p-act join">加入</button>
+      </div>
+
+      <div class="person">
+        <div class="p-av" style="background:#7c3aed;">李<span class="p-pct mid">74</span></div>
+        <div class="p-info">
+          <div class="p-name">李小溪 <span class="p-tag" style="background:#d1fae5;color:#065f46;">🐢 享受者</span></div>
+          <div class="p-reason">对梧桐山有相同兴趣，时间同步</div>
+        </div>
+        <button class="p-act invite">组队</button>
+      </div>
+
+      <div class="person">
+        <div class="p-av" style="background:#dc2626;">陈<span class="p-pct mid">72</span></div>
+        <div class="p-info">
+          <div class="p-name">陈小雅 <span class="p-team">在「银湖山晨练」</span></div>
+          <div class="p-reason">匹配提示词命中：不抽烟、周末出发</div>
+        </div>
+        <button class="p-act join">加入</button>
+      </div>
+
+      <div class="person">
+        <div class="p-av" style="background:#059669;">赵<span class="p-pct mid">68</span></div>
+        <div class="p-info">
+          <div class="p-name">赵六 <span class="p-tag" style="background:#fef3c7;color:#b45309;">🐺 挑战者</span></div>
+          <div class="p-reason">共同队伍：上次一起徒步「塘朗山」</div>
+        </div>
+        <button class="p-act invite">组队</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

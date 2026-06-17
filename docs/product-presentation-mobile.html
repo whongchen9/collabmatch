@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>需求匹配 · 产品介绍</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', sans-serif; background: #f5f5f8; color: #1a1a2e; }
+.page { display: none; min-height: 100vh; padding: 20px 18px; max-width: 480px; margin: 0 auto; }
+.page.active { display: block; }
+
+/* Cover */
+.cover { background: linear-gradient(135deg, #1a1a3e 0%, #2a1a4e 50%, #1a2a4e 100%); min-height: 100vh; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 30px 24px; max-width: 100%; }
+.cover.active { display: flex !important; }
+.cover .hero-sub { color: rgba(255,255,255,0.4); font-size: 13px; letter-spacing: 3px; margin-bottom: 12px; }
+.cover h1 { color: #fff; font-size: 36px; font-weight: 800; text-align: center; }
+.cover .subtitle { color: rgba(255,255,255,0.6); font-size: 16px; margin-top: 8px; text-align: center; }
+.cover .desc { color: rgba(255,255,255,0.35); font-size: 13px; margin-top: 16px; text-align: center; line-height: 1.6; }
+.cover .tags { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 20px; }
+.cover .tag { padding: 4px 10px; border-radius: 12px; font-size: 11px; background: rgba(124,140,247,0.15); color: #7c8cf7; }
+.cover .meta { color: rgba(255,255,255,0.25); font-size: 11px; margin-top: 30px; }
+
+/* Section header */
+.section-header { background: #1a1a2e; margin: -20px -18px 16px; padding: 32px 20px 14px; }
+.section-header h2 { color: #fff; font-size: 20px; font-weight: 700; }
+.section-header .bar { width: 30px; height: 3px; background: #4f46e5; margin-top: 6px; border-radius: 2px; }
+
+/* Cards */
+.card { background: #fff; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); border: 1px solid #eee; }
+.card .c-icon { font-size: 22px; margin-bottom: 4px; }
+.card .c-title { font-size: 15px; font-weight: 600; color: #1a1a2e; }
+.card .c-desc { font-size: 13px; color: #666; margin-top: 2px; line-height: 1.5; }
+.card .c-tag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-top: 4px; }
+.tag-done { background: #ecfdf5; color: #059c69; }
+.tag-plan { background: #fffbeb; color: #d97706; }
+.tag-now { background: #eef2ff; color: #4f46e5; }
+
+/* Flow */
+.flow { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin: 12px 0; }
+.flow-step { background: #eef2ff; border-radius: 10px; padding: 8px 12px; text-align: center; font-size: 12px; color: #4f46e5; font-weight: 500; }
+.flow-arrow { font-size: 14px; color: #4f46e5; align-self: center; }
+
+/* Roadmap */
+.rm-item { display: flex; gap: 12px; margin-bottom: 10px; }
+.rm-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 4px; flex-shrink: 0; }
+.rm-title { font-size: 14px; font-weight: 600; }
+.rm-desc { font-size: 12px; color: #666; margin-top: 2px; }
+.rm-status { font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; }
+
+/* Nav bottom */
+.nav-bar { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.95); backdrop-filter: blur(10px); border-top: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; z-index: 100; }
+.nav-btn { background: none; border: 1px solid #ddd; padding: 6px 16px; border-radius: 20px; font-size: 13px; color: #333; cursor: pointer; }
+.nav-btn.primary { background: #4f46e5; border-color: #4f46e5; color: #fff; }
+.nav-progress { font-size: 11px; color: #999; }
+.nav-dots { display: flex; gap: 4px; }
+.nav-dot { width: 6px; height: 6px; border-radius: 50%; background: #ddd; border: none; padding: 0; }
+.nav-dot.active { background: #4f46e5; width: 18px; border-radius: 3px; }
+
+/* Grid */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.grid-2 .card { padding: 12px; }
+
+/* Highlight box */
+.highlight { background: #eef2ff; border-radius: 12px; padding: 14px 16px; margin: 12px 0; font-size: 13px; color: #333; line-height: 1.6; }
+.highlight strong { color: #4f46e5; }
+
+/* Spacing */
+.mt-8 { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.mt-16 { margin-top: 16px; }
+.mb-8 { margin-bottom: 8px; }
+.text-center { text-align: center; }
+.text-muted { color: #999; font-size: 12px; }
+
+/* List */
+ul { padding-left: 16px; margin-top: 4px; }
+ul li { font-size: 13px; color: #666; line-height: 1.6; }
+
+/* Tags at bottom of cards */
+.tag-row { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 4px; }
+.tag-sm { font-size: 9px; padding: 1px 6px; border-radius: 8px; background: #f0f0f5; color: #888; }
+
+.badge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+.badge-blue { background: #eef2ff; color: #4f46e5; }
+.badge-green { background: #ecfdf5; color: #059c69; }
+.badge-yellow { background: #fffbeb; color: #d97706; }
+</style>
+</head>
+<body>
+
+<!-- ===== PAGE 1: COVER ===== -->
+<div class="cover active" id="p1">
+  <div class="hero-sub">产品介绍</div>
+  <h1>需求匹配</h1>
+  <div class="subtitle">AI 驱动的协作匹配平台</div>
+  <div class="desc">说一个想法，找到志同道合的伙伴<br>从灵感碰撞到团队组建，一站式完成</div>
+  <div class="tags">
+    <span class="tag">AI 智能匹配</span>
+    <span class="tag">多领域协作</span>
+    <span class="tag">即时沟通</span>
+    <span class="tag">游戏化体验</span>
+  </div>
+  <div class="meta">2026 年 6 月  ·  产品团队</div>
+</div>
+
+<!-- ===== PAGE 2: PROBLEM ===== -->
+<div class="page" id="p2">
+  <div class="section-header"><h2>个人与项目的协作困境</h2><div class="bar"></div></div>
+  <div class="card"><div class="c-icon">🧑‍💻</div><div class="c-title">独立开发者</div><div class="c-desc">有技术能力但缺少设计、运营等互补伙伴，一个人扛所有角色</div></div>
+  <div class="card"><div class="c-icon">🎨</div><div class="c-title">设计师 / 创作者</div><div class="c-desc">有创意但找不到靠谱的技术实现者，好想法止步于概念</div></div>
+  <div class="card"><div class="c-icon">🎓</div><div class="c-title">学生 / 创业团队</div><div class="c-desc">组队靠熟人，圈子有限，很难找到真正匹配的跨界伙伴</div></div>
+  <div class="card"><div class="c-icon">💼</div><div class="c-title">自由职业者</div><div class="c-desc">项目不稳定，缺少持续的项目来源和稳定的协作网络</div></div>
+  <div class="highlight">💡 核心痛点：<strong>协作连接成本高</strong>，没有高效的工具来发现和匹配对的人</div>
+</div>
+
+<!-- ===== PAGE 3: VISION ===== -->
+<div class="page" id="p3">
+  <div class="section-header"><h2>产品愿景</h2><div class="bar"></div></div>
+  <div style="font-size:18px;font-weight:600;margin-bottom:12px;line-height:1.5;">让每个人都能轻松找到志同道合的伙伴<br>让每个好想法都能找到落地的团队</div>
+  <div class="grid-2">
+    <div class="card"><div style="font-size:24px;">🎯</div><div class="c-title">精准匹配</div><div class="c-desc">AI 分析需求与技能互补度，推荐最合适的伙伴</div></div>
+    <div class="card"><div style="font-size:24px;">🚀</div><div class="c-title">低门槛启动</div><div class="c-desc">AI 辅助生成需求文档，无需从零开始</div></div>
+    <div class="card"><div style="font-size:24px;">🎮</div><div class="c-title">游戏化体验</div><div class="c-desc">像素风驿站场景，让匹配像玩游戏一样自然</div></div>
+    <div class="card"><div style="font-size:24px;">🔄</div><div class="c-title">双向连接</div><div class="c-desc">发布需求找人，也可浏览项目找机会</div></div>
+  </div>
+</div>
+
+<!-- ===== PAGE 4: CORE FLOW ===== -->
+<div class="page" id="p4">
+  <div class="section-header"><h2>核心流程：从想法到团队</h2><div class="bar"></div></div>
+  <div class="flow">
+    <span class="flow-step">💡 描述想法</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🤖 AI 解析</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🔍 智能匹配</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">💬 沟通协作</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-step">🤝 组队成功</span>
+  </div>
+  <div class="card mt-12"><div class="c-icon">📋</div><div class="c-title">AI 辅助需求整理</div><div class="c-desc">输入想法，AI 自动生成结构化需求文档，包含项目背景、目标、所需技能、时间线等</div></div>
+  <div class="card"><div class="c-icon">🎯</div><div class="c-title">双向智能匹配</div><div class="c-desc">找人找项目双向匹配，分析技能互补度和协作意愿，推荐最合适的伙伴</div></div>
+  <div class="card"><div class="c-icon">🔄</div><div class="c-title">一键组队协作</div><div class="c-desc">匹配确认后自动创建协作群，内置即时通讯，支持文件分享和 AI 总结</div></div>
+</div>
+
+<!-- ===== PAGE 5: FEATURES ===== -->
+<div class="page" id="p5">
+  <div class="section-header"><h2>核心功能矩阵</h2><div class="bar"></div></div>
+  <div class="grid-2">
+    <div class="card"><div style="font-size:22px;">🤖</div><div class="c-title">AI 智能匹配</div><div class="c-desc">正向找人 + 反向找项目，AI 推荐</div></div>
+    <div class="card"><div style="font-size:22px;">💬</div><div class="c-title">AI 对话</div><div class="c-desc">内置 LLM 生成需求，支持诊断优化</div></div>
+    <div class="card"><div style="font-size:22px;">📊</div><div class="c-title">需求广场</div><div class="c-desc">按领域浏览公开需求，发现项目</div></div>
+    <div class="card"><div style="font-size:22px;">👥</div><div class="c-title">协作群组</div><div class="c-desc">自动建群，实时聊天，AI 总结</div></div>
+    <div class="card"><div style="font-size:22px;">👤</div><div class="c-title">个人主页</div><div class="c-desc">技能、作品集、协作历史展示</div></div>
+    <div class="card"><div style="font-size:22px;">🎮</div><div class="c-title">游戏化驿站</div><div class="c-desc">2D 像素风，NPC 交互触发匹配</div></div>
+    <div class="card"><div style="font-size:22px;">🔧</div><div class="c-title">AI 工具箱 <span class="badge badge-green">7+</span></div><div class="c-desc">PRD / SWOT / 诊断 / 周期估算</div></div>
+    <div class="card"><div style="font-size:22px;">📡</div><div class="c-title">协作者入口</div><div class="c-desc">MCP 协议，AI Agent 自动协作</div></div>
+  </div>
+</div>
+
+<!-- ===== PAGE 6: GAME ===== -->
+<div class="page" id="p6">
+  <div class="section-header"><h2>游戏化创新：「驿站」</h2><div class="bar"></div></div>
+  <div style="font-size:15px;color:#666;margin-bottom:12px;">把协作匹配变成像素风 RPG 探索体验</div>
+  <div class="card"><div style="font-size:24px;">🏠</div><div class="c-title">驿站场景</div><div class="c-desc">20×15 Tile 古风驿站：接待台、公告栏、茶座、比武擂台，每个区域对应不同功能入口</div></div>
+  <div class="card"><div style="font-size:24px;">🧑‍🦱</div><div class="c-title">NPC 交互</div><div class="c-desc">与"小二""侠客"对话触发匹配面板，游戏化替代冰冷表单</div></div>
+  <div class="card"><div style="font-size:24px;">🎵</div><div class="c-title">沉浸体验</div><div class="c-desc">Web Audio API 合成脚步声、环境音效、交互反馈音效</div></div>
+  <div class="card"><div style="font-size:24px;">🔄</div><div class="c-title">零外部依赖</div><div class="c-desc">自研 Canvas 游戏引擎，6 个模块，纯原生 Web API</div></div>
+  <div class="highlight">✨ <strong>核心理念</strong>：看似网络游戏，实则联通现实 —— 游戏内的每一次交互都对应真实操作，让匹配变得有趣自然</div>
+</div>
+
+<!-- ===== PAGE 7: TECH ===== -->
+<div class="page" id="p7">
+  <div class="section-header"><h2>技术架构</h2><div class="bar"></div></div>
+  <div class="card"><div class="c-icon">🌐</div><div class="c-title">前端</div>
+    <ul><li>单文件 SPA，零框架依赖，极速加载</li><li>Lucide SVG 图标，中英双语 + 江湖彩蛋</li><li>自研 2D Canvas 游戏引擎（6 模块）</li></ul>
+  </div>
+  <div class="card mt-8"><div class="c-icon">⚙️</div><div class="c-title">后端与基础设施</div>
+    <ul><li>腾讯云 CloudBase 云函数，弹性伸缩</li><li>火山方舟（豆包）LLM API</li><li>CloudBase 内置数据库</li><li>双平台部署：CloudBase + Vercel</li></ul>
+  </div>
+  <div class="tag-row" style="margin:8px 0;">
+    <span class="tag-sm">Vite</span><span class="tag-sm">Lucide</span><span class="tag-sm">CloudBase</span><span class="tag-sm">豆包 API</span><span class="tag-sm">Canvas</span><span class="tag-sm">Web Audio</span><span class="tag-sm">JWT</span>
+  </div>
+  <div class="highlight">📐 <strong>架构特点</strong>：前后端分离 · 全栈 Serverless · 国内 CloudBase + 国际 Vercel · 低耦合可迁移</div>
+</div>
+
+<!-- ===== PAGE 8: ROADMAP ===== -->
+<div class="page" id="p8">
+  <div class="section-header"><h2>规划路线图</h2><div class="bar"></div></div>
+  <div class="rm-item"><div class="rm-dot" style="background:#059c69;"></div>
+    <div><div class="rm-title">🚀 MVP 已完成 <span class="badge badge-green">已完成</span></div><div class="rm-desc">邮箱注册 · 需求发布 · AI 对话 · 匹配 · 群组 · 游戏驿站 · 中英双语</div></div>
+  </div>
+  <div class="rm-item"><div class="rm-dot" style="background:#4f46e5;"></div>
+    <div><div class="rm-title">🔧 正式上线 <span class="badge badge-blue">进行中</span></div><div class="rm-desc">绑定域名 · 隐私协议 · 内容审核 · 国际化部署</div></div>
+  </div>
+  <div class="rm-item"><div class="rm-dot" style="background:#d97706;"></div>
+    <div><div class="rm-title">📋 短期规划</div><div class="rm-desc">短信验证码 · 邮箱验证 · 密码找回 · 实名认证 · 作品集</div></div>
+  </div>
+  <div class="rm-item"><div class="rm-dot" style="background:#2563eb;"></div>
+    <div><div class="rm-title">🎯 中期规划</div><div class="rm-desc">MongoDB · WebSocket · 移动端 · 成就徽章</div></div>
+  </div>
+  <div class="rm-item"><div class="rm-dot" style="background:#dc2626;"></div>
+    <div><div class="rm-title">🌟 长期规划</div><div class="rm-desc">更多游戏场景 · 智能合约 · AI Agent · 开放平台</div></div>
+  </div>
+</div>
+
+<!-- ===== PAGE 9: BUSINESS ===== -->
+<div class="page" id="p9">
+  <div class="section-header"><h2>商业模式探讨</h2><div class="bar"></div></div>
+  <div class="grid-2">
+    <div class="card"><div style="font-size:22px;">🏅</div><div class="c-title">个人增值服务</div><div class="c-desc">金牌认证 · 匹配扩容 · 作品集优化 · 信用体系</div></div>
+    <div class="card"><div style="font-size:22px;">🏢</div><div class="c-title">企业/团队版</div><div class="c-desc">内部匹配 · 项目管理 · 私有部署 · SSO</div></div>
+    <div class="card"><div style="font-size:22px;">🔌</div><div class="c-title">AI Agent 生态</div><div class="c-desc">MCP 接入 · Agent 撮合 · 平台微抽佣</div></div>
+    <div class="card"><div style="font-size:22px;">🌐</div><div class="c-title">社区与流量</div><div class="c-desc">广告位 · 置顶需求 · 推荐排名 · SaaS 工具</div></div>
+  </div>
+  <div class="highlight mt-12">💡 <strong>核心理念</strong>：基础匹配免费，增值服务付费 —— 降低门槛，靠价值变现</div>
+</div>
+
+<!-- ===== PAGE 10: Q&A ===== -->
+<div class="cover" id="p10">
+  <div class="hero-sub">🙋</div>
+  <h1 style="font-size:36px;">感谢聆听</h1>
+  <div class="subtitle" style="margin-top:8px;">期待你的反馈和建议</div>
+  <div style="margin-top:30px;text-align:center;">
+    <div style="color:rgba(255,255,255,0.5);font-size:13px;margin-bottom:4px;">📱 产品演示</div>
+    <div style="color:#7c8cf7;font-size:15px;">CloudBase 在线体验</div>
+    <div style="color:rgba(255,255,255,0.5);font-size:13px;margin:16px 0 4px;">💻 GitHub</div>
+    <div style="color:#7c8cf7;font-size:15px;">github.com/whongchen9/collabmatch</div>
+  </div>
+  <div class="meta" style="margin-top:40px;">需求匹配 · 产品团队</div>
+</div>
+
+<!-- ===== NAVIGATION ===== -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="go(-1)">‹ 上一页</button>
+  <div style="display:flex;align-items:center;gap:8px;">
+    <div class="nav-dots" id="dots"></div>
+    <span class="nav-progress" id="pageNum">1/10</span>
+  </div>
+  <button class="nav-btn primary" onclick="go(+1)" id="nextBtn">下一页 ›</button>
+</div>
+
+<script>
+let cur = 0;
+const pages = document.querySelectorAll('.page, .cover');
+const total = 10;
+
+// Build dots
+const dotsEl = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+  const d = document.createElement('button');
+  d.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  d.onclick = () => jump(i);
+  d.setAttribute('aria-label', '第' + (i+1) + '页');
+  dotsEl.appendChild(d);
+}
+
+function jump(n) {
+  pages.forEach(p => p.classList.remove('active'));
+  const items = document.querySelectorAll('#p' + (n+1) + ', .cover#p' + (n+1));
+  items.forEach(p => p.classList.add('active'));
+  document.querySelectorAll('.nav-dot').forEach((d, i) => d.classList.toggle('active', i === n));
+  document.getElementById('pageNum').textContent = (n+1) + '/' + total;
+  document.getElementById('nextBtn').textContent = n === total-1 ? '完成 ✓' : '下一页 ›';
+}
+
+function go(d) {
+  const next = cur + d;
+  if (next < 0 || next >= total) return;
+  cur = next;
+  jump(cur);
+}
+
+// Touch swipe support
+let touchStartX = 0;
+document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+document.addEventListener('touchend', e => {
+  const diff = e.changedTouches[0].clientX - touchStartX;
+  if (Math.abs(diff) > 60) { go(diff < 0 ? 1 : -1); }
+});
+</script>
+</body>
+</html>

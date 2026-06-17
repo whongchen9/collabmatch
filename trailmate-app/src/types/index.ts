@@ -17,10 +17,14 @@ export interface Intent {
   prompts: string[];         // ["不喜欢抽烟", "有经验优先", "喜欢拍照"]
   /** 必要因素是否完整（决定是否可进入"确定细节"阶段） */
   essentialsComplete: boolean;
+  /** 缺失的必要字段 */
+  missingFields?: string[];
   /** 状态 */
   status: 'matching' | 'matched' | 'teaming' | 'confirmed' | 'expired';
   /** 匹配到的用户 */
   matchedUsers: MatchedUser[];
+  /** 匹配到的队伍 */
+  matchedTeams?: MatchedTeam[];
   /** 创建者 */
   author: { id: string; name: string; avatar?: string };
   createdAt: string;
@@ -40,13 +44,14 @@ export interface MatchedUser {
   reason: string;
 }
 
-/** 匹配通知——系统作为中间人告知被匹配用户 */
-export interface MatchNotice {
-  id: string;
+/** 匹配到的队伍 */
+export interface MatchedTeam {
+  groupId: string;
+  groupName: string;
+  groupMembers: { id: string; name: string; avatar?: string; avatarUrl?: string }[];
+  maxMembers: number;
   intentId: string;
-  fromUser: { id: string; name: string; avatar?: string };
-  rawInput: string;
-  prompts: string[];
+  intentAuthor: { id: string; name: string; avatar?: string; avatarUrl?: string };
   essentials: {
     location?: string;
     date?: string;
@@ -54,8 +59,43 @@ export interface MatchNotice {
     difficulty?: string;
     eventType?: string;
   };
+  prompts: string[];
   matchPct: number;
+  breakdown: {
+    intent: number;
+    prompts: number;
+    pace: number;
+    activity: number;
+    distance: number;
+  };
   reason: string;
+}
+
+/** 匹配通知——系统作为中间人告知被匹配用户 */
+export interface MatchNotice {
+  id: string;
+  type?: string;
+  intentId?: string;
+  fromUser?: { id: string; name: string; avatar?: string };
+  fromUserName?: string;
+  rawInput?: string;
+  prompts?: string[];
+  essentials?: {
+    location?: string;
+    date?: string;
+    groupSize?: number;
+    difficulty?: string;
+    eventType?: string;
+  };
+  matchPct?: number;
+  reason?: string;
+  title?: string;
+  content?: string;
+  groupId?: string;
+  fromGroupId?: string;
+  targetGroupId?: string;
+  targetTeamName?: string;
+  targetTeamMembers?: number;
   status: 'pending' | 'accepted' | 'rejected' | 'expired';
   reply?: string;
   createdAt: string;
@@ -71,117 +111,139 @@ export interface User {
   avatarUrl?: string;
   bio?: string;
   city?: string;
-  experienceLevel: 'novice' | 'experienced' | 'veteran';
-  preferences: string[];
   hikeFrequency: string;
   creditScore: number;
   hikeCount: number;
   totalDistance: number;
   emergencyContacts: { name: string; phone: string }[];
+  /** 资源设备 */
+  resources?: { text: string; image?: string }[];
   /** 用户的精炼提示词（从历史意图和偏好中提取） */
   userPrompts: string[];
   online?: boolean;
+  createdAt?: number;
 }
 
 /* ── 队伍（匹配成功后创建） ── */
 export interface Group {
   id: string;
   name: string;
-  emoji: string;
-  avatarColor: string;
-  desc: string;
+  type?: 'hike' | 'other';
+  emoji?: string;
+  avatarColor?: string;
+  desc?: string;
   eventId?: string | null;
   intentId?: string | null;
-  status: 'forming' | 'ready' | 'ongoing' | 'completed';
-  members: { id: string; name: string; avatar?: string; avatarColor?: string }[];
-  messages: GroupMessage[];
-  /** 队伍商定的细节（从聊天中提取或手动确认） */
+  status: 'forming' | 'ready' | 'ongoing' | 'completed' | 'recruiting';
+  hikeStatus?: 'idle' | 'hiking' | 'completed';
+  matchingEnabled?: boolean;
+  members: { id: string; name: string; avatar?: string; avatarUrl?: string; avatarColor?: string; role?: string; joinedAt?: number }[];
+  maxMembers?: number;
+  essentials?: {
+    location?: string;
+    date?: string;
+    groupSize?: number;
+    difficulty?: string;
+    eventType?: string;
+  };
+  prompts?: string[];
+  plan?: string;
+  likes?: number;
+  hot?: boolean;
+  photos?: string[];
+  comments?: { userId: string; userName: string; avatarColor?: string; content: string; time: string; createdAt: number }[];
+  locations?: { userId: string; userName: string; lat: number; lng: number; updatedAt: number }[];
+  shareToken?: string;
+  checkpoints?: { lat: number; lng: number; label?: string; type?: 'meeting' | 'start' | 'checkpoint' | 'end'; createdAt: number; checkins?: { userId: string; userName: string; avatarColor?: string; checkedInAt: number; photos?: string[]; notes?: string }[] }[];
+  messages?: GroupMessage[];
   confirmedDetails?: {
     location: string;
     date: string;
     groupSize: number;
   };
+  createdBy?: string;
   createdAt: string;
+  updatedAt?: string;
 }
 
 export interface GroupMessage {
-  user: { id: string; name: string; avatar?: string; avatarColor?: string };
-  type: 'text' | 'file' | 'system';
+  user: { id: string; name: string; avatar?: string; avatarUrl?: string; avatarColor?: string };
+  type: 'text' | 'file' | 'system' | 'image';
   content: string;
   fileName?: string;
   fileSize?: string;
   time: string;
 }
 
-/* ── 兼容旧模型 ── */
-export interface HikeEvent {
+export interface TrailLog {
   id: string;
+  userId?: string;
+  userName?: string;
+  status?: 'active' | 'completed';
+  type: 'hike' | 'other';
   title: string;
-  author: { id: string; name: string; avatar?: string; avatarColor?: string };
-  status: string;
-  visibility: string;
-  difficulty: string;
-  eventType: string;
-  startDate: string;
-  meetupPoint: string;
-  endPoint: string;
-  distance: number;
-  elevation: number;
-  estimatedHours: number;
-  maxMembers: number;
-  feeType: string;
-  feeAmount: number;
-  gearRequired: string;
-  description: string;
-  coverImage: string;
-  tags: string[];
-  invitees: string[];
-  matchProgress: number;
-  createdAt: string;
-  updatedAt: string;
+  date: string;
+  location?: string;
+  distance?: number;
+  duration?: number;
+  notes?: string;
+  photos?: string[];
+  groupId?: string;
+  rating?: number;
+  createdAt?: number;
+  updatedAt?: number;
+  checkpoints?: { label?: string; checkedInAt?: number; notes?: string; photos?: string[] }[];
+  track?: { lat: number; lng: number; timestamp: number }[];
+  totalDistance?: number;
+  movingDuration?: number;
+  avgPace?: number;
 }
 
-export interface JoinRequest {
-  id: string;
-  eventId: string;
-  user: { id: string; name: string; avatar?: string };
-  message: string;
-  status: string;
-  createdAt: string;
+/* ── 山志图鉴：经典路线 ── */
+export interface RouteCheckpoint {
+  label: string;
+  lat: number;
+  lng: number;
+  order: number;
+  tip?: string;
 }
 
-export interface CheckIn {
+export interface RouteTitle {
+  name: string;
+  tier: 'bronze' | 'silver' | 'gold' | 'hidden';
+  condition: string;
+  icon?: string;
+}
+
+export interface RouteComment {
   id: string;
-  eventId: string;
-  user: { id: string; name: string; avatar?: string };
-  type: 'start' | 'finish' | 'sos';
-  location: { lat: number; lng: number };
-  address: string;
+  userId: string;
+  userName: string;
+  avatarColor?: string;
+  content: string;
   time: string;
+  createdAt: number;
+  likes: number;
+  titleBadge?: string;
 }
 
-export interface MatchResult {
-  matchPct: number;
-  breakdown: {
-    essentials?: number;
-    prompts?: number;
-    profile?: number;
-    fitness?: number;
-    preference?: number;
-    time?: number;
-    distance?: number;
-    heat?: number;
-  };
-  user?: User;
-  event?: HikeEvent;
-  reason?: string;
-}
-
-export interface HikeConfig {
-  difficultyLevels: Record<string, { label: string; icon: string; color: string }>;
-  eventTypes: Record<string, { label: string; icon: string }>;
-  preferences: Record<string, { label: string; icon: string }>;
-  feeTypes: Record<string, { label: string }>;
-  experienceLevels: Record<string, { label: string; icon: string }>;
-  hikeFrequencies: Record<string, { label: string }>;
+export interface ClassicRoute {
+  id: string;
+  name: string;
+  province: string;
+  theme: string;
+  coverImage?: string;
+  coverGradient: string;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  distance: string;
+  duration: string;
+  elevation: string;
+  story: string;
+  storyQuote: string;
+  guide: string;
+  tags: string[];
+  checkpoints: RouteCheckpoint[];
+  titles: RouteTitle[];
+  comments: RouteComment[];
+  relatedTeamIds: string[];
 }

@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>新 PlanPanel（意图融合页）Mockup</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background:#f0ede7; display:flex; flex-direction:column; align-items:center; padding:20px 12px; gap:40px; }
+  .phone { width:390px; min-height:800px; background:#f5f3ef; border-radius:36px; overflow:hidden; box-shadow:0 30px 60px rgba(0,0,0,.12); display:flex; flex-direction:column; }
+  .ph { height:40px; background:#f5f3ef; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:800; color:#9ca3af; }
+
+  /* 面板容器 */
+  .panel { flex:1; display: flex; flex-direction: column; }
+
+  /* ── Topbar ── */
+  .topbar {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 10px 14px 12px; flex-shrink: 0;
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    border-radius: 0 0 20px 20px;
+    box-shadow: 0 4px 16px rgba(16,185,129,.12);
+  }
+  .back-btn {
+    width: 32px; height: 32px; border-radius: 10px; background: rgba(255,255,255,.15);
+    border: none; color: #fff; cursor: pointer; font-size: 16px; flex-shrink:0; margin-top:2px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .topbar-info { flex:1; min-width:0; }
+  .topbar-info h1 { font-size: 15px; font-weight: 900; }
+  .topbar-info .meta { font-size: 10px; opacity: .65; margin-top: 2px; }
+  .status-badge {
+    padding: 4px 10px; border-radius: 8px; font-size: 10px; font-weight: 900;
+    background: rgba(255,255,255,.2); flex-shrink: 0; white-space: nowrap;
+  }
+
+  /* ── 滚动区 ── */
+  .scroll { flex:1; overflow-y:auto; padding: 0 12px 10px; }
+
+  /* ── Section card ── */
+  .card { background:#fff; border-radius:18px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,.04); margin-bottom:10px; }
+  .card-h {
+    display:flex; align-items:center; justify-content:space-between;
+    padding:12px 14px; font-size:11px; font-weight:800; color:#374151;
+    border-left:3px solid;
+  }
+  .card-h.amber { border-left-color:#f59e0b; }
+  .card-h.blue { border-left-color:#60a5fa; }
+  .card-h.green { border-left-color:#10b981; }
+  .card-h.purple { border-left-color:#8b5cf6; }
+
+  /* ── 匹配提示词（顶部） ── */
+  .prompt-intent-line {
+    padding: 10px 14px 0; font-size: 11px; color: #6b7280; line-height: 1.5;
+  }
+  .prompt-tags { display: flex; gap: 4px; padding: 6px 14px; flex-wrap: wrap; }
+  .pr-tag {
+    padding: 3px 10px; border-radius: 20px; font-size: 9px; font-weight: 700;
+    background: #fffbeb; color: #92400e; border: 1px solid #fde68a;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .pr-tag .x { cursor: pointer; opacity: .4; font-size: 11px; }
+  .pr-tag .x:hover { opacity: 1; color: #ef4444; }
+
+  .prompt-edit-row {
+    display: flex; gap: 6px; padding: 4px 14px 12px;
+  }
+  .prompt-edit-input {
+    flex:1; padding: 7px 12px; border-radius: 12px; border: 1px solid #e5e7eb;
+    font-size: 11px; outline: none;
+  }
+  .prompt-edit-input::placeholder { color: #d1d5db; }
+  .prompt-edit-save {
+    padding: 7px 14px; border-radius: 12px; border: none;
+    background: #10b981; color: #fff; font-size: 10px; font-weight: 800; cursor: pointer;
+    white-space: nowrap;
+  }
+
+  /* ── 计划 ── */
+  .plan-text {
+    padding: 10px 14px 14px; font-size: 11px; line-height: 1.6; color: #6b7280;
+  }
+  .plan-empty {
+    padding: 16px 14px; text-align: center;
+  }
+  .plan-empty .p { color: #9ca3af; font-size: 10px; }
+  .plan-empty .cta {
+    margin-top: 6px; padding: 5px 14px; border-radius: 20px; border: none;
+    background: #ecfdf5; color: #059669; font-size: 10px; font-weight: 700; cursor: pointer;
+  }
+
+  /* ── 成员 ── */
+  .m-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 14px; border-bottom: 1px solid #f3f4f6;
+  }
+  .m-row:last-child { border-bottom: none; }
+  .m-av {
+    width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .m-info { flex:1; min-width:0; }
+  .m-name { font-size: 11px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 4px; }
+  .m-role {
+    font-size: 7px; padding: 1px 5px; border-radius: 4px; font-weight: 700;
+  }
+  .m-role.leader { background: #fef3c7; color: #92400e; }
+  .m-role.member { background: #f3f4f6; color: #6b7280; }
+
+  /* ── 匹配推荐 ── */
+  .mp-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid #f3f4f6;
+  }
+  .mp-row:last-child { border-bottom: none; }
+  .mp-av {
+    width: 36px; height: 36px; border-radius: 11px; display: flex; align-items: center;
+    justify-content: center; font-size: 13px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .mp-info { flex:1; min-width:0; }
+  .mp-name { font-size: 11px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+  .mp-pct {
+    font-size: 9px; font-weight: 800; padding: 1px 6px; border-radius: 8px;
+    background: #ecfdf5; color: #059669;
+  }
+  .mp-tag { font-size: 8px; padding: 1px 5px; border-radius: 5px; font-weight: 700; }
+  .mp-team { font-size: 8px; color: #8b5cf6; background: #f5f3ff; padding: 1px 5px; border-radius: 5px; font-weight: 700; margin-left: 2px; }
+  .mp-reason { font-size: 9px; color: #9ca3af; margin-top: 1px; }
+  .mp-btn {
+    padding: 5px 12px; border-radius: 20px; border: none; font-size: 9px; font-weight: 800; cursor: pointer; flex-shrink: 0; color: #fff;
+  }
+  .mp-btn.invite { background: #10b981; }
+  .mp-btn.join { background: #3b82f6; }
+
+  /* ── 底部 ── */
+  .bottom-bar {
+    padding: 6px 14px 14px; flex-shrink: 0;
+  }
+  .bottom-btn {
+    width: 100%; padding: 12px; border-radius: 14px; border: none;
+    background: #10b981; color: #fff; font-size: 13px; font-weight: 900;
+    cursor: pointer; box-shadow: 0 2px 8px rgba(16,185,129,.2);
+  }
+  .bottom-hint { text-align: center; font-size: 9px; color: #9ca3af; margin-top: 4px; }
+
+  /* ── 匹配开关 ── */
+  .match-toggle {
+    width: 38px; height: 20px; border-radius: 10px; position: relative;
+    transition: .2s; cursor: pointer; flex-shrink: 0;
+  }
+  .match-toggle.on { background: #10b981; }
+  .match-toggle.off { background: #d1d5db; }
+  .match-toggle .toggle-knob {
+    position: absolute; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.15); transition: .2s;
+  }
+  .match-toggle.on .toggle-knob { left: 20px; }
+  .match-toggle.off .toggle-knob { left: 2px; }
+
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="ph">📋 新的 PlanPanel（待组队状态）</div>
+  <div class="panel">
+
+    <!-- ═══ 绿色渐变顶栏 ═══ -->
+    <div class="topbar">
+      <button class="back-btn">←</button>
+      <div class="topbar-info">
+        <h1>周末梧桐山日归</h1>
+        <div class="meta">2位成员 · 深圳梧桐山 · 自由匹配</div>
+      </div>
+      <span class="status-badge">🟢 匹配中</span>
+    </div>
+
+    <!-- ═══ 滚动内容区 ═══ -->
+    <div class="scroll">
+
+      <!-- ① 匹配提示词（顶部，编辑即修改意图） -->
+      <div class="card">
+        <div class="card-h amber">
+          <span style="display:flex;align-items:center;gap:6px;">⭐ 匹配提示词</span>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <button style="padding:3px 10px;border-radius:10px;border:1px solid #fcd34d;background:#fffbeb;color:#b45309;font-size:9px;font-weight:700;cursor:pointer;">编辑</button>
+            <div class="match-toggle on"><span class="toggle-knob"></span></div>
+          </div>
+        </div>
+        <div class="prompt-intent-line">
+          意图：<strong>周末梧桐山日归，轻松慢行，不喜欢抽烟的人，有徒步经验优先</strong>
+        </div>
+        <div class="prompt-tags">
+          <span class="pr-tag">不抽烟 <span class="x">×</span></span>
+          <span class="pr-tag">有经验优先 <span class="x">×</span></span>
+          <span class="pr-tag">慢行 <span class="x">×</span></span>
+          <span class="pr-tag">周末 <span class="x">×</span></span>
+        </div>
+        <div class="prompt-edit-row">
+          <input class="prompt-edit-input" placeholder="添加提示词，保存后重新匹配..." />
+          <button class="prompt-edit-save">保存并重新匹配</button>
+        </div>
+      </div>
+
+      <!-- ② 行动计划 -->
+      <div class="card">
+        <div class="card-h blue">
+          <span style="display:flex;align-items:center;gap:6px;">📋 行动计划</span>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button style="padding:3px 10px;border-radius:10px;border:1px solid #fcd34d;background:#fffbeb;color:#b45309;font-size:9px;font-weight:700;cursor:pointer;">编辑</button>
+            <button style="padding:3px 10px;border-radius:10px;border:1px solid #c7d2fe;background:#eef2ff;color:#4f46e5;font-size:9px;font-weight:700;cursor:pointer;">AI 生成</button>
+          </div>
+        </div>
+        <div class="plan-empty">
+          <div class="p">暂未制定行动计划</div>
+        </div>
+      </div>
+
+      <!-- ③ 当前成员 -->
+      <div class="card">
+        <div class="card-h green">
+          <span style="display:flex;align-items:center;gap:6px;">👥 当前成员</span>
+          <span style="font-size:9px;color:#10b981;background:#ecfdf5;padding:2px 8px;border-radius:8px;font-weight:700;">2/6</span>
+        </div>
+        <div class="m-row">
+          <div class="m-av" style="background:#f59e0b;">张</div>
+          <div class="m-info">
+            <div class="m-name">张山峰 <span class="m-role leader">队长</span></div>
+          </div>
+        </div>
+        <div class="m-row">
+          <div class="m-av" style="background:#7c3aed;">李</div>
+          <div class="m-info">
+            <div class="m-name">李小溪 <span class="m-role member">队员</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ④ 匹配推荐 -->
+      <div class="card">
+        <div class="card-h purple">
+          <span style="display:flex;align-items:center;gap:6px;">✨ 匹配推荐</span>
+          <span style="font-size:9px;color:#8b5cf6;background:#f5f3ff;padding:2px 8px;border-radius:8px;font-weight:700;">4人</span>
+        </div>
+
+        <div class="mp-row">
+          <div class="mp-av" style="background:#2563eb;">王</div>
+          <div class="mp-info">
+            <div class="mp-name">王大力 <span class="mp-pct">89%</span> <span class="mp-tag" style="background:#fef3c7;color:#b45309;">🐺 挑战者</span></div>
+            <div class="mp-reason">经验等级相当，配速相近</div>
+          </div>
+          <button class="mp-btn invite">邀请</button>
+        </div>
+
+        <div class="mp-row">
+          <div class="mp-av" style="background:#dc2626;">陈</div>
+          <div class="mp-info">
+            <div class="mp-name">陈小雅 <span class="mp-pct">83%</span> <span class="mp-tag" style="background:#d1fae5;color:#065f46;">🐢 享受者</span></div>
+            <div class="mp-reason">周末出发、性别不限</div>
+          </div>
+          <button class="mp-btn invite">邀请</button>
+        </div>
+
+        <div class="mp-row">
+          <div class="mp-av" style="background:#059669;">赵</div>
+          <div class="mp-info">
+            <div class="mp-name">赵六 <span class="mp-pct">76%</span> <span class="mp-team">在「塘朗山慢摇」</span></div>
+            <div class="mp-reason">相同路线偏好，去过梧桐山</div>
+          </div>
+          <button class="mp-btn join">加入</button>
+        </div>
+
+        <div class="mp-row">
+          <div class="mp-av" style="background:#f59e0b;">周</div>
+          <div class="mp-info">
+            <div class="mp-name">周二狗 <span class="mp-pct">65%</span></div>
+            <div class="mp-reason">新驴友，时间灵活</div>
+          </div>
+          <button class="mp-btn invite">邀请</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ═══ 底部按钮 ═══ -->
+    <div class="bottom-bar">
+      <button class="bottom-btn">完成组队，开始聊天 →</button>
+      <div class="bottom-hint">凑满 2 人即可出发</div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

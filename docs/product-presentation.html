@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>需求匹配 - 产品介绍</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Sans SC', sans-serif; background: #0a0a1a; color: #fff; overflow: hidden; height: 100vh; }
+  .slides { position: relative; width: 100vw; height: 100vh; }
+  .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; flex-direction: column; justify-content: center; align-items: center; padding: 60px 80px; opacity: 0; transition: opacity 0.4s ease; }
+  .slide.active { display: flex; opacity: 1; }
+  .slide.exit { opacity: 0; }
+  
+  /* Navigation */
+  .nav-bar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; align-items: center; z-index: 100; background: rgba(255,255,255,0.06); backdrop-filter: blur(12px); padding: 10px 18px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.08); }
+  .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.25); cursor: pointer; transition: all 0.3s; border: none; }
+  .nav-dot.active { background: #7c8cf7; width: 24px; border-radius: 4px; }
+  .nav-btn { background: rgba(255,255,255,0.08); border: none; color: #fff; cursor: pointer; padding: 6px 14px; border-radius: 20px; font-size: 13px; transition: all 0.2s; }
+  .nav-btn:hover { background: rgba(255,255,255,0.15); }
+  .page-num { font-size: 12px; color: rgba(255,255,255,0.4); margin: 0 8px; min-width: 30px; text-align: center; }
+  
+  /* Slide backgrounds */
+  .slide { background: linear-gradient(135deg, #0a0a1a 0%, #141428 50%, #1a1a35 100%); }
+  .slide:nth-child(1) { background: linear-gradient(135deg, #0a0a2a 0%, #1a0a30 50%, #0a1a3a 100%); }
+  .slide:nth-child(4) { background: linear-gradient(135deg, #0a1a2a 0%, #0a2a1a 50%, #1a1a2a 100%); }
+  .slide:nth-child(8) { background: linear-gradient(135deg, #1a0a2a 0%, #2a0a1a 50%, #0a1a2a 100%); }
+  
+  /* Content styles */
+  h1 { font-size: clamp(36px, 4.5vw, 64px); font-weight: 900; letter-spacing: -0.02em; line-height: 1.2; }
+  h2 { font-size: clamp(28px, 3vw, 42px); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 12px; }
+  h3 { font-size: clamp(20px, 2vw, 28px); font-weight: 500; margin-bottom: 8px; }
+  p { font-size: clamp(14px, 1.3vw, 20px); line-height: 1.7; color: rgba(255,255,255,0.7); max-width: 800px; text-align: center; }
+  .subtitle { font-size: clamp(16px, 1.5vw, 24px); color: rgba(255,255,255,0.5); margin-top: 12px; font-weight: 300; }
+  .tag { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; background: rgba(124,140,247,0.15); color: #7c8cf7; margin: 2px; }
+  
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 30px; max-width: 900px; width: 100%; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 30px; max-width: 1000px; width: 100%; }
+  .grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; margin-top: 30px; max-width: 1100px; width: 100%; }
+  .card { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 16px; padding: 24px; text-align: left; transition: all 0.3s; }
+  .card:hover { background: rgba(255,255,255,0.07); transform: translateY(-2px); }
+  .card .icon { font-size: 32px; margin-bottom: 12px; }
+  .card h4 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .card p { font-size: 13px; color: rgba(255,255,255,0.55); text-align: left; }
+  
+  .card-large { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 30px; text-align: left; }
+  
+  /* Flow diagram */
+  .flow { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 30px; flex-wrap: wrap; }
+  .flow-step { background: rgba(124,140,247,0.1); border: 1px solid rgba(124,140,247,0.2); border-radius: 12px; padding: 14px 22px; text-align: center; min-width: 120px; }
+  .flow-step .label { font-size: 13px; font-weight: 500; }
+  .flow-step .desc { font-size: 11px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+  .flow-arrow { font-size: 20px; color: rgba(124,140,247,0.5); }
+  
+  /* Roadmap */
+  .roadmap-item { display: flex; gap: 20px; margin-bottom: 16px; text-align: left; }
+  .roadmap-dot { width: 12px; height: 12px; border-radius: 50%; margin-top: 6px; flex-shrink: 0; }
+  .roadmap-dot.current { background: #7c8cf7; box-shadow: 0 0 12px rgba(124,140,247,0.4); }
+  .roadmap-dot.next { background: rgba(255,255,255,0.2); border: 2px dashed rgba(255,255,255,0.3); }
+  .roadmap-dot.mvp { background: #4ade80; }
+  
+  /* Badge */
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 11px; margin-left: 6px; font-weight: 500; }
+  .badge-done { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge-plan { background: rgba(250,204,21,0.15); color: #facc15; }
+  .badge-new { background: rgba(124,140,247,0.15); color: #7c8cf7; }
+  
+  /* Center layout */
+  .center-text { text-align: center; }
+  .text-left { text-align: left; }
+  .content-box { max-width: 900px; width: 100%; }
+  .w-full { width: 100%; }
+  .mt-4 { margin-top: 16px; }
+  .mt-6 { margin-top: 24px; }
+  .mb-4 { margin-bottom: 16px; }
+  .flex { display: flex; }
+  .gap-4 { gap: 16px; }
+  .items-center { align-items: center; }
+  .justify-center { justify-content: center; }
+  
+  /* Highlight accent */
+  .accent { color: #7c8cf7; }
+  .accent-green { color: #4ade80; }
+  .accent-yellow { color: #facc15; }
+  .accent-pink { color: #f472b6; }
+  
+  /* Hero */
+  .hero-sub { font-size: clamp(14px, 1.1vw, 18px); color: rgba(255,255,255,0.4); letter-spacing: 4px; text-transform: uppercase; margin-bottom: 16px; font-weight: 400; }
+  .hero-tags { display: flex; gap: 8px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+  
+  /* Stat */
+  .stat-row { display: flex; gap: 40px; margin-top: 30px; justify-content: center; }
+  .stat-item { text-align: center; }
+  .stat-num { font-size: 36px; font-weight: 700; }
+  .stat-label { font-size: 13px; color: rgba(255,255,255,0.5); margin-top: 4px; }
+
+  @media (max-width: 768px) {
+    .slide { padding: 30px 20px; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .stat-row { flex-wrap: wrap; gap: 20px; }
+    .flow { flex-direction: column; }
+    .flow-arrow { transform: rotate(90deg); }
+  }
+</style>
+</head>
+<body>
+
+<div class="slides" id="slides">
+
+<!-- ==================== SLIDE 1: Cover ==================== -->
+<div class="slide active">
+  <div class="hero-sub">产品介绍</div>
+  <h1>需求匹配</h1>
+  <p class="subtitle">AI 驱动的协作匹配平台</p>
+  <p style="margin-top:24px;max-width:600px;">说一个想法，找到志同道合的伙伴<br>从灵感碰撞到团队组建，一站式完成</p>
+  <div class="hero-tags">
+    <span class="tag">AI 智能匹配</span>
+    <span class="tag">多领域协作</span>
+    <span class="tag">即时沟通</span>
+    <span class="tag">游戏化体验</span>
+  </div>
+  <div class="stat-row">
+    <div class="stat-item"><div class="stat-num accent">6</div><div class="stat-label">核心领域</div></div>
+    <div class="stat-item"><div class="stat-num accent">7+</div><div class="stat-label">AI 辅助工具</div></div>
+    <div class="stat-item"><div class="stat-num accent">2</div><div class="stat-label">部署平台</div></div>
+    <div class="stat-item"><div class="stat-num accent">1</div><div class="stat-label">游戏化体验</div></div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 2: The Problem ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">🤔 个人与项目的协作困境</h2>
+    <div class="grid-2 mt-6">
+      <div class="card">
+        <div class="icon">🧑‍💻</div>
+        <h4>独立开发者</h4>
+        <p>有技术能力但缺少设计、运营等互补伙伴，一个人扛所有角色</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎨</div>
+        <h4>设计师/创作者</h4>
+        <p>有创意但找不到靠谱的技术实现者，好想法止步于概念</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎓</div>
+        <h4>学生/创业团队</h4>
+        <p>组队靠熟人，圈子有限，很难找到真正匹配的跨界伙伴</p>
+      </div>
+      <div class="card">
+        <div class="icon">💼</div>
+        <h4>自由职业者</h4>
+        <p>项目不稳定，缺少持续的项目来源和稳定的协作网络</p>
+      </div>
+    </div>
+    <div class="center-text mt-6">
+      <p style="font-size:18px;max-width:600px;margin:0 auto;">核心痛点：<strong class="accent-pink">协作连接成本高</strong>，没有高效的工具来发现和匹配对的人</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 3: Vision ==================== -->
+<div class="slide">
+  <div class="content-box center-text">
+    <h2>产品愿景</h2>
+    <p class="subtitle" style="max-width:700px;margin:20px auto 0;">让每个人都能轻松找到志同道合的伙伴，<br>让每个好想法都能找到落地的团队</p>
+    <div style="margin-top:40px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+      <div style="background:rgba(124,140,247,0.08);border:1px solid rgba(124,140,247,0.15);border-radius:16px;padding:20px 28px;max-width:280px;">
+        <div style="font-size:28px;margin-bottom:6px;">🎯</div>
+        <div style="font-weight:600;font-size:15px;">精准匹配</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">AI 分析需求与技能，推荐最合适的伙伴</div>
+      </div>
+      <div style="background:rgba(124,140,247,0.08);border:1px solid rgba(124,140,247,0.15);border-radius:16px;padding:20px 28px;max-width:280px;">
+        <div style="font-size:28px;margin-bottom:6px;">🚀</div>
+        <div style="font-weight:600;font-size:15px;">低门槛启动</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">AI 辅助生成需求文档，无需从零开始</div>
+      </div>
+      <div style="background:rgba(124,140,247,0.08);border:1px solid rgba(124,140,247,0.15);border-radius:16px;padding:20px 28px;max-width:280px;">
+        <div style="font-size:28px;margin-bottom:6px;">🎮</div>
+        <div style="font-weight:600;font-size:15px;">游戏化体验</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">驿站场景交互，让匹配像游戏一样有趣</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 4: Core Flow ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">核心流程：从想法到团队</h2>
+    <div class="flow">
+      <div class="flow-step"><div class="label">💡 描述想法</div><div class="desc">自然语言输入</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="label">🤖 AI 解析</div><div class="desc">结构化需求文档</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="label">🔍 智能匹配</div><div class="desc">AI 推荐潜在伙伴</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="label">💬 沟通协作</div><div class="desc">即时聊天群组</div></div>
+      <div class="flow-arrow">→</div>
+      <div class="flow-step"><div class="label">🤝 组队成功</div><div class="desc">自动建立协作群</div></div>
+    </div>
+    <div class="grid-3 mt-6">
+      <div class="card-large center-text" style="text-align:center;">
+        <div style="font-size:40px;">📋</div>
+        <h3 style="margin-top:8px;">AI 辅助需求整理</h3>
+        <p>输入你的想法，AI 自动生成结构化需求文档，包含项目背景、目标、所需技能、时间线等</p>
+      </div>
+      <div class="card-large center-text" style="text-align:center;">
+        <div style="font-size:40px;">🎯</div>
+        <h3 style="margin-top:8px;">双向智能匹配</h3>
+        <p>找人找项目双向匹配，AI 分析技能互补度和协作意愿，推荐最合适的伙伴</p>
+      </div>
+      <div class="card-large center-text" style="text-align:center;">
+        <div style="font-size:40px;">🔄</div>
+        <h3 style="margin-top:8px;">一键组队协作</h3>
+        <p>匹配确认后自动创建协作群，内置即时通讯，支持文件分享和 AI 群聊总结</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 5: Key Features ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">核心功能矩阵</h2>
+    <div class="grid-4 mt-6">
+      <div class="card">
+        <div class="icon">🤖</div>
+        <h4>AI 智能匹配</h4>
+        <p>深度分析需求与技能，<br>正向(找人)和反向(找项目)<br>双向匹配机制</p>
+      </div>
+      <div class="card">
+        <div class="icon">💬</div>
+        <h4>AI 对话</h4>
+        <p>内置 LLM 对话，自动生成结构化需求文档，支持项目诊断与优化</p>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h4>需求广场</h4>
+        <p>按领域浏览公开需求，<br>发现感兴趣的项目，<br>一键申请参与协作</p>
+      </div>
+      <div class="card">
+        <div class="icon">👥</div>
+        <h4>协作群组</h4>
+        <p>自动建群，实时聊天，<br>文件分享，AI 总结<br>群聊内容</p>
+      </div>
+      <div class="card">
+        <div class="icon">👤</div>
+        <h4>个人主页</h4>
+        <p>展示技能、作品集、<br>协作历史，让伙伴<br>快速了解你</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎮</div>
+        <h4>游戏化驿站</h4>
+        <p>2D 像素风交互场景，<br>WASD 移动探索，<br>NPC 交互触发匹配</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔧</div>
+        <h4>AI 工具箱 <span class="badge badge-done">7+</span></h4>
+        <p>生成 PRD、诊断需求、<br>SWOT 分析、周期估算、<br>邀请文案...</p>
+      </div>
+      <div class="card">
+        <div class="icon">📈</div>
+        <h4>协作者入口 <span class="badge badge-new">NEW</span></h4>
+        <p>MCP 协议接入，<br>AI Agent 可自动提交<br>作品、参与匹配</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 6: Game Innovation ==================== -->
+<div class="slide">
+  <div class="content-box center-text">
+    <h2>🎮 游戏化创新：「驿站」</h2>
+    <p class="subtitle" style="max-width:650px;margin:12px auto 0;">把协作匹配变成一场像素风 RPG 探索体验</p>
+    <div class="grid-3 mt-6">
+      <div class="card">
+        <div class="icon">🏠</div>
+        <h4>驿站场景</h4>
+        <p>20×15 Tile 的古风驿站<br>包含接待台、公告栏、<br>茶座、比武擂台等区域</p>
+      </div>
+      <div class="card">
+        <div class="icon">🧑‍🦱</div>
+        <h4>NPC 交互</h4>
+        <p>与"小二""侠客"等 NPC<br>对话触发匹配面板，<br>游戏化替代冰冷表单</p>
+      </div>
+      <div class="card">
+        <div class="icon">🎵</div>
+        <h4>沉浸体验</h4>
+        <p>Web Audio API 合成<br>脚步声、环境音、<br>交互反馈音效</p>
+      </div>
+    </div>
+    <div style="margin-top:24px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:20px;display:inline-block;">
+      <p style="font-size:14px;max-width:600px;margin:0;">
+        ✨ 核心理念：<strong>看似网络游戏，实则联通现实</strong> — 游戏内的每一次交互<br>都对应真实的匹配操作，娱乐性和实用性并存
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 7: Tech Foundation ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">技术架构</h2>
+    <div class="grid-2 mt-6">
+      <div class="card-large">
+        <h4>🌐 前端架构</h4>
+        <div style="margin-top:12px;">
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• 单文件 SPA，零框架依赖</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• Lucide SVG 图标系统，风格统一</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• 中英双语国际化，彩蛋式江湖模式</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• 自研 2D Canvas 游戏引擎（6 个模块）</p>
+          <p style="font-size:13px;text-align:left;">• 零外部依赖，纯原生 Web API</p>
+        </div>
+      </div>
+      <div class="card-large">
+        <h4>⚙️ 后端架构</h4>
+        <div style="margin-top:12px;">
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• 腾讯云 CloudBase 云函数</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• 火山方舟（豆包）LLM API</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• CloudBase 内置数据库</p>
+          <p style="font-size:13px;text-align:left;margin-bottom:6px;">• HTTP 访问服务统一路由</p>
+          <p style="font-size:13px;text-align:left;">• 部署：CloudBase + Vercel 双平台</p>
+        </div>
+      </div>
+    </div>
+    <div class="center-text mt-6">
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <span class="tag">Vite</span>
+        <span class="tag">Lucide</span>
+        <span class="tag">CloudBase</span>
+        <span class="tag">豆包API</span>
+        <span class="tag">Canvas</span>
+        <span class="tag">Web Audio API</span>
+        <span class="tag">MongoDB Atlas</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 8: Roadmap ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">🗺️ 规划路线图</h2>
+    <div style="margin-top:30px;max-width:650px;margin-left:auto;margin-right:auto;">
+      <div class="roadmap-item">
+        <div class="roadmap-dot mvp"></div>
+        <div class="text-left" style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">MVP 已完成 <span class="badge badge-done">DONE</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);">邮箱注册登录 · 需求发布 · AI 对话 · 智能匹配 · 协作群组 · 游戏驿站 · 中英双语</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot current"></div>
+        <div class="text-left" style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">正式上线 <span class="badge badge-new">进行中</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);">绑定自定义域名 · 用户协议/隐私政策 · 内容审核 · 国际化部署</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot next"></div>
+        <div class="text-left" style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">短期规划 <span class="badge badge-plan">规划中</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);">短信验证码登录 · 邮箱验证 · 密码找回 · 用户实名认证 · 作品集上传</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot next"></div>
+        <div class="text-left" style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">中期规划 <span class="badge badge-plan">规划中</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);">迁移 MongoDB Atlas · WebSocket 实时通信 · 移动端适配 · 项目协作看板 · 成就徽章系统</div>
+        </div>
+      </div>
+      <div class="roadmap-item">
+        <div class="roadmap-dot next"></div>
+        <div class="text-left" style="flex:1;">
+          <div style="font-weight:600;font-size:15px;">长期规划 <span class="badge badge-plan">规划中</span></div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.5);">更多游戏场景（茶馆议事·擂台匹配） · 智能合约结算 · AI Agent 自动撮合 · 开放平台</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 9: Business Thinking ==================== -->
+<div class="slide">
+  <div class="content-box">
+    <h2 class="center-text">💡 商业模式探讨</h2>
+    <div class="grid-2 mt-6">
+      <div class="card">
+        <div class="icon">🏅</div>
+        <h4>个人增值服务</h4>
+        <p style="font-size:13px;">• 点亮「金牌协作者」认证<br>• 每月 AI 匹配次数扩容<br>• 作品集展示优化<br>• 协作评价与信用体系</p>
+      </div>
+      <div class="card">
+        <div class="icon">🏢</div>
+        <h4>企业/团队版</h4>
+        <p style="font-size:13px;">• 企业内协作匹配<br>• 项目管理看板集成<br>• 私有化部署支持<br>• SSO/权限管理</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔌</div>
+        <h4>AI Agent 生态</h4>
+        <p style="font-size:13px;">• MCP 协议接入费用<br>• AI Agent 自动发布需求<br>• Agent 间自动撮合交易<br>• 平台抽佣（微）</p>
+      </div>
+      <div class="card">
+        <div class="icon">🌐</div>
+        <h4>社区/流量</h4>
+        <p style="font-size:13px;">• 项目展示广告位<br>• 付费置顶需求<br>• 协作者推荐排名<br>• 增值 SaaS 工具</p>
+      </div>
+    </div>
+    <div class="center-text mt-6">
+      <p style="font-size:15px;color:rgba(255,255,255,0.6);">核心理念：<strong class="accent">基础匹配免费，增值服务付费</strong> — 降低门槛，靠价值变现</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== SLIDE 10: Q&A ==================== -->
+<div class="slide">
+  <div class="content-box center-text">
+    <h1 style="font-size:clamp(48px,6vw,80px);">🙋</h1>
+    <h2>感谢聆听</h2>
+    <p class="subtitle" style="max-width:500px;margin:20px auto;">期待你的反馈和建议</p>
+    <div style="margin-top:40px;display:flex;gap:20px;justify-content:center;flex-wrap:wrap;">
+      <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px 24px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#7c8cf7;">需求匹配</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">产品官网</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px 24px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#4ade80;">collabmatch</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">GitHub 仓库</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.04);border-radius:12px;padding:16px 24px;text-align:center;">
+        <div style="font-size:24px;font-weight:700;color:#facc15;">在线演示</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.5);margin-top:4px;">CloudBase 部署</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<!-- Navigation -->
+<div class="nav-bar">
+  <button class="nav-btn" onclick="prevSlide()">←</button>
+  <div id="dots"></div>
+  <span class="page-num" id="pageNum">1 / 10</span>
+  <button class="nav-btn" onclick="nextSlide()">→</button>
+</div>
+
+<script>
+const slides = document.querySelectorAll('.slide');
+let current = 0;
+const total = slides.length;
+
+// Create dots
+const dotsContainer = document.getElementById('dots');
+for (let i = 0; i < total; i++) {
+  const dot = document.createElement('button');
+  dot.className = 'nav-dot' + (i === 0 ? ' active' : '');
+  dot.onclick = () => goTo(i);
+  dotsContainer.appendChild(dot);
+}
+
+function goTo(n) {
+  slides[current].classList.remove('active');
+  slides[current].classList.add('exit');
+  document.querySelectorAll('.nav-dot')[current].classList.remove('active');
+  current = (n + total) % total;
+  setTimeout(() => {
+    slides.forEach(s => s.classList.remove('exit'));
+    slides[current].classList.add('active');
+  }, 50);
+  document.querySelectorAll('.nav-dot')[current].classList.add('active');
+  document.getElementById('pageNum').textContent = (current + 1) + ' / ' + total;
+}
+
+function nextSlide() { goTo(current + 1); }
+function prevSlide() { goTo(current - 1); }
+
+// Keyboard navigation
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); nextSlide(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevSlide(); }
+});
+</script>
+</body>
+</html>

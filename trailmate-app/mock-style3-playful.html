@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate — 轻快活泼风</title>
+<style>
+  :root {
+    --bg: #fff5f0;
+    --card: #ffffff;
+    --accent: #ff6b6b;
+    --accent2: #ffa502;
+    --blue: #5352ed;
+    --blue-light: #ececfe;
+    --green: #2ed573;
+    --green-light: #e4fcef;
+    --text: #2d1b14;
+    --text-sec: #7a6258;
+    --text-dim: #bba59b;
+    --border: #f0e4dc;
+    --shadow: 0 4px 20px rgba(0,0,0,.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.06);
+    --font: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 20px;
+    --radius-sm: 14px;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: var(--font); background: #f0e8e0;
+    display: flex; justify-content: center; align-items: flex-start;
+    min-height: 100vh; padding: 24px 0;
+    -webkit-font-smoothing: antialiased;
+  }
+  .phone {
+    width: 390px; min-height: 844px; background: var(--bg);
+    border-radius: 36px; overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,.1), 0 0 0 2px #2d1b14;
+    position: relative;
+  }
+  .content { position: relative; z-index: 1; padding-bottom: 100px; }
+
+  /* Background blobs */
+  .bg-blobs { position: absolute; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; }
+  .bg-blob {
+    position: absolute; border-radius: 50%; filter: blur(60px); opacity: .15;
+  }
+  .bg-blob-1 {
+    width: 200px; height: 200px; background: #ff6b6b;
+    top: -40px; right: -60px;
+  }
+  .bg-blob-2 {
+    width: 160px; height: 160px; background: #ffa502;
+    bottom: 200px; left: -40px; opacity: .1;
+  }
+  .bg-blob-3 {
+    width: 180px; height: 180px; background: #5352ed;
+    bottom: 80px; right: -50px; opacity: .08;
+  }
+
+  /* Status Bar */
+  .status-bar {
+    height: 44px; display: flex; align-items: center;
+    justify-content: space-between; padding: 0 24px;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    letter-spacing: .3px;
+  }
+
+  /* Hero — playful, warm */
+  .hero {
+    padding: 8px 20px 24px; position: relative; z-index: 1;
+  }
+  .hero-wave {
+    display: flex; align-items: center; gap: 4px; margin-bottom: 8px;
+  }
+  .hero-wave span {
+    font-size: 14px;
+  }
+  .hero-greeting {
+    font-size: 14px; font-weight: 700; color: var(--text-sec);
+  }
+  .hero-title {
+    font-size: 28px; font-weight: 800; color: var(--text);
+    line-height: 1.2; margin-bottom: 6px;
+  }
+  .hero-title .highlight {
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: 13px; color: var(--text-dim); font-weight: 500;
+    margin-bottom: 18px;
+  }
+  .hero-sub em {
+    font-style: normal; font-weight: 800; color: var(--accent);
+  }
+
+  /* Fun stat chips */
+  .hero-stats {
+    display: flex; gap: 10px;
+  }
+  .hero-stat {
+    flex: 1; background: var(--card); border-radius: var(--radius-sm);
+    padding: 12px 14px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .stat-emoji {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .stat-info { text-align: left; }
+  .stat-val {
+    font-size: 16px; font-weight: 800; color: var(--text);
+  }
+  .stat-lbl {
+    font-size: 10px; color: var(--text-dim); font-weight: 500;
+  }
+
+  /* Section */
+  .section { padding: 0 20px; margin-bottom: 22px; }
+  .sec-head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .sec-title {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    display: flex; align-items: center; gap: 6px;
+  }
+  .sec-emoji { font-size: 18px; }
+  .sec-link {
+    font-size: 12px; font-weight: 700;
+    background: linear-gradient(120deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    cursor: pointer;
+  }
+
+  /* Quick Actions — big rounded gradient cards */
+  .quick-actions {
+    display: flex; gap: 10px; padding: 0 20px; margin-bottom: 24px;
+  }
+  .qa-btn {
+    flex: 1; padding: 20px 14px; border-radius: var(--radius);
+    border: none; cursor: pointer; text-align: center;
+    box-shadow: var(--shadow-lg); transition: transform .15s;
+    position: relative; overflow: hidden;
+  }
+  .qa-btn:hover { transform: translateY(-2px); }
+  .qa-btn.primary {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ff8e53 50%, #ffa502 100%);
+    color: #fff;
+  }
+  .qa-btn.secondary {
+    background: var(--card); border: 2px solid var(--border);
+  }
+  .qa-btn-icon {
+    font-size: 28px; display: block; margin-bottom: 8px;
+  }
+  .qa-btn-label {
+    font-size: 15px; font-weight: 800; display: block; margin-bottom: 2px;
+  }
+  .qa-btn.secondary .qa-btn-label { color: var(--text); }
+  .qa-btn-hint {
+    font-size: 11px; font-weight: 500; display: block;
+  }
+  .qa-btn.primary .qa-btn-hint { color: rgba(255,255,255,.75); }
+  .qa-btn.secondary .qa-btn-hint { color: var(--text-dim); }
+
+  /* Intent Card — rounded, colorful */
+  .intent-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 18px; box-shadow: var(--shadow);
+    border: 2px solid transparent;
+    background-clip: padding-box;
+    position: relative;
+  }
+  .intent-card::before {
+    content: ''; position: absolute; inset: -2px; z-index: -1;
+    border-radius: 22px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2), var(--blue));
+    opacity: .15;
+  }
+  .intent-top {
+    display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px;
+  }
+  .intent-icon {
+    width: 44px; height: 44px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+    background: linear-gradient(135deg, #ff6b6b20, #ffa50220);
+    border: 2px solid #ff6b6b20;
+  }
+  .intent-info { flex: 1; min-width: 0; }
+  .intent-name {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 3px;
+  }
+  .intent-meta {
+    font-size: 11px; color: var(--text-dim); line-height: 1.4;
+  }
+  .intent-badge {
+    font-size: 10px; font-weight: 700; padding: 4px 12px;
+    border-radius: 20px; flex-shrink: 0;
+  }
+  .badge-matching {
+    background: linear-gradient(135deg, #ff6b6b15, #ffa50215);
+    color: var(--accent); border: 1.5px solid #ff6b6b30;
+  }
+  .intent-tags {
+    display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px;
+  }
+  .tag {
+    font-size: 11px; font-weight: 600; padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--bg); color: var(--text-sec);
+  }
+  .tag:nth-child(1) { background: #e4fcef; color: #20a859; }
+  .tag:nth-child(2) { background: #ececfe; color: #5352ed; }
+  .tag:nth-child(3) { background: #fff3e0; color: #e67e22; }
+  .intent-progress {
+    height: 8px; background: #f0e4dc; border-radius: 4px;
+    margin-bottom: 14px; overflow: hidden;
+  }
+  .intent-progress-bar {
+    height: 100%; border-radius: 4px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+  }
+  .intent-footer {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .intent-avatars { display: flex; }
+  .intent-avatars .av {
+    width: 28px; height: 28px; border-radius: 50%;
+    margin-left: -8px; border: 3px solid #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; color: #fff;
+  }
+  .intent-avatars .av:first-child { margin-left: 0; }
+  .intent-count {
+    font-size: 12px; font-weight: 700; color: var(--accent);
+  }
+
+  /* Team Card */
+  .team-card {
+    background: var(--card); border-radius: var(--radius);
+    padding: 16px 18px; box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 14px;
+    cursor: pointer; transition: transform .15s;
+  }
+  .team-card:hover { transform: translateY(-1px); }
+  .team-avatar {
+    width: 48px; height: 48px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, #5352ed, #7c6ff7);
+    flex-shrink: 0;
+  }
+  .team-info { flex: 1; min-width: 0; }
+  .team-name {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 2px;
+  }
+  .team-meta {
+    font-size: 11px; color: var(--text-dim);
+  }
+  .team-badge {
+    font-size: 11px; font-weight: 700; padding: 5px 14px;
+    border-radius: 20px; flex-shrink: 0;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .badge-hiking {
+    background: var(--green-light); color: var(--green);
+    border: 1.5px solid #2ed57340;
+  }
+  .pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--green);
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: .5; transform: scale(1.3); }
+  }
+
+  /* Route Cards */
+  .route-scroll {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding-bottom: 4px; scroll-snap-type: x mandatory;
+  }
+  .route-scroll::-webkit-scrollbar { display: none; }
+  .route-card {
+    min-width: 230px; border-radius: var(--radius); overflow: hidden;
+    box-shadow: var(--shadow); scroll-snap-align: start;
+    cursor: pointer; flex-shrink: 0; background: var(--card);
+    transition: transform .15s;
+  }
+  .route-card:hover { transform: translateY(-2px); }
+  .route-cover {
+    height: 120px; position: relative; padding: 14px;
+    display: flex; align-items: flex-end;
+  }
+  .route-diff {
+    position: absolute; top: 12px; right: 12px;
+    font-size: 9px; font-weight: 800; padding: 4px 10px;
+    border-radius: 20px; letter-spacing: .5px;
+    background: rgba(255,255,255,.9); backdrop-filter: blur(8px);
+    color: var(--text);
+  }
+  .route-name {
+    font-size: 17px; font-weight: 800; color: #fff;
+    text-shadow: 0 2px 6px rgba(0,0,0,.4);
+    margin-bottom: 2px;
+  }
+  .route-loc {
+    font-size: 11px; color: rgba(255,255,255,.85);
+  }
+  .route-body { padding: 14px; }
+  .route-stats {
+    display: flex; gap: 10px; margin-bottom: 10px;
+    font-size: 11px; font-weight: 600; color: var(--text-sec);
+  }
+  .route-stats span {
+    display: flex; align-items: center; gap: 3px;
+  }
+  .route-tags { display: flex; gap: 5px; flex-wrap: wrap; }
+
+  /* Bottom Tab — pill style */
+  .bottom-tab-wrap {
+    position: absolute; bottom: 0; left: 0; right: 0; z-index: 2;
+    padding: 10px 16px 28px;
+  }
+  .bottom-pill {
+    background: var(--card); border-radius: 28px;
+    box-shadow: 0 4px 24px rgba(0,0,0,.08);
+    display: flex; padding: 4px;
+    border: 2px solid var(--border);
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; padding: 8px 4px; cursor: pointer; border: none;
+    background: none; font-family: var(--font);
+    font-size: 10px; font-weight: 700; color: var(--text-dim);
+    border-radius: 24px; transition: all .2s;
+  }
+  .tab-item.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; box-shadow: 0 4px 12px rgba(255,107,107,.3);
+  }
+  .tab-item svg { width: 20px; height: 20px; }
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="bg-blobs">
+    <div class="bg-blob bg-blob-1"></div>
+    <div class="bg-blob bg-blob-2"></div>
+    <div class="bg-blob bg-blob-3"></div>
+  </div>
+  <div class="content">
+
+    <!-- Status Bar -->
+    <div class="status-bar">
+      <span>9:41</span>
+      <span>📶 🔋</span>
+    </div>
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-wave">
+        <span>👋</span>
+        <span class="hero-greeting">下午好，小张！</span>
+      </div>
+      <div class="hero-title">
+        今天去<span class="highlight">哪里</span>探险？
+      </div>
+      <div class="hero-sub">
+        <em>12</em> 支队伍正在招募队友 ✨
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat">
+          <div class="stat-emoji" style="background:linear-gradient(135deg,#ff6b6b15,#ffa50215);">🏔️</div>
+          <div class="stat-info">
+            <div class="stat-val">8</div>
+            <div class="stat-lbl">已完成</div>
+          </div>
+        </div>
+        <div class="hero-stat">
+          <div class="stat-emoji" style="background:linear-gradient(135deg,#5352ed15,#7c6ff715);">👣</div>
+          <div class="stat-info">
+            <div class="stat-val">126 km</div>
+            <div class="stat-lbl">总里程</div>
+          </div>
+        </div>
+        <div class="hero-stat">
+          <div class="stat-emoji" style="background:linear-gradient(135deg,#2ed57315,#20a85915);">⭐</div>
+          <div class="stat-info">
+            <div class="stat-val">92</div>
+            <div class="stat-lbl">信用</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <button class="qa-btn primary">
+        <span class="qa-btn-icon">🎒</span>
+        <span class="qa-btn-label">发起组队</span>
+        <span class="qa-btn-hint">创建你的冒险</span>
+      </button>
+      <button class="qa-btn secondary">
+        <span class="qa-btn-icon">🔍</span>
+        <span class="qa-btn-label">AI 匹配</span>
+        <span class="qa-btn-hint">一秒找队友</span>
+      </button>
+    </div>
+
+    <!-- Active Intent -->
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">
+          <span class="sec-emoji">📋</span>我的意图
+        </span>
+        <span class="sec-link">查看全部 →</span>
+      </div>
+      <div class="intent-card">
+        <div class="intent-top">
+          <div class="intent-icon">⛰️</div>
+          <div class="intent-info">
+            <div class="intent-name">周末白云山轻徒步</div>
+            <div class="intent-meta">广州 · 6月21日周六 · 3-5人 · 初级</div>
+          </div>
+          <span class="intent-badge badge-matching">🔥 匹配中</span>
+        </div>
+        <div class="intent-tags">
+          <span class="tag">🌿 休闲徒步</span>
+          <span class="tag">📸 摄影</span>
+          <span class="tag">👶 新手友好</span>
+        </div>
+        <div class="intent-progress">
+          <div class="intent-progress-bar" style="width:60%"></div>
+        </div>
+        <div class="intent-footer">
+          <div class="intent-avatars">
+            <div class="av" style="background:linear-gradient(135deg,#5352ed,#7c6ff7);">李</div>
+            <div class="av" style="background:linear-gradient(135deg,#ff6b6b,#ffa502);">王</div>
+            <div class="av" style="background:linear-gradient(135deg,#2ed573,#20a859);">+2</div>
+          </div>
+          <span class="intent-count">3/5 已匹配</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- My Team -->
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">
+          <span class="sec-emoji">👥</span>我的队伍
+        </span>
+        <span class="sec-link" style="display:flex;align-items:center;gap:5px;">
+          <span class="pulse"></span>进行中
+        </span>
+      </div>
+      <div class="team-card">
+        <div class="team-avatar">白</div>
+        <div class="team-info">
+          <div class="team-name">白云山徒步小分队</div>
+          <div class="team-meta">4人 · 6/21 08:00出发 · 摩星岭下一站</div>
+        </div>
+        <span class="team-badge badge-hiking">
+          <span class="pulse"></span>征途中
+        </span>
+      </div>
+    </div>
+
+    <!-- Recommended Routes -->
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">
+          <span class="sec-emoji">🗺️</span>推荐路线
+        </span>
+        <span class="sec-link">探索更多 →</span>
+      </div>
+      <div class="route-scroll">
+        <!-- Card 1 -->
+        <div class="route-card">
+          <div class="route-cover" style="background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.6)), linear-gradient(135deg,#20a859,#2ed573);">
+            <span class="route-diff">中级</span>
+            <div>
+              <div class="route-name">白云山穿越线</div>
+              <div class="route-loc">📍 广东广州</div>
+            </div>
+          </div>
+          <div class="route-body">
+            <div class="route-stats">
+              <span>📏 15km</span><span>⏱ 4-5h</span><span>📈 380m</span>
+            </div>
+            <div class="route-tags">
+              <span class="tag">🌲 森林步道</span><span class="tag">🏙️ 城市景观</span>
+            </div>
+          </div>
+        </div>
+        <!-- Card 2 -->
+        <div class="route-card">
+          <div class="route-cover" style="background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.6)), linear-gradient(135deg,#e67e22,#ffa502);">
+            <span class="route-diff">高级</span>
+            <div>
+              <div class="route-name">丹霞山穿越</div>
+              <div class="route-loc">📍 广东韶关</div>
+            </div>
+          </div>
+          <div class="route-body">
+            <div class="route-stats">
+              <span>📏 22km</span><span>⏱ 7-8h</span><span>📈 680m</span>
+            </div>
+            <div class="route-tags">
+              <span class="tag">🏜️ 丹霞地貌</span><span class="tag">💪 挑战级</span>
+            </div>
+          </div>
+        </div>
+        <!-- Card 3 -->
+        <div class="route-card">
+          <div class="route-cover" style="background:linear-gradient(180deg,transparent 30%,rgba(0,0,0,.6)), linear-gradient(135deg,#5352ed,#7c6ff7);">
+            <span class="route-diff">初级</span>
+            <div>
+              <div class="route-name">梧桐山休闲线</div>
+              <div class="route-loc">📍 广东深圳</div>
+            </div>
+          </div>
+          <div class="route-body">
+            <div class="route-stats">
+              <span>📏 8km</span><span>⏱ 2-3h</span><span>📈 200m</span>
+            </div>
+            <div class="route-tags">
+              <span class="tag">🌊 海景步道</span><span class="tag">👨‍👩‍👧 亲子友好</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Tab — Pill Style -->
+  <div class="bottom-tab-wrap">
+    <div class="bottom-pill">
+      <button class="tab-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        首页
+      </button>
+      <button class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/>
+        </svg>
+        探索
+      </button>
+      <button class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+        </svg>
+        队伍
+      </button>
+      <button class="tab-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+        </svg>
+        我的
+      </button>
+    </div>
+  </div>
+</div>
+</body>
+</html>

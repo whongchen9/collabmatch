@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home 主页重设计 Mockup</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+    background: #f0ede7; display: flex; flex-direction: column; align-items: center;
+    padding: 20px 12px; gap: 40px;
+  }
+  .phone {
+    width: 390px; min-height: 850px; background: #f5f3ef;
+    border-radius: 36px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,.12);
+    display: flex; flex-direction: column;
+  }
+  .phone-header {
+    height: 40px; background: #f5f3ef;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #9ca3af;
+  }
+  .scroll-area { flex:1; overflow-y:auto; padding: 0 12px 12px; }
+
+  /* ── 头卡 ── */
+  .hero {
+    background: linear-gradient(135deg, #10b981, #059669); color: #fff;
+    border-radius: 20px; padding: 20px 18px 16px; margin: 8px 0 12px;
+    box-shadow: 0 4px 18px rgba(16,185,129,.15);
+  }
+  .hero-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+  .hero-brand { font-size: 18px; font-weight: 900; display: flex; align-items: center; gap: 6px; }
+  .hero-badge {
+    width: 36px; height: 36px; border-radius: 12px; background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+  }
+  .hero-stats { display: flex; gap: 16px; }
+  .hero-stat { text-align: center; }
+  .hero-stat-val { font-size: 16px; font-weight: 900; }
+  .hero-stat-label { font-size: 9px; opacity: .55; margin-top: 1px; }
+
+  /* ── hiking banner ── */
+  .hiking-bar {
+    background: #ecfdf5; border: 1px solid #a7f3d0;
+    border-radius: 14px; padding: 10px 14px; margin-bottom: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .hiking-bar span { font-size: 10px; color: #065f46; font-weight: 700; }
+  .hiking-bar button {
+    padding: 5px 12px; background: #10b981; color: #fff;
+    border-radius: 8px; border: none; font-size: 10px; font-weight: 800; cursor: pointer;
+  }
+
+  /* ── 匹配输入卡 ── */
+  .match-card {
+    background: #fff; border-radius: 20px; overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,.04); margin-bottom: 12px;
+  }
+  .match-card-header {
+    padding: 14px 16px 10px;
+    border-left: 3px solid #10b981; margin-left:0;
+  }
+  .match-card-title { font-size: 14px; font-weight: 900; color: #1e293b; }
+  .match-card-sub { font-size: 10px; color: #9ca3af; margin-top: 2px; }
+
+  /* 我的意图 tags */
+  .intents-row {
+    display: flex; gap: 6px; padding: 4px 16px 12px; flex-wrap: wrap;
+  }
+  .intent-tag {
+    padding: 4px 12px; border-radius: 20px; border: 1px solid #d1fae5;
+    background: #f0fdf4; color: #059669; font-size: 10px; font-weight: 700;
+    cursor: pointer; display: flex; align-items: center; gap: 4px;
+  }
+  .intent-tag:hover { background: #d1fae5; }
+
+  /* 快捷建议 */
+  .quick-suggest {
+    display: flex; gap: 6px; padding: 0 16px 12px; flex-wrap: wrap;
+  }
+  .quick-pill {
+    padding: 4px 12px; border-radius: 20px; border: none;
+    background: #f3f4f6; color: #6b7280;
+    font-size: 10px; font-weight: 700; cursor: pointer;
+  }
+  .quick-pill:hover { background: #ecfdf5; color: #059669; }
+
+  /* 输入框 */
+  .match-input-row {
+    display: flex; gap: 8px; padding: 0 14px 14px; align-items: center;
+  }
+  .match-input {
+    flex:1; padding: 10px 16px; border-radius: 24px; border: 1px solid #e5e7eb;
+    font-size: 13px; outline: none; background: #f9fafb; color: #374151;
+  }
+  .match-input::placeholder { color: #d1d5db; }
+  .mode-btn {
+    width: 36px; height: 36px; border-radius: 12px; border: none;
+    display: flex; align-items: center; justify-content: center; cursor: pointer;
+    font-size: 16px;
+  }
+  .mode-btn.rank { background: #f3f4f6; color: #9ca3af; }
+  .mode-btn.room { background: #3b82f6; color: #fff; }
+  .send-btn {
+    width: 40px; height: 40px; border-radius: 20px; border: none;
+    background: #10b981; color: #fff; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  /* 匹配结果 */
+  .result-card {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 12px;
+  }
+  .result-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-left: 3px solid #8b5cf6;
+    font-size: 11px; font-weight: 800; color: #374151;
+  }
+  .result-list { padding: 0 14px; }
+  .result-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 0; border-bottom: 1px solid #f3f4f6;
+  }
+  .result-item:last-child { border-bottom: none; }
+  .result-avatar {
+    width: 38px; height: 38px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .result-info { flex:1; min-width:0; }
+  .result-name { font-size: 12px; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 6px; }
+  .result-pct { font-size: 9px; background: #ecfdf5; color: #059669; padding: 1px 7px; border-radius: 8px; font-weight: 700; }
+  .result-tag {
+    font-size: 8px; padding: 1px 6px; border-radius: 6px; font-weight: 700;
+  }
+  .result-reason { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+  .invite-btn {
+    padding: 6px 14px; border-radius: 20px; border: none;
+    background: #10b981; color: #fff; font-size: 10px; font-weight: 800; cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* 我的队伍 section */
+  .team-section {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 12px;
+  }
+  .team-section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; border-left: 3px solid #10b981;
+    font-size: 11px; font-weight: 800; color: #374151;
+  }
+  .team-scroll { display: flex; gap: 8px; padding: 4px 14px 14px; overflow-x: auto; }
+  .team-card {
+    flex-shrink: 0; width: 100px; border-radius: 14px; overflow: hidden;
+    background: linear-gradient(135deg, #a7f3d0, #6ee7b7);
+    position: relative; cursor: pointer;
+  }
+  .team-card-img { height: 60px; background: rgba(0,0,0,.05); }
+  .team-card-label {
+    position: absolute; bottom: 0; left:0;right:0;
+    padding: 6px 8px; background: linear-gradient(transparent, rgba(0,0,0,.3));
+    color: #fff; font-size: 10px; font-weight: 800;
+  }
+  .team-card-badge {
+    position: absolute; top: 6px; left: 6px;
+    padding: 2px 6px; border-radius: 6px; background: rgba(255,255,255,.25);
+    font-size: 8px; font-weight: 800; color: #fff;
+  }
+  .team-card-members {
+    position: absolute; bottom: 6px; right: 6px;
+    padding: 2px 6px; border-radius: 6px; background: rgba(0,0,0,.3);
+    font-size: 8px; font-weight: 800; color: #fff;
+  }
+
+  /* 广场 section */
+  .square-section {
+    background: #fff; border-radius: 16px; overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,.04); margin-bottom: 12px;
+  }
+  .square-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 14px; font-size: 11px; font-weight: 800;
+  }
+  .square-header.blue { border-left: 3px solid #60a5fa; color: #374151; }
+  .square-header.amber { border-left: 3px solid #f59e0b; color: #374151; }
+  .square-header.green { border-left: 3px solid #34d399; color: #374151; }
+  .square-more { font-size: 9px; color: #9ca3af; text-decoration: none; }
+  .square-scroll { display: flex; gap: 8px; padding: 2px 14px 14px; overflow-x: auto; }
+
+  .empty-state { padding: 20px 0; text-align: center; }
+  .empty-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #f3f4f6;
+    margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #d1d5db;
+  }
+  .empty-text { font-size: 10px; color: #9ca3af; }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 完整主页 mockup ═══════════ -->
+<div class="phone">
+  <div class="phone-header">🏠 TrailMate 主页</div>
+  <div class="scroll-area">
+    <!-- 头卡 -->
+    <div class="hero">
+      <div class="hero-top">
+        <div class="hero-brand">
+          <div class="hero-badge">🏔</div>TrailMate
+        </div>
+        <div style="display:flex;gap:8px;">
+          <div style="width:32px;height:32px;border-radius:10px;background:rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">🔔</div>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat"><div class="hero-stat-val">3</div><div class="hero-stat-label">我的队伍</div></div>
+        <div class="hero-stat"><div class="hero-stat-val">12</div><div class="hero-stat-label">匹配队友</div></div>
+        <div class="hero-stat"><div class="hero-stat-val">5</div><div class="hero-stat-label">广场队伍</div></div>
+      </div>
+    </div>
+
+    <!-- 征途中 -->
+    <div class="hiking-bar">
+      <span>🏔 你正在「梧桐山小分队」征途中</span>
+      <button>回到队伍 →</button>
+    </div>
+
+    <!-- 匹配输入卡 -->
+    <div class="match-card">
+      <div class="match-card-header" style="border-left:none;padding-left:16px;">
+        <div class="match-card-title">一句话<span style="color:#059669;">匹配队友</span></div>
+        <div class="match-card-sub">告诉我想去哪里、想找什么样的人</div>
+      </div>
+
+      <!-- 我的意图 -->
+      <div class="intents-row">
+        <span style="font-size:9px;color:#d1d5db;font-weight:700;margin-right:4px;">我的意图</span>
+        <span class="intent-tag">周末梧桐山日归 ▸</span>
+        <span class="intent-tag">深圳湾晨跑 ▸</span>
+        <span class="intent-tag">银湖山探索 ▸</span>
+      </div>
+
+      <!-- 快捷建议 -->
+      <div class="quick-suggest">
+        <button class="quick-pill">周末梧桐山日归</button>
+        <button class="quick-pill">不喜欢抽烟</button>
+        <button class="quick-pill">轻松</button>
+        <button class="quick-pill">3天长线挑战</button>
+      </div>
+
+      <!-- 输入框 -->
+      <div class="match-input-row">
+        <button class="mode-btn rank">⚔</button>
+        <input class="match-input" placeholder="排位匹配：说一句话找队友..." />
+        <button class="send-btn">✨</button>
+      </div>
+    </div>
+
+    <!-- 匹配结果 -->
+    <div class="result-card">
+      <div class="result-header" style="border-left-color:#8b5cf6;">
+        <span style="display:flex;align-items:center;gap:6px;">✨ 匹配队友</span>
+        <span style="font-size:9px;color:#8b5cf6;background:#f5f3ff;padding:2px 8px;border-radius:8px;">5人</span>
+      </div>
+      <div class="result-list">
+        <div class="result-item">
+          <div class="result-avatar" style="background:#f59e0b;">张</div>
+          <div class="result-info">
+            <div class="result-name">张山峰 <span class="result-pct">95%</span> <span class="result-tag" style="background:#ede9fe;color:#7c3aed;">🦅 领航者</span></div>
+            <div class="result-reason">你们偏好相同的徒步路线，曾去过黄山</div>
+          </div>
+          <button class="invite-btn">邀请组队</button>
+        </div>
+        <div class="result-item">
+          <div class="result-avatar" style="background:#7c3aed;">李</div>
+          <div class="result-info">
+            <div class="result-name">李小溪 <span class="result-pct">89%</span> <span class="result-tag" style="background:#d1fae5;color:#065f46;">🐢 享受者</span></div>
+            <div class="result-reason">对"深圳梧桐山"有相同兴趣，时间同步</div>
+          </div>
+          <button class="invite-btn">邀请组队</button>
+        </div>
+        <div class="result-item">
+          <div class="result-avatar" style="background:#2563eb;">王</div>
+          <div class="result-info">
+            <div class="result-name">王大力 <span class="result-pct">74%</span> <span class="result-tag" style="background:#fef3c7;color:#b45309;">🐺 挑战者</span></div>
+            <div class="result-reason">经验等级相当，配速相近</div>
+          </div>
+          <button class="invite-btn">邀请组队</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我的队伍 -->
+    <div class="team-section">
+      <div class="team-section-header">
+        <span style="display:flex;align-items:center;gap:6px;">👥 我的队伍</span>
+        <span style="font-size:9px;color:#9ca3af;">查看全部 ▸</span>
+      </div>
+      <div class="team-scroll">
+        <div class="team-card" style="background:linear-gradient(135deg,#10b981,#059669);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">梧桐山小分队</div>
+          <div class="team-card-badge">🏔 征途</div>
+          <div class="team-card-members">👥4/6</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#a7f3d0,#6ee7b7);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">深圳湾晨跑</div>
+          <div class="team-card-badge">⏳ 等待</div>
+          <div class="team-card-members">👥2/4</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">塘朗山徒步</div>
+          <div class="team-card-badge">🏁 凯旋</div>
+          <div class="team-card-members">👥6/6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 广场：完成分享 -->
+    <div class="square-section">
+      <div class="square-header green">
+        <span style="display:flex;align-items:center;gap:6px;">🏔 完成分享</span>
+        <span class="square-more">更多 ▸</span>
+      </div>
+      <div class="square-scroll">
+        <div class="team-card" style="background:linear-gradient(135deg,#d1fae5,#6ee7b7);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">银湖山凯旋</div>
+          <div class="team-card-badge">🏁 完成</div>
+          <div class="team-card-members">👥5/6</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#a7f3d0,#34d399);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">东西涌穿越</div>
+          <div class="team-card-badge">🏁 完成</div>
+          <div class="team-card-members">👥8/10</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#6ee7b7,#34d399);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">塘朗山日归</div>
+          <div class="team-card-badge">🏁 完成</div>
+          <div class="team-card-members">👥3/6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 广场：最新 -->
+    <div class="square-section">
+      <div class="square-header blue">
+        <span style="display:flex;align-items:center;gap:6px;">🕐 最新</span>
+        <span class="square-more">更多 ▸</span>
+      </div>
+      <div class="square-scroll">
+        <div class="team-card" style="background:linear-gradient(135deg,#bfdbfe,#93c5fd);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">阳台山观鸟</div>
+          <div class="team-card-members">👥2/8</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#93c5fd,#60a5fa);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">梅林水库环线</div>
+          <div class="team-card-members">👥1/4</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#dbeafe,#93c5fd);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">马峦山探路</div>
+          <div class="team-card-members">👥3/6</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 广场：最热 -->
+    <div class="square-section">
+      <div class="square-header amber">
+        <span style="display:flex;align-items:center;gap:6px;">🔥 最热</span>
+        <span class="square-more">更多 ▸</span>
+      </div>
+      <div class="square-scroll">
+        <div class="team-card" style="background:linear-gradient(135deg,#fde68a,#fbbf24);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">梧桐山挑战</div>
+          <div class="team-card-badge">🔥 热</div>
+          <div class="team-card-members">👥10/12</div>
+        </div>
+        <div class="team-card" style="background:linear-gradient(135deg,#fef3c7,#fde68a);">
+          <div class="team-card-img"></div>
+          <div class="team-card-label">羊台山速攀</div>
+          <div class="team-card-badge">🔥 热</div>
+          <div class="team-card-members">👥7/8</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

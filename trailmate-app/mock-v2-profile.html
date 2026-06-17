@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate V2 — Profile</title>
+<style>
+  :root {
+    --bg-page: #faf7f2; --bg-card: #ffffff;
+    --text-primary: #1e293b; --text-secondary: #64748b; --text-tertiary: #94a3b8;
+    --border: #e2e8f0;
+    --brand-500: #10b981; --brand-600: #059669; --brand-700: #047857;
+    --brand-bg: #d1fae5;
+    --success: #10b981; --warning: #f59e0b; --danger: #ef4444; --info: #3b82f6;
+    --success-bg: #d1fae5; --warning-bg: #fef3c7; --danger-bg: #fee2e2; --info-bg: #dbeafe;
+    --purple: #8b5cf6; --purple-bg: #ede9fe;
+    --radius: 16px; --radius-sm: 12px; --radius-xs: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    --font: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family: var(--font); background: #e8e5df; display:flex; justify-content:center; align-items:flex-start; min-height:100vh; padding:20px 0; }
+
+  .phone {
+    width: 390px; min-height: 844px; background: var(--bg-page);
+    border-radius: 32px; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,.15), 0 0 0 2px #1e293b;
+    position: relative;
+  }
+
+  /* Profile Header */
+  .profile-hero {
+    background: linear-gradient(160deg, #059669 0%, #047857 50%, #064e3b 100%);
+    padding: 32px 20px 20px; color: white; position: relative; overflow: hidden;
+  }
+  .profile-hero::after {
+    content: ''; position: absolute; top: -60px; right: -40px;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,.04);
+  }
+  .profile-hero * { position: relative; z-index: 1; }
+
+  .settings-btn {
+    position: absolute; top: 14px; right: 16px;
+    width: 36px; height: 36px; border-radius: 10px;
+    background: rgba(255,255,255,.15); border: none; color: white;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 2;
+  }
+
+  .user-main {
+    display: flex; align-items: center; gap: 14px; margin-bottom: 20px;
+  }
+  .user-avatar-large {
+    width: 72px; height: 72px; border-radius: 22px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 800; color: white; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.2), rgba(255,255,255,.1));
+    border: 2px solid rgba(255,255,255,.3);
+  }
+  .user-info { flex: 1; }
+  .user-name { font-size: 22px; font-weight: 800; margin-bottom: 2px; }
+  .user-title { font-size: 13px; opacity: .8; margin-bottom: 6px; }
+  .user-bio { font-size: 12px; opacity: .7; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* Stats bar */
+  .stats-bar {
+    display: flex; gap: 12px;
+  }
+  .stat-card {
+    flex: 1; background: rgba(255,255,255,.12); backdrop-filter: blur(10px);
+    border-radius: var(--radius-sm); padding: 10px 12px; text-align: center;
+  }
+  .stat-value { font-size: 20px; font-weight: 800; }
+  .stat-label { font-size: 11px; opacity: .7; margin-top: 2px; }
+
+  /* Content area (negative margin to overlap hero) */
+  .content-area { padding: 0 16px 24px; margin-top: 0; }
+
+  /* Section card */
+  .section-card {
+    background: white; border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 16px; margin-bottom: 12px;
+  }
+  .section-card h3 {
+    font-size: 15px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+
+  /* Rank card */
+  .rank-display {
+    display: flex; align-items: center; gap: 14px;
+    padding: 12px; background: var(--warning-bg); border-radius: var(--radius-sm);
+  }
+  .rank-badge {
+    width: 52px; height: 52px; border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; flex-shrink: 0;
+    background: linear-gradient(135deg, #f59e0b, #fbbf24);
+  }
+  .rank-info { flex: 1; }
+  .rank-name { font-size: 15px; font-weight: 700; }
+  .rank-progress-label { font-size: 11px; color: #92400e; margin-bottom: 4px; }
+  .rank-bar {
+    height: 6px; background: rgba(245,158,11,.2); border-radius: 3px;
+    overflow: hidden; margin-top: 4px;
+  }
+  .rank-bar-fill { height: 100%; background: var(--warning); border-radius: 3px; }
+
+  /* Badges grid */
+  .badges-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  }
+  .badge-card {
+    text-align: center; padding: 10px 6px; border-radius: var(--radius-xs);
+    background: #f8fafc; border: 1px solid var(--border);
+  }
+  .badge-icon {
+    width: 40px; height: 40px; border-radius: 12px; margin: 0 auto 6px;
+    display: flex; align-items: center; justify-content: center; font-size: 20px;
+  }
+  .badge-name { font-size: 11px; font-weight: 600; }
+  .badge-date { font-size: 10px; color: var(--text-tertiary); margin-top: 2px; }
+
+  /* Hike log mini */
+  .log-item {
+    display: flex; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f8fafc;
+    align-items: center;
+  }
+  .log-item:last-child { border-bottom: none; }
+  .log-cover {
+    width: 56px; height: 56px; border-radius: var(--radius-xs); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+  }
+  .log-info { flex: 1; min-width: 0; }
+  .log-route { font-size: 14px; font-weight: 600; }
+  .log-date { font-size: 11px; color: var(--text-secondary); }
+  .log-stats { display: flex; gap: 12px; font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+  .log-badge-right { flex-shrink: 0; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: 20px; font-size: 10px; font-weight: 600;
+  }
+  .badge-success { background: var(--success-bg); color: var(--brand-700); }
+  .badge-warning { background: var(--warning-bg); color: #92400e; }
+
+  /* Menu items */
+  .menu-item {
+    display: flex; align-items: center; gap: 10px; padding: 14px 0;
+    border-bottom: 1px solid #f8fafc; font-size: 14px; cursor: pointer;
+  }
+  .menu-item:last-child { border-bottom: none; }
+  .menu-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .menu-label { flex: 1; }
+  .menu-arrow { color: var(--text-tertiary); }
+
+  /* Bottom tab */
+  .bottom-tab {
+    display: flex; border-top: 1px solid var(--border);
+    background: rgba(255,255,255,.9); backdrop-filter: blur(20px);
+    padding: 8px 16px 28px;
+  }
+  .tab-item {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    gap: 4px; font-size: 10px; color: var(--text-tertiary); cursor: pointer;
+    padding: 6px 0; border: none; background: none; font-family: var(--font);
+  }
+  .tab-item.active { color: var(--brand-600); }
+  .tab-item svg { width: 24px; height: 24px; }
+  .tab-item.active svg { stroke: var(--brand-600); }
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <!-- Profile Hero -->
+  <div class="profile-hero">
+    <button class="settings-btn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+
+    <div class="user-main">
+      <div class="user-avatar-large">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <div class="user-info">
+        <div class="user-name">张三</div>
+        <div class="user-title">🏔️ 山径探索者</div>
+        <div class="user-bio">周末徒步爱好者，喜欢探索广东周边山林。摄影+露营，欢迎约伴～</div>
+      </div>
+    </div>
+
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="stat-value">8</div>
+        <div class="stat-label">完成征途</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">126<span style="font-size:12px;opacity:.7">km</span></div>
+        <div class="stat-label">累计里程</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value">92</div>
+        <div class="stat-label">信用分</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content-area" style="margin-top:16px;">
+
+    <!-- Rank & Gamification -->
+    <div class="section-card">
+      <h3>
+        <span class="section-icon" style="background:var(--warning-bg);">🏆</span>
+        段位 & 成就
+      </h3>
+      <div class="rank-display" style="margin-bottom:12px;">
+        <div class="rank-badge">⛰️</div>
+        <div class="rank-info">
+          <div class="rank-name">山地行者 · Lv.3</div>
+          <div class="rank-progress-label">还需完成 2 次征途升级</div>
+          <div class="rank-bar">
+            <div class="rank-bar-fill" style="width:60%"></div>
+          </div>
+        </div>
+        <span style="font-size:11px;color:#92400e;font-weight:700;">60%</span>
+      </div>
+
+      <div class="badges-grid">
+        <div class="badge-card">
+          <div class="badge-icon" style="background:var(--success-bg);">🌄</div>
+          <div class="badge-name">白云山征服者</div>
+          <div class="badge-date">2026.04</div>
+        </div>
+        <div class="badge-card">
+          <div class="badge-icon" style="background:var(--info-bg);">📸</div>
+          <div class="badge-name">风光摄影师</div>
+          <div class="badge-date">2026.03</div>
+        </div>
+        <div class="badge-card">
+          <div class="badge-icon" style="background:var(--purple-bg);">🤝</div>
+          <div class="badge-name">最佳队友</div>
+          <div class="badge-date">2026.05</div>
+        </div>
+        <div class="badge-card">
+          <div class="badge-icon" style="background:var(--danger-bg);">⚡</div>
+          <div class="badge-name">征途先锋</div>
+          <div class="badge-date">2026.01</div>
+        </div>
+        <div class="badge-card">
+          <div class="badge-icon" style="background:var(--warning-bg);">🏕️</div>
+          <div class="badge-name">露营达人</div>
+          <div class="badge-date">2026.02</div>
+        </div>
+        <div class="badge-card" style="border:2px dashed var(--border);">
+          <div class="badge-icon" style="background:#f1f5f9;color:var(--text-tertiary);font-size:16px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </div>
+          <div class="badge-name" style="color:var(--text-tertiary);">待解锁</div>
+          <div class="badge-date"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Hikes -->
+    <div class="section-card">
+      <h3>
+        <span class="section-icon" style="background:var(--brand-bg);">🥾</span>
+        最近征途
+        <span style="margin-left:auto;font-size:12px;color:var(--brand-600);font-weight:600;cursor:pointer;">查看全部</span>
+      </h3>
+      <div class="log-item">
+        <div class="log-cover" style="background:linear-gradient(135deg,#059669,#10b981);">⛰️</div>
+        <div class="log-info">
+          <div class="log-route">白云山穿越线</div>
+          <div class="log-date">6月14日 · 与李四、王五同行</div>
+          <div class="log-stats">
+            <span>15.2km</span><span>4h32m</span><span>380m↑</span>
+          </div>
+        </div>
+        <span class="badge badge-success">已完成</span>
+      </div>
+      <div class="log-item">
+        <div class="log-cover" style="background:linear-gradient(135deg,#7c3aed,#8b5cf6);">🌲</div>
+        <div class="log-info">
+          <div class="log-route">火炉山夜爬</div>
+          <div class="log-date">6月7日 · 独自挑战</div>
+          <div class="log-stats">
+            <span>5.8km</span><span>1h50m</span><span>200m↑</span>
+          </div>
+        </div>
+        <span class="badge badge-success">已完成</span>
+      </div>
+      <div class="log-item">
+        <div class="log-cover" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);">🏔️</div>
+        <div class="log-info">
+          <div class="log-route">丹霞山穿越</div>
+          <div class="log-date">5月24日 · 与赵六同行</div>
+          <div class="log-stats">
+            <span>22.1km</span><span>7h15m</span><span>680m↑</span>
+          </div>
+        </div>
+        <span class="badge badge-success">已完成</span>
+      </div>
+    </div>
+
+    <!-- Settings Menu -->
+    <div class="section-card">
+      <h3>
+        <span class="section-icon" style="background:var(--bg-card);border:1px solid var(--border);">⚙</span>
+        设置
+      </h3>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--info-bg);">📋</div>
+        <span class="menu-label">徒步日志</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--success-bg);">👥</div>
+        <span class="menu-label">紧急联系人</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--purple-bg);">🧠</div>
+        <span class="menu-label">路途人格测试</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:var(--warning-bg);">🔔</div>
+        <span class="menu-label">通知设置</span>
+        <span class="menu-arrow">›</span>
+      </div>
+      <div class="menu-item">
+        <div class="menu-icon" style="background:#f1f5f9;">🌙</div>
+        <span class="menu-label">暗色模式</span>
+        <div style="width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;">
+          <div style="width:20px;height:20px;border-radius:50%;background:white;position:absolute;top:2px;left:2px;box-shadow:0 1px 3px rgba(0,0,0,.2);"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Tab -->
+  <div class="bottom-tab">
+    <button class="tab-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      首页
+    </button>
+    <button class="tab-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"/></svg>
+      探索
+    </button>
+    <button class="tab-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      队伍
+    </button>
+    <button class="tab-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      我的
+    </button>
+  </div>
+
+</div>
+</body>
+</html>

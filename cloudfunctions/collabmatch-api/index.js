@@ -834,9 +834,8 @@ function extractDifferencePoints(messages) {
   return diffs.filter(d => { const k = d.topic + d.userPreference; if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
-// ─── 匹配算法（Tag Intersection + 查询扩展） ─────────────────};
+// ─── 匹配算法（Tag Intersection + 查询扩展） ─────────────────
 
-function locationMatch(loc1, loc2, city1, city2) {
 //   当前: prompts.includes() 精确字符串匹配 + 查询扩展（方案 A）
 //   未来: 将 prompts 组合转为 768 维 embedding 向量，匹配时用 cosine 相似度
 //   步骤: ① 调 embedding API 为每个用户生成向量 → ② 存入 users 表
@@ -866,7 +865,7 @@ async function matchUsersSimple(userId, essentials, prompts, db) {
     if (!essentials.location && !essentials.date) eScore += 15;
     score += eScore * 0.30;
     // 出行频率匹配
-    const uFreq = u.hikeFrequency || '';
+    const uFreq = calcHikeFrequency(u.hikeCount || 0, u.createdAt || Date.now());
     const qFreq = essentials.hikeFrequency || '';
     let freqScore = 0;
     if (uFreq && qFreq) {
@@ -883,9 +882,19 @@ async function matchUsersSimple(userId, essentials, prompts, db) {
     // 档案匹配
     const profileScore = 20;
     score += profileScore * 0.10;
+    // 人格互补加分
+    const myPersonality = u.personality || '';
+    const personalityBonus = getPersonalityBonus(essentials.personality || '', myPersonality);
+    score += personalityBonus * 0.15;
+    // 队伍段位相似加分（段位相近的队伍优先匹配）
+    const myTeamScore = essentials.teamRankScore || 0;
+    const theirTeamScore = u.teamRankScore || 0;
+    const rankDiff = Math.abs(myTeamScore - theirTeamScore);
+    const rankBonus = Math.max(0, 20 - rankDiff * 0.05);
+    score += rankBonus * 0.05;
     const matchPct = Math.min(Math.round(score), 99);
     return {
-      user: { id: String(u._id), name: u.name || '', avatar: u.avatar || '', avatarColor: u.avatarColor || '', avatarUrl: u.avatarUrl || '' },
+      user: { id: String(u._id), name: u.name || '', avatar: u.avatar || '', avatarColor: u.avatarColor || '', avatarUrl: u.avatarUrl || '', personality: u.personality || '' },
       matchPct,
       breakdown: { essentials: Math.round(eScore), prompts: Math.round(promptScore * 100), profile: profileScore },
       reason: promptMatch.length ? `匹配提示词: ${promptMatch.join(', ')}` : '基本匹配'
@@ -1002,15 +1011,21 @@ P('/api/intents', async (p, b, q) => {
   const rawInput = b.rawInput || '';
   if (!rawInput) return err('缺少 rawInput');
   const { essentials, prompts, essentialsComplete } = extractFromInput(rawInput);
+  // 检查缺失字段
+  const missingFields = [];
+  if (!essentials.location) missingFields.push('location');
+  if (!essentials.date) missingFields.push('date');
+  if (!essentials.groupSize) missingFields.push('groupSize');
   // 获取用户信息
   const userDoc = await db.collection('users').doc(u.userId).get();
   const user = userDoc.data[0] || {};
-  essentials.hikeFrequency = user.hikeFrequency || '';
+  essentials.hikeFrequency = calcHikeFrequency(user.hikeCount || 0, user.createdAt || Date.now());
   const intentData = {
     rawInput,
     essentials,
     prompts,
     essentialsComplete,
+    missingFields,
     status: 'matching',
     author: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
     matchedUsers: [],
@@ -1044,7 +1059,7 @@ P('/api/intents', async (p, b, q) => {
     await safeAdd('matchnotices', {
       intentId: r.id,
       fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-      toUserId: mu.id,
+      toUserId: mu.user.id,
       rawInput,
       essentials,
       prompts,
@@ -1192,7 +1207,7 @@ P('/api/intents/:id/dissolve', async (p, b, q) => {
       intentId: nr.id,
       fromUserId: u.userId,
       fromUserName: user.name || '',
-      toUserId: mu.id,
+      toUserId: mu.user.id,
       status: 'pending',
       essentials: newIntentData.essentials,
       prompts: newPrompts,
@@ -1306,7 +1321,7 @@ P('/api/intents/:id/iterate', async (p, b, q) => {
     await safeAdd('matchnotices', {
       intentId: p.id,
       fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-      toUserId: mu.id,
+      toUserId: mu.user.id,
       rawInput: intent.rawInput,
       essentials: intent.essentials,
       prompts: newPrompts,
@@ -1320,17 +1335,99 @@ P('/api/intents/:id/iterate', async (p, b, q) => {
   return { intent: addId(updated.data[0]) };
 });
 
+// POST /api/intents/:id/update — 修改意图（更新essentials/prompts并重新匹配）
+P('/api/intents/:id/update', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const intentDoc = await db.collection('intents').doc(p.id).get();
+  if (!intentDoc.data.length) return err('意图不存在', 404);
+  const intent = intentDoc.data[0];
+  if (intent.author.id !== u.userId) return err('无权操作', 403);
+
+  // 合并更新
+  const newEssentials = { ...(intent.essentials || {}), ...(b.essentials || {}) };
+  const newPrompts = b.prompts || intent.prompts || [];
+  const missingFields = [];
+  if (!newEssentials.location) missingFields.push('location');
+  if (!newEssentials.date) missingFields.push('date');
+  if (!newEssentials.groupSize) missingFields.push('groupSize');
+  const essentialsComplete = !!(newEssentials.location && newEssentials.date);
+
+  // 重新匹配
+  const matchedUsers = await matchUsersSimple(u.userId, newEssentials, newPrompts, db);
+  await db.collection('intents').doc(p.id).update({
+    essentials: newEssentials,
+    prompts: newPrompts,
+    essentialsComplete,
+    missingFields,
+    matchedUsers,
+    status: 'matching',
+    updatedAt: Date.now(),
+  });
+
+  // 同步更新关联的队伍
+  if (intent.groupId) {
+    await db.collection('groups').doc(intent.groupId).update({
+      essentials: newEssentials,
+      prompts: newPrompts,
+      name: `${intent.author?.name || '我'}的${newEssentials.location || '徒步'}队`,
+      updatedAt: Date.now(),
+    });
+  }
+
+  // 给新匹配到的用户发通知
+  const userDoc = await db.collection('users').doc(u.userId).get();
+  const user = userDoc.data[0] || {};
+  for (const mu of matchedUsers) {
+    await safeAdd('matchnotices', {
+      intentId: p.id,
+      fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
+      toUserId: mu.user.id,
+      rawInput: intent.rawInput,
+      essentials: newEssentials,
+      prompts: newPrompts,
+      matchPct: mu.matchPct,
+      reason: mu.reason,
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+  }
+
+  const updated = await db.collection('intents').doc(p.id).get();
+  return { intent: addId(updated.data[0]) };
+});
+
 // POST /api/groups/:id/leave — 退出队伍
 P('/api/groups/:id/leave', async (p, b, q) => {
   const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
   const found = await findGroup(p.id); if (!found) return err('队伍不存在', 404);
   const group = found.doc;
-  const members = (group.members || []).filter(m => (m.id || m) !== u.userId);
+  const uid = String(u.userId);
+  const members = (group.members || []).filter(m => String(m.id || m) !== uid);
+  // 如果退出者是队长且队伍还有其他成员，自动移交给第一个成员
+  const isLeader = (group.members || []).some(m => String(m.id || m) === uid && m.role === 'leader')
+    || String(group.creatorId || group.createdBy || '') === uid;
+  if (isLeader && members.length > 0) {
+    const newLeader = members[0];
+    if (typeof newLeader === 'object') {
+      newLeader.role = 'leader';
+    }
+  }
   const ud = await db.collection('users').doc(u.userId).get();
   const userName = (ud.data[0] || {}).name || '';
   const msgs = group.messages || [];
-  msgs.push({ userId: 'system', userName: '系统', content: userName + ' 退出了队伍', createdAt: Date.now() });
-  await db.collection('groups').doc(found.docId).update({ members, messages: msgs, updatedAt: Date.now() });
+  msgs.push({ userId: 'system', userName: '系统', type: 'system', content: userName + ' 退出了队伍', createdAt: Date.now() });
+  // 清除 creatorId 如果退出者是创建者且队伍已空
+  const updateData = { members, messages: msgs, updatedAt: Date.now() };
+  if (isLeader && members.length > 0) {
+    const newLeaderId = typeof members[0] === 'object' ? members[0].id : members[0];
+    updateData.creatorId = newLeaderId;
+    updateData.createdBy = newLeaderId;
+  }
+  if (String(group.creatorId || group.createdBy || '') === uid && members.length === 0) {
+    updateData.creatorId = '';
+    updateData.createdBy = '';
+  }
+  await db.collection('groups').doc(found.docId).update(updateData);
   return { ok: true };
 });
 
@@ -1368,7 +1465,7 @@ P('/api/groups/apply-merge', async (p, b, q) => {
     fromUserName: fromLeaderName, fromUserId: u.userId, createdAt: Date.now(),
   });
   const msgs = toGroup.messages || [];
-  msgs.push({ userId: 'system', userName: '系统',
+  msgs.push({ userId: 'system', userName: '系统', type: 'system',
     content: `${fromLeaderName} 申请将「${fromGroup.name}」合并到本队伍，等待队长确认`, createdAt: Date.now() });
   await db.collection('groups').doc(toFound.docId).update({ messages: msgs, updatedAt: Date.now() });
   return { ok: true, message: '合并申请已发送' };
@@ -1394,11 +1491,11 @@ U('/api/groups/merge-requests/:noticeId/accept', async (p, b, q) => {
   for (const m of fromMembers) { const mid = String(m.id || m); if (!existingIds.has(mid)) { newMembers.push(m); existingIds.add(mid); } }
   const mergedPrompts = [...new Set([...(toGroup.prompts || []), ...(fromGroup.prompts || [])])];
   const mergedMessages = [...(toGroup.messages || [])];
-  mergedMessages.push({ userId: 'system', userName: '系统', content: `队伍「${fromGroup.name}」已合并到本队伍`, createdAt: Date.now() });
+  mergedMessages.push({ userId: 'system', userName: '系统', type: 'system', content: `队伍「${fromGroup.name}」已合并到本队伍`, createdAt: Date.now() });
   await db.collection('groups').doc(toFound.docId).update({ members: newMembers, prompts: mergedPrompts, messages: mergedMessages, updatedAt: Date.now() });
   await db.collection('groups').doc(fromFound.docId).update({
     matchingEnabled: false,
-    messages: [...(fromGroup.messages || []), { userId: 'system', userName: '系统', content: `队伍已合并到「${toGroup.name}」，匹配已停止`, createdAt: Date.now() }],
+    messages: [...(fromGroup.messages || []), { userId: 'system', userName: '系统', type: 'system', content: `队伍已合并到「${toGroup.name}」，匹配已停止`, createdAt: Date.now() }],
     updatedAt: Date.now()
   });
   await db.collection('matchnotices').doc(p.noticeId).update({ status: 'accepted', updatedAt: Date.now() });
@@ -1436,7 +1533,7 @@ P('/api/groups/:id/apply-join', async (p, b, q) => {
     groupId: p.id, applicantUserId: u.userId, applicantName, createdAt: Date.now(),
   });
   const msgs = group.messages || [];
-  msgs.push({ userId: 'system', userName: '系统', content: `${applicantName} 申请加入队伍，等待队长确认`, createdAt: Date.now() });
+  msgs.push({ userId: 'system', userName: '系统', type: 'system', content: `${applicantName} 申请加入队伍，等待队长确认`, createdAt: Date.now() });
   await db.collection('groups').doc(found.docId).update({ messages: msgs, updatedAt: Date.now() });
   return { ok: true, message: '入队申请已发送' };
 });
@@ -1467,7 +1564,7 @@ U('/api/groups/join-requests/:noticeId/accept', async (p, b, q) => {
     role: 'member', joinedAt: Date.now()
   });
   const msgs = group.messages || [];
-  msgs.push({ userId: 'system', userName: '系统', content: `${applicantName} 已加入队伍`, createdAt: Date.now() });
+  msgs.push({ userId: 'system', userName: '系统', type: 'system', content: `${applicantName} 已加入队伍`, createdAt: Date.now() });
   await db.collection('groups').doc(found.docId).update({ members, messages: msgs, updatedAt: Date.now() });
   await db.collection('matchnotices').doc(p.noticeId).update({ status: 'accepted', updatedAt: Date.now() });
   return { ok: true, groupId };
@@ -1541,7 +1638,20 @@ P('/api/groups/:id/checkin', async (p, b, q) => {
     }
   } catch(e) { console.log('auto-log checkin err:', e.message); }
 
-  return { ok: true, distance: Math.round(dist) };
+  // 更新游戏化数据（境界/排位/称号）
+  let gamification = null;
+  try {
+    const ess = group.essentials || {};
+    gamification = await updateGamificationOnCheckin(u.userId, ess.location || cp.name || '', ess.difficulty || 'casual', true, db);
+  } catch(e) { console.log('gamification checkin err:', e.message); }
+
+  // 更新队伍段位
+  let teamRankUpdate = null;
+  try {
+    teamRankUpdate = await updateTeamRank(p.id, db);
+  } catch(e) { console.log('team rank update err:', e.message); }
+
+  return { ok: true, distance: Math.round(dist), gamification, teamRank: teamRankUpdate };
 });
 
 // POST /api/groups/:id/sos — 基于 Group 的 SOS（切换：再次调用取消）
@@ -1662,7 +1772,7 @@ U('/api/intents/notices/:noticeId', async (p, b, q) => {
             const avatarUrl = (ud.data[0] || {}).avatarUrl || '';
             members.push({ id: u.userId, name: userName, avatar, avatarUrl });
             const msgs = group.messages || [];
-            msgs.push({ userId: 'system', userName: '系统', content: userName + ' 加入了队伍', createdAt: Date.now() });
+            msgs.push({ userId: 'system', userName: '系统', type: 'system', content: userName + ' 加入了队伍', createdAt: Date.now() });
             await db.collection('groups').doc(group._id).update({ members, messages: msgs, updatedAt: Date.now() });
           }
           groupId = group._id;
@@ -2235,7 +2345,7 @@ P('/api/lobby/create-room', async (p, b, q) => {
       await safeAdd('matchnotices', {
         intentId: ir.id,
         fromUser: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
-        toUserId: mu.id,
+        toUserId: mu.user.id,
         rawInput: intentData.rawInput,
         essentials,
         prompts: finalPrompts,
@@ -2256,7 +2366,7 @@ P('/api/lobby/create-room', async (p, b, q) => {
 // POST /api/lobby/quick-match — 快速匹配（自动拼队）
 P('/api/lobby/quick-match', async (p, b, q) => {
   const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
-  const { location, date, difficulty, eventType, groupSize, prompts, rawInput } = b;
+  const { location, date, difficulty, eventType, groupSize, prompts, rawInput, autoCreateTeam } = b;
   const userDoc = await db.collection('users').doc(u.userId).get();
   const user = userDoc.data[0] || {};
   const myCity = user.city || '';
@@ -2269,6 +2379,12 @@ P('/api/lobby/quick-match', async (p, b, q) => {
     essentials = { ...essentials, ...extracted.essentials };
     finalPrompts = [...new Set([...finalPrompts, ...extracted.prompts])];
   }
+
+  // 检查缺失字段
+  const missingFields = [];
+  if (!essentials.location) missingFields.push('location');
+  if (!essentials.date) missingFields.push('date');
+  if (!essentials.groupSize) missingFields.push('groupSize');
 
   // 第一步：查找匹配的已有房间
   const allGroups = await db.collection('groups').get();
@@ -2393,9 +2509,10 @@ P('/api/lobby/quick-match', async (p, b, q) => {
   scoredRooms.sort((a, b) => b.matchPct - a.matchPct);
   soloPlayers.sort((a, b) => b.matchPct - a.matchPct);
 
-  // 如果没有匹配到任何房间或散人，自动开房
+  // 自动开房逻辑：开房模式下始终开房，排位模式下仅无匹配时自动开房
   let autoRoom = null;
-  if (scoredRooms.length === 0 && soloPlayers.length === 0) {
+  const shouldCreateTeam = autoCreateTeam || (scoredRooms.length === 0 && soloPlayers.length === 0);
+  if (shouldCreateTeam) {
     const intentData = {
       rawInput: rawInput || `${location || '徒步'} ${date || ''}`,
       essentials,
@@ -2404,6 +2521,7 @@ P('/api/lobby/quick-match', async (p, b, q) => {
       status: 'matching',
       author: { id: u.userId, name: user.name || '', avatar: user.avatar || '', avatarUrl: user.avatarUrl || '' },
       matchedUsers: [],
+      missingFields,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -2431,6 +2549,7 @@ P('/api/lobby/quick-match', async (p, b, q) => {
     rooms: scoredRooms.slice(0, 10),
     soloPlayers: soloPlayers.slice(0, 5),
     autoRoom,
+    missingFields,
     totalMatches: scoredRooms.length + soloPlayers.length,
   };
 });
@@ -2499,10 +2618,608 @@ P('/api/lobby/join/:id', async (p, b, q) => {
       role: 'member', joinedAt: Date.now()
     });
     const msgs = group.messages || [];
-    msgs.push({ userId: 'system', userName: '系统', content: `${user.name || '队友'} 加入了队伍`, createdAt: Date.now() });
+    msgs.push({ userId: 'system', userName: '系统', type: 'system', content: `${user.name || '队友'} 加入了队伍`, createdAt: Date.now() });
     await db.collection('groups').doc(found.docId).update({ members, messages: msgs, updatedAt: Date.now() });
     return { ok: true, status: 'joined', groupId: p.id };
   }
+});
+
+// ═══════════════════════════════════════════════════════════
+// ─── Gamification: 境界 / 排位 / 称号 / 山志图鉴 ────────
+// ═══════════════════════════════════════════════════════════
+
+// ── 境界体系（修仙） ──
+const REALMS = [
+  { key: 'mortal',      name: '凡人',  level: 0, minDifficulty: 0 },
+  { key: 'qiRefining',  name: '练气',  level: 1, minDifficulty: 1 },  // casual
+  { key: 'foundation',  name: '筑基',  level: 2, minDifficulty: 1 },  // casual~moderate
+  { key: 'coreForming', name: '结丹',  level: 3, minDifficulty: 2 },  // moderate
+  { key: 'nascentSoul', name: '元婴',  level: 4, minDifficulty: 3 },  // advanced
+  { key: 'spiritSever', name: '化神',  level: 5, minDifficulty: 3 },  // advanced~challenge
+  { key: 'tribulation', name: '渡劫',  level: 6, minDifficulty: 4 },  // challenge
+  { key: 'mahayana',    name: '大乘',  level: 7, minDifficulty: 4 },  // challenge+
+];
+const DIFFICULTY_LEVELS = { casual: 1, moderate: 2, advanced: 3, challenge: 4 };
+
+// ── 排位体系（游戏段位） ──
+const RANKS = [
+  { key: 'bronze',   name: '黄铜', icon: '🥉', minScore: 0 },
+  { key: 'silver',   name: '白银', icon: '🥈', minScore: 100 },
+  { key: 'gold',     name: '黄金', icon: '🥇', minScore: 300 },
+  { key: 'platinum', name: '铂金', icon: '💎', minScore: 600 },
+  { key: 'diamond',  name: '钻石', icon: '💠', minScore: 1000 },
+  { key: 'master',   name: '大师', icon: '👑', minScore: 1500 },
+  { key: 'king',     name: '王者', icon: '🏆', minScore: 2500 },
+];
+
+// ── 称号定义 ──
+const TITLES = [
+  // 签到系列
+  { id: 'first_step',       name: '初入山林',   desc: '首次签到任何打卡点',       category: 'checkin',  condition: { type: 'checkin_count', min: 1 } },
+  { id: 'five_peaks',       name: '五岳行者',   desc: '签到5座不同的山',          category: 'checkin',  condition: { type: 'unique_locations', min: 5 } },
+  { id: 'ten_peaks',        name: '千峰客',     desc: '签到10座不同的山',         category: 'checkin',  condition: { type: 'unique_locations', min: 10 } },
+  { id: 'three_in_day',     name: '三山连越',   desc: '单日完成3座山签到',        category: 'checkin',  condition: { type: 'same_day_locations', min: 3 } },
+  // 地理神话系列
+  { id: 'phoenix_perch',    name: '凤栖梧桐',   desc: '签到梧桐山',               category: 'legend',   condition: { type: 'location', location: '梧桐山' } },
+  { id: 'seven_fairies',    name: '七仙遗踪',   desc: '签到七娘山',               category: 'legend',   condition: { type: 'location', location: '七娘山' } },
+  { id: 'fire_rebirth',     name: '浴火重生',   desc: '签到凤凰山',               category: 'legend',   condition: { type: 'location', location: '凤凰山' } },
+  { id: 'wave_listener',    name: '羊台听涛',   desc: '签到羊台山',               category: 'legend',   condition: { type: 'location', location: '羊台山' } },
+  { id: 'tooth_walker',     name: '齿锋行者',   desc: '签到排牙山',               category: 'legend',   condition: { type: 'location', location: '排牙山' } },
+  { id: 'cloud_rider',      name: '云中行者',   desc: '签到白云山',               category: 'legend',   condition: { type: 'location', location: '白云山' } },
+  { id: 'lotus_peak',       name: '莲峰问道',   desc: '签到莲花山',               category: 'legend',   condition: { type: 'location', location: '莲花山' } },
+  { id: 'tanglang_path',    name: '塘朗问道',   desc: '签到塘朗山',               category: 'legend',   condition: { type: 'location', location: '塘朗山' } },
+  { id: 'maluan_waterfall', name: '马峦听瀑',   desc: '签到马峦山',               category: 'legend',   condition: { type: 'location', location: '马峦山' } },
+  // 社交系列
+  { id: 'popular_leader',   name: '人气领队',   desc: '组队被3人以上加入',        category: 'social',   condition: { type: 'team_members', min: 3 } },
+  { id: 'trail_guide',      name: '指路明灯',   desc: '攻略被点赞50次',           category: 'social',   condition: { type: 'likes_received', min: 50 } },
+  { id: 'mountain_poet',    name: '山野诗人',   desc: '打卡配文获赞30次',         category: 'social',   condition: { type: 'post_likes', min: 30 } },
+  { id: 'warm_heart',       name: '古道热肠',   desc: '帮助3位新人完成首次徒步',  category: 'social',   condition: { type: 'help_newbies', min: 3 } },
+  // 境界系列
+  { id: 'qi_awakening',     name: '气感初生',   desc: '突破至练气境',             category: 'realm',    condition: { type: 'realm_level', min: 1 } },
+  { id: 'foundation_set',   name: '道基初成',   desc: '突破至筑基境',             category: 'realm',    condition: { type: 'realm_level', min: 2 } },
+  { id: 'core_achieved',    name: '金丹大道',   desc: '突破至结丹境',             category: 'realm',    condition: { type: 'realm_level', min: 3 } },
+  { id: 'soul_born',        name: '元神出窍',   desc: '突破至元婴境',             category: 'realm',    condition: { type: 'realm_level', min: 4 } },
+];
+
+// ── 山志图鉴 ──
+const MOUNTAIN_CODEX = [
+  { id: 'wutong',     name: '梧桐山',   elevation: 943,  difficulty: 'moderate', city: '深圳',
+    legend: '梧桐山因梧桐引凤的传说得名。相传古时山上梧桐树成林，引来百鸟之王凤凰栖息，故有"凤栖梧桐"之美誉。',
+    seasons: { spring: '杜鹃花海', summer: '云海日出', autumn: '秋高气爽', winter: '冬日暖阳' } },
+  { id: 'qiniang',    name: '七娘山',   elevation: 869,  difficulty: 'moderate', city: '深圳',
+    legend: '七娘山因七仙女下凡的传说得名。相传七位仙女曾在此沐浴嬉戏，留下七座连绵的山峰。',
+    seasons: { spring: '山花烂漫', summer: '海风习习', autumn: '天高云淡', winter: '远眺海景' } },
+  { id: 'paiya',      name: '排牙山',   elevation: 707,  difficulty: 'advanced', city: '深圳',
+    legend: '排牙山因其山峰排列如牙齿而得名，是深圳最险峻的山峰之一，有"深圳小华山"之称。',
+    seasons: { spring: '野花遍野', summer: '丛林密布', autumn: '层林尽染', winter: '寒风猎猎' } },
+  { id: 'fenghuang',  name: '凤凰山',   elevation: 376,  difficulty: 'casual',   city: '深圳',
+    legend: '凤凰山因凤凰栖息的传说得名，山上有凤岩古庙，是深圳著名的祈福圣地。',
+    seasons: { spring: '庙会祈福', summer: '林荫避暑', autumn: '登高望远', winter: '暖阳古寺' } },
+  { id: 'tanglang',   name: '塘朗山',   elevation: 430,  difficulty: 'casual',   city: '深圳',
+    legend: '塘朗山是深圳城市绿肺，山间有百年古道，是都市人修心养性的好去处。',
+    seasons: { spring: '百花争艳', summer: '绿荫如盖', autumn: '落叶缤纷', winter: '晨雾缭绕' } },
+  { id: 'yangtai',    name: '羊台山',   elevation: 587,  difficulty: 'moderate', city: '深圳',
+    legend: '羊台山因山形似羊而得名，是深圳西部最高峰，登顶可远眺珠江口。',
+    seasons: { spring: '山茶花开', summer: '听涛观海', autumn: '金风送爽', winter: '晴空万里' } },
+  { id: 'maluan',     name: '马峦山',   elevation: 525,  difficulty: 'casual',   city: '深圳',
+    legend: '马峦山以瀑布群闻名，雨季时瀑布飞流直下，有"深圳小九寨"之美称。',
+    seasons: { spring: '瀑布飞流', summer: '溪水潺潺', autumn: '红叶满山', winter: '枯水探幽' } },
+  { id: 'lianhua',    name: '莲花山',   elevation: 106,  difficulty: 'casual',   city: '深圳',
+    legend: '莲花山因山形似莲花而得名，山顶有邓小平铜像，是深圳的城市名片。',
+    seasons: { spring: '桃李争春', summer: '绿草如茵', autumn: '风筝满天', winter: '暖阳如春' } },
+  { id: 'baiyun',     name: '白云山',   elevation: 382,  difficulty: 'casual',   city: '广州',
+    legend: '白云山为广州之肺，自古有"羊城第一秀"之称，白云缭绕如仙境。',
+    seasons: { spring: '白云春晓', summer: '蒲谷探幽', autumn: '摩星秋月', winter: '云山叠翠' } },
+  { id: 'dananshan',  name: '大南山',   elevation: 336,  difficulty: 'casual',   city: '深圳',
+    legend: '大南山俯瞰蛇口半岛，是观赏深圳湾日落的绝佳之地。',
+    seasons: { spring: '海风拂面', summer: '日落金辉', autumn: '秋海长天', winter: '暖阳碧海' } },
+];
+
+// ── 境界计算引擎 ──
+function calculateRealmChange(currentRealm, stability, routeDifficulty, completed) {
+  const routeLevel = DIFFICULTY_LEVELS[routeDifficulty] || 0;
+  const realmLevel = REALMS.find(r => r.key === currentRealm)?.level || 0;
+  let stabilityChange = 0;
+
+  if (completed) {
+    if (routeLevel >= realmLevel + 1) {
+      stabilityChange = 20; // 完成高一级路线
+    } else if (routeLevel >= realmLevel) {
+      stabilityChange = 10; // 完成同级路线
+    } else {
+      stabilityChange = 3;  // 完成低级路线
+    }
+  } else {
+    if (routeLevel >= realmLevel) {
+      stabilityChange = -15; // 未完成同级或高级路线
+    } else {
+      stabilityChange = -5;  // 未完成低级路线
+    }
+  }
+
+  let newStability = Math.max(0, Math.min(100, stability + stabilityChange));
+  let newRealm = currentRealm;
+  let realmChanged = false;
+
+  // 突破：稳固度达到100且完成同级以上路线
+  if (newStability >= 100 && completed && routeLevel >= realmLevel) {
+    const nextRealm = REALMS.find(r => r.level === realmLevel + 1);
+    if (nextRealm) {
+      newRealm = nextRealm.key;
+      newStability = 30; // 突破后稳固度重置为30
+      realmChanged = true;
+    }
+  }
+
+  // 跌境：稳固度归0
+  if (newStability <= 0 && realmLevel > 0) {
+    const prevRealm = REALMS.find(r => r.level === realmLevel - 1);
+    if (prevRealm) {
+      newRealm = prevRealm.key;
+      newStability = 60; // 跌境后稳固度设为60
+      realmChanged = true;
+    }
+  }
+
+  return { realm: newRealm, stability: newStability, stabilityChange, realmChanged };
+}
+
+// ── 排位积分计算 ──
+function calculateRankScore(user, activity) {
+  let score = user.rankScore || 0;
+  switch (activity) {
+    case 'hike_complete': score += 10; break;    // 完成徒步
+    case 'hike_monthly': score += 20; break;     // 全勤月bonus
+    case 'team_formed': score += 5; break;       // 组队成功
+    case 'liked': score += 2; break;             // 被点赞
+    case 'invited': score += 3; break;           // 收到邀请
+    case 'checkin_post': score += 3; break;      // 发打卡
+    case 'collected': score += 5; break;         // 被收藏
+    case 'guide_post': score += 8; break;        // 写攻略
+  }
+  return score;
+}
+
+function getRankByKey(key) { return RANKS.find(r => r.key === key) || RANKS[0]; }
+function getRankByScore(score) {
+  for (let i = RANKS.length - 1; i >= 0; i--) {
+    if (score >= RANKS[i].minScore) return RANKS[i];
+  }
+  return RANKS[0];
+}
+function getRealmByKey(key) { return REALMS.find(r => r.key === key) || REALMS[0]; }
+
+// ── 称号检查 ──
+async function checkAndUnlockTitles(userId, db) {
+  const userDoc = await db.collection('users').doc(userId).get();
+  const user = (userDoc.data && userDoc.data[0]) ? addId(userDoc.data[0]) : {};
+  const existingTitles = user.unlockedTitles || [];
+
+  // 获取用户签到记录
+  const logs = await db.collection('traillogs').where({ userId }).limit(100).get();
+  const logItems = addIds(logs.data || []);
+
+  // 统计签到地点
+  const locations = new Set();
+  const locationDates = {}; // { location: Set<date> }
+  let totalCheckins = 0;
+  for (const log of logItems) {
+    const loc = log.location || '';
+    if (loc) {
+      locations.add(loc);
+      const date = (log.date || '').slice(0, 10);
+      if (!locationDates[loc]) locationDates[loc] = new Set();
+      locationDates[loc].add(date);
+    }
+    totalCheckins++;
+  }
+
+  // 统计同日签到不同地点
+  const dateLocations = {};
+  for (const [loc, dates] of Object.entries(locationDates)) {
+    for (const d of dates) {
+      if (!dateLocations[d]) dateLocations[d] = new Set();
+      dateLocations[d].add(loc);
+    }
+  }
+  const maxSameDay = Math.max(0, ...Object.values(dateLocations).map(s => s.size));
+
+  // 统计组队人数
+  const groups = await db.collection('groups').where({ 'members.id': userId }).limit(50).get();
+  const groupItems = addIds(groups.data || []);
+  const maxTeamSize = Math.max(0, ...groupItems.map(g => (g.members || []).length));
+
+  // 境界等级
+  const realmLevel = REALMS.find(r => r.key === (user.realm || 'mortal'))?.level || 0;
+
+  // 检查每个称号
+  const newTitles = [];
+  for (const title of TITLES) {
+    if (existingTitles.includes(title.id)) continue;
+    let unlocked = false;
+    const cond = title.condition;
+    switch (cond.type) {
+      case 'checkin_count': unlocked = totalCheckins >= cond.min; break;
+      case 'unique_locations': unlocked = locations.size >= cond.min; break;
+      case 'same_day_locations': unlocked = maxSameDay >= cond.min; break;
+      case 'location': unlocked = locations.has(cond.location); break;
+      case 'team_members': unlocked = maxTeamSize >= cond.min; break;
+      case 'realm_level': unlocked = realmLevel >= cond.min; break;
+      // social类暂用近似值
+      case 'likes_received': unlocked = (user.totalLikes || 0) >= cond.min; break;
+      case 'post_likes': unlocked = (user.postLikes || 0) >= cond.min; break;
+      case 'help_newbies': unlocked = (user.helpedNewbies || 0) >= cond.min; break;
+    }
+    if (unlocked) newTitles.push(title.id);
+  }
+
+  if (newTitles.length > 0) {
+    const allTitles = [...existingTitles, ...newTitles];
+    await db.collection('users').doc(userId).update({ unlockedTitles: allTitles, updatedAt: Date.now() });
+  }
+  return newTitles;
+}
+
+// ── API: 获取我的游戏化数据 ──
+G('/api/gamification/me', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  try {
+    const userDoc = await db.collection('users').doc(u.userId).get();
+    const user = (userDoc.data && userDoc.data[0]) ? addId(userDoc.data[0]) : {};
+
+  const rankScore = user.rankScore || 0;
+  const rank = getRankByScore(rankScore);
+  const nextRank = RANKS.find(r => r.minScore > rankScore);
+  const realm = getRealmByKey(user.realm || 'mortal');
+  const stability = user.realmStability ?? 50;
+
+  // 已解锁称号
+  const unlockedIds = user.unlockedTitles || [];
+  const unlockedTitles = TITLES.filter(t => unlockedIds.includes(t.id));
+
+  // 图鉴解锁情况
+  const logs = await db.collection('traillogs').where({ userId: u.userId }).limit(100).get();
+  const visitedLocations = new Set((addIds(logs.data || [])).map(l => l.location).filter(Boolean));
+  const codex = MOUNTAIN_CODEX.map(m => ({
+    ...m,
+    unlocked: visitedLocations.has(m.name),
+    visitedSeasons: [], // TODO: 按季节签到记录
+  }));
+
+  return {
+    rank: { ...rank, score: rankScore, nextRank: nextRank ? { key: nextRank.key, name: nextRank.name, minScore: nextRank.minScore } : null },
+    realm: { ...realm, stability, key: user.realm || 'mortal' },
+    titles: unlockedTitles,
+    allTitles: TITLES,
+    codex,
+    stats: {
+      totalCheckins: (addIds(logs.data || [])).length,
+      uniqueLocations: visitedLocations.size,
+      totalHikes: user.hikeCount || 0,
+    },
+  };
+  } catch(e) { console.error('gamification/me error:', e); return err('获取游戏化数据失败: ' + e.message, 500); }
+});
+
+// ── API: 签到时更新境界和排位（内部调用） ──
+async function updateGamificationOnCheckin(userId, location, difficulty, completed, db) {
+  const userDoc = await db.collection('users').doc(userId).get();
+  const user = (userDoc.data && userDoc.data[0]) ? addId(userDoc.data[0]) : {};
+
+  // 更新境界
+  const currentRealm = user.realm || 'mortal';
+  const currentStability = user.realmStability ?? 50;
+  const realmResult = calculateRealmChange(currentRealm, currentStability, difficulty || 'casual', completed);
+
+  // 更新排位积分
+  const newScore = calculateRankScore(user, completed ? 'hike_complete' : 'checkin_post');
+
+  const updates = {
+    realm: realmResult.realm,
+    realmStability: realmResult.stability,
+    rankScore: newScore,
+    updatedAt: Date.now(),
+  };
+
+  await db.collection('users').doc(userId).update(updates);
+
+  // 检查称号
+  const newTitles = await checkAndUnlockTitles(userId, db);
+
+  return {
+    realm: { ...getRealmByKey(realmResult.realm), stability: realmResult.stability, key: realmResult.realm },
+    realmChanged: realmResult.realmChanged,
+    stabilityChange: realmResult.stabilityChange,
+    rank: getRankByScore(newScore),
+    newTitles: newTitles.map(id => TITLES.find(t => t.id === id)),
+  };
+}
+
+// ── API: 活跃度衰减（定时任务调用） ──
+G('/api/gamification/decay', async (p, b, q) => {
+  const u = await auth(); // 需认证才能调用
+  // 简单实现：连续2周无徒步，稳固度-10
+  const twoWeeksAgo = Date.now() - 14 * 24 * 60 * 60 * 1000;
+  const allUsers = await db.collection('users').limit(100).get();
+  let decayed = 0;
+  for (const user of addIds(allUsers.data || [])) {
+    if ((user.realm || 'mortal') === 'mortal') continue;
+    const lastLog = await db.collection('traillogs').where({ userId: user.id }).orderBy('createdAt', 'desc').limit(1).get();
+    if (!lastLog.data.length || lastLog.data[0].createdAt < twoWeeksAgo) {
+      const newStability = Math.max(0, (user.realmStability ?? 50) - 10);
+      let newRealm = user.realm;
+      let realmChanged = false;
+      if (newStability <= 0) {
+        const currentLevel = REALMS.find(r => r.key === user.realm)?.level || 0;
+        if (currentLevel > 0) {
+          newRealm = REALMS.find(r => r.level === currentLevel - 1).key;
+          realmChanged = true;
+        }
+      }
+      await db.collection('users').doc(user.id).update({ realmStability: newStability, realm: newRealm, updatedAt: Date.now() });
+      decayed++;
+    }
+  }
+  return { decayed, message: `${decayed} 位用户因长时间未徒步而境界不稳` };
+});
+
+// ── API: 山志图鉴详情 ──
+G('/api/gamification/codex/:id', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const mountain = MOUNTAIN_CODEX.find(m => m.id === p.id);
+  if (!mountain) return err('图鉴不存在', 404);
+
+  // 检查用户是否已解锁
+  const logs = await db.collection('traillogs').where({ userId: u.userId, location: mountain.name }).limit(1).get();
+  const unlocked = logs.data && logs.data.length > 0;
+
+  return {
+    ...mountain,
+    unlocked,
+    // 未解锁只显示基础信息，解锁后显示传说和四季
+    legend: unlocked ? mountain.legend : '???',
+    seasons: unlocked ? mountain.seasons : { spring: '???', summer: '???', autumn: '???', winter: '???' },
+  };
+});
+
+// ═══════════════════════════════════════════════════════════
+// 队伍段位系统（青铜→钻石，基于完成质量涨星）
+// ═══════════════════════════════════════════════════════════
+const TEAM_RANKS = [
+  { key: 'bronze',   name: '青铜', icon: '🥉', stars: 0,  minScore: 0 },
+  { key: 'silver',   name: '白银', icon: '🥈', stars: 1,  minScore: 100 },
+  { key: 'gold',     name: '黄金', icon: '🥇', stars: 2,  minScore: 300 },
+  { key: 'diamond',  name: '钻石', icon: '💎', stars: 3,  minScore: 600 },
+];
+
+function getTeamRankByScore(score) {
+  let rank = TEAM_RANKS[0];
+  for (const r of TEAM_RANKS) {
+    if (score >= r.minScore) rank = r;
+  }
+  return rank;
+}
+
+// 计算队伍段位积分（完成徒步后调用）
+function calculateTeamRankScore(group, checkinRate, paceConsistency) {
+  // checkinRate: 全员签到率 0-1, paceConsistency: 配速一致性 0-1
+  let gain = 0;
+  // 基础完成分
+  gain += 20;
+  // 全员签到率加分
+  gain += Math.round(checkinRate * 30);
+  // 配速一致性加分
+  gain += Math.round(paceConsistency * 20);
+  // 队伍规模加分（2人+5, 3人+10, 4人+15）
+  const memberCount = (group.members || []).length;
+  gain += Math.min(15, memberCount * 5);
+  return gain;
+}
+
+// 更新队伍段位
+async function updateTeamRank(groupId, db) {
+  const groupDoc = await db.collection('groups').doc(groupId).get();
+  const group = (groupDoc.data && groupDoc.data[0]) ? addId(groupDoc.data[0]) : null;
+  if (!group) return null;
+
+  const currentScore = group.teamRankScore || 0;
+  const members = group.members || [];
+
+  // 计算全员签到率
+  const checkpoints = group.checkpoints || [];
+  let totalCheckins = 0;
+  let possibleCheckins = checkpoints.length * members.length;
+  for (const cp of checkpoints) {
+    totalCheckins += (cp.checkins || []).length;
+  }
+  const checkinRate = possibleCheckins > 0 ? totalCheckins / possibleCheckins : 0;
+
+  // 配速一致性（简化：基于签到时间差估算）
+  const paceConsistency = 0.7; // TODO: 基于实际GPS数据计算
+
+  const gain = calculateTeamRankScore(group, checkinRate, paceConsistency);
+  const newScore = currentScore + gain;
+
+  await db.collection('groups').doc(groupId).update({
+    teamRankScore: newScore,
+    teamRank: getTeamRankByScore(newScore).key,
+    updatedAt: Date.now(),
+  });
+
+  return { score: newScore, rank: getTeamRankByScore(newScore), gain };
+}
+
+// ═══════════════════════════════════════════════════════════
+// 路途人格系统
+// ═══════════════════════════════════════════════════════════
+const TRAIL_PERSONALITIES = [
+  { key: 'navigator',   name: '领航者', emoji: '🦅', desc: '带领节奏、找路', color: '#3b82f6' },
+  { key: 'enjoyer',     name: '享受者', emoji: '🐢', desc: '慢行拍照、不赶时间', color: '#10b981' },
+  { key: 'socializer',  name: '社交者', emoji: '🦊', desc: '聊天为主、徒步为辅', color: '#f59e0b' },
+  { key: 'challenger',  name: '挑战者', emoji: '🐺', desc: '追求速度、极限路线', color: '#ef4444' },
+];
+
+// 人格互补矩阵：互补组合匹配加分
+const PERSONALITY_SYNERGY = {
+  navigator:  { enjoyer: 30, socializer: 20, navigator: -5, challenger: 10 },
+  enjoyer:    { navigator: 30, socializer: 15, enjoyer: 5, challenger: -10 },
+  socializer: { navigator: 20, enjoyer: 15, socializer: 5, challenger: 5 },
+  challenger: { challenger: 15, navigator: 10, socializer: 5, enjoyer: -10 },
+};
+
+// 趣味测试题
+const PERSONALITY_QUIZ = [
+  {
+    id: 'pace',
+    question: '徒步时你的节奏是？',
+    options: [
+      { key: 'a', text: '走在最前面探路', personality: 'navigator' },
+      { key: 'b', text: '走走停停拍拍照', personality: 'enjoyer' },
+      { key: 'c', text: '边走边聊不亦乐乎', personality: 'socializer' },
+      { key: 'd', text: '全速前进不停歇', personality: 'challenger' },
+    ],
+  },
+  {
+    id: 'goal',
+    question: '徒步最重要的目标是？',
+    options: [
+      { key: 'a', text: '安全到达目的地', personality: 'navigator' },
+      { key: 'b', text: '享受沿途风景', personality: 'enjoyer' },
+      { key: 'c', text: '和伙伴一起开心', personality: 'socializer' },
+      { key: 'd', text: '挑战自我极限', personality: 'challenger' },
+    ],
+  },
+  {
+    id: 'rest',
+    question: '休息时你在做什么？',
+    options: [
+      { key: 'a', text: '研究下一步路线', personality: 'navigator' },
+      { key: 'b', text: '拍照发朋友圈', personality: 'enjoyer' },
+      { key: 'c', text: '和大家聊天分享零食', personality: 'socializer' },
+      { key: 'd', text: '拉伸准备继续冲', personality: 'challenger' },
+    ],
+  },
+];
+
+// 根据答题结果计算人格
+function calculatePersonality(answers) {
+  // answers: { pace: 'a', goal: 'c', rest: 'b' }
+  const counts = {};
+  for (const qid of Object.keys(answers)) {
+    const q = PERSONALITY_QUIZ.find(q => q.id === qid);
+    if (!q) continue;
+    const opt = q.options.find(o => o.key === answers[qid]);
+    if (opt) counts[opt.personality] = (counts[opt.personality] || 0) + 1;
+  }
+  let maxKey = 'navigator', maxCount = 0;
+  for (const [k, v] of Object.entries(counts)) {
+    if (v > maxCount) { maxCount = v; maxKey = k; }
+  }
+  return TRAIL_PERSONALITIES.find(p => p.key === maxKey);
+}
+
+// 计算两人人格互补加分
+function getPersonalityBonus(p1, p2) {
+  if (!p1 || !p2) return 0;
+  return PERSONALITY_SYNERGY[p1]?.[p2] || 0;
+}
+
+// 根据实际徒步数据计算出行频率（自动推导，无需用户手动设置）
+function calcHikeFrequency(hikeCount, createdAt) {
+  const now = Date.now();
+  const months = Math.max(1, (now - createdAt) / (30 * 24 * 3600 * 1000));
+  const hikesPerMonth = hikeCount / months;
+  if (hikesPerMonth >= 4) return 'weekly+';       // 每周多次
+  if (hikesPerMonth >= 2.5) return 'weekly1';     // 约每周1次
+  if (hikesPerMonth >= 1) return 'monthly2-3';    // 每月2-3次
+  return 'monthly1';                               // 每月1次或更少
+}
+
+// ═══════════════════════════════════════════════════════════
+// 匹配回顾卡片
+// ═══════════════════════════════════════════════════════════
+async function generateMatchReview(groupId, db) {
+  const groupDoc = await db.collection('groups').doc(groupId).get();
+  const group = (groupDoc.data && groupDoc.data[0]) ? addId(groupDoc.data[0]) : null;
+  if (!group) return null;
+
+  const members = (group.members || []).map(m => ({
+    name: m.name || '匿名',
+    avatarUrl: m.avatarUrl || '',
+    avatarColor: m.avatarColor || '#10b981',
+    personality: m.personality || null,
+  }));
+
+  const checkpoints = group.checkpoints || [];
+  const location = group.essentials?.location || group.name || '未知路线';
+  const matchPct = group.matchPct || 0;
+
+  // AI 生成总结语
+  let summary = '';
+  try {
+    const prompt = `你们在${location}完成了一次徒步，队伍有${members.length}人，经过了${checkpoints.length}个打卡点。请用一句话总结这次徒步，语气轻松有趣，不超过30字。`;
+    const llmRes = await callLLM('你是一个户外徒步助手，擅长写有趣的总结。', prompt);
+    summary = llmRes || `${members.length}人在${location}完成了徒步！`;
+  } catch {
+    summary = `${members.length}人在${location}完成了徒步！`;
+  }
+
+  return {
+    groupId,
+    groupName: group.name,
+    location,
+    members,
+    matchPct,
+    checkpointCount: checkpoints.length,
+    teamRank: getTeamRankByScore(group.teamRankScore || 0),
+    summary,
+    createdAt: Date.now(),
+  };
+}
+
+// ── API: 路途人格测试题 ──
+G('/api/personality/quiz', async (p, b, q) => {
+  return { questions: PERSONALITY_QUIZ };
+});
+
+// ── API: 提交人格测试结果 ──
+P('/api/personality/submit', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const { answers } = b; // { pace: 'a', goal: 'c', rest: 'b' }
+  if (!answers) return err('请提供答题结果');
+
+  const personality = calculatePersonality(answers);
+  await db.collection('users').doc(u.userId).update({
+    personality: personality.key,
+    personalityQuiz: answers,
+    updatedAt: Date.now(),
+  });
+
+  return { personality };
+});
+
+// ── API: 获取匹配回顾卡片 ──
+G('/api/groups/:id/review', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  const review = await generateMatchReview(p.id, db);
+  if (!review) return err('队伍不存在', 404);
+  return review;
+});
+
+// ── API: 获取我的队伍段位 ──
+G('/api/team-rank/me', async (p, b, q) => {
+  const u = auth(q.headers.authorization); if (!u) return err('Unauthorized', 401);
+  // 获取用户所在队伍的段位信息
+  const groups = await db.collection('groups').where({ 'members.id': u.userId }).limit(10).get();
+  const teamRanks = addIds(groups.data || []).map(g => ({
+    groupId: g.id,
+    name: g.name,
+    rank: getTeamRankByScore(g.teamRankScore || 0),
+    score: g.teamRankScore || 0,
+  }));
+  // 取最高段位
+  const bestRank = teamRanks.sort((a, b) => (b.score) - (a.score))[0];
+  return { teams: teamRanks, bestRank: bestRank || null };
 });
 
 // ─── Router ─────────────────────────

@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MatchPanel 重设计 Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f7f5f0;
+    display: flex; flex-direction: column; align-items: center; padding: 20px 12px; gap: 40px;
+  }
+
+  /* ── 手机外壳 ── */
+  .phone {
+    width: 390px; min-height: 844px;
+    background: #f5f3ef;
+    border-radius: 36px;
+    overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,.12);
+    position: relative;
+  }
+  .phone-header {
+    height: 48px; background: #f5f3ef;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 28px; font-size: 12px; font-weight: 700; color: #1e293b;
+  }
+  .panel {
+    padding: 0 12px; overflow-y: auto;
+  }
+
+  /* ── Header Card ── */
+  .header-card {
+    margin: 8px 4px 0;
+    border-radius: 18px; padding: 16px;
+    box-shadow: 0 4px 12px rgba(16,185,129,.08);
+  }
+  .header-card.active { background: linear-gradient(135deg, #10b981, #059669); color: #fff; }
+  .header-card.inactive { background: #fff; color: #6b7280; border: 1px solid #e5e7eb; }
+
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .match-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; }
+  .match-label.active { color: #fff; }
+  .pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #10b981; }
+  .pulse-dot.active { background: #fff; animation: pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .toggle { width: 44px; height: 24px; border-radius: 12px; cursor: pointer; position: relative; transition: .25s; }
+  .toggle.on { background: rgba(255,255,255,.3); }
+  .toggle.off { background: #d1d5db; }
+  .toggle-knob {
+    position: absolute; top: 2px; width: 20px; height: 20px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); transition: .25s;
+  }
+  .toggle.on .toggle-knob { left: 22px; }
+  .toggle.off .toggle-knob { left: 2px; background: #fff; }
+
+  .header-stats { display: flex; gap: 20px; }
+  .header-stats .stat { text-align: center; }
+  .header-stats .stat-val { font-size: 18px; font-weight: 900; }
+  .header-card.active .stat-val { color: #fff; }
+  .header-card.active .stat-label { color: rgba(255,255,255,.55); }
+  .stat-label { font-size: 10px; margin-top: 1px; }
+
+  .header-hint { font-size: 10px; margin-top: 8px; opacity: .65; }
+  .header-card.inactive .header-hint { color: #9ca3af; }
+
+  /* ── Tab Bar ── */
+  .tab-bar {
+    display: flex; background: #fff; border-radius: 12px; padding: 3px;
+    margin: 12px 4px; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .tab-btn {
+    flex: 1; padding: 8px 0; border-radius: 10px; border: none;
+    font-size: 11px; font-weight: 700; cursor: pointer; transition: .2s;
+    background: transparent; color: #9ca3af;
+  }
+  .tab-btn.active { background: #ecfdf5; color: #059669; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+
+  /* ── Section Card ── */
+  .section { background: #fff; border-radius: 16px; overflow: hidden; margin: 0 4px 12px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-left: 3px solid; }
+  .section-header.blue { border-left-color: #60a5fa; }
+  .section-header.amber { border-left-color: #f59e0b; }
+  .section-title { font-size: 11px; font-weight: 800; color: #374151; display: flex; align-items: center; gap: 6px; }
+  .section-badge { font-size: 9px; padding: 1px 7px; border-radius: 10px; font-weight: 700; }
+  .section-badge.blue { background: #eff6ff; color: #3b82f6; }
+  .section-badge.amber { background: #fffbeb; color: #d97706; }
+
+  /* ── Match Card (horizontal) ── */
+  .match-card {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 14px; border-bottom: 1px solid #f3f4f6; transition: .15s;
+  }
+  .match-card:last-child { border-bottom: none; }
+  .match-card:hover { background: #fafbfc; }
+
+  .match-avatar {
+    width: 42px; height: 42px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; font-weight: 800; color: #fff; flex-shrink: 0;
+    position: relative;
+  }
+  .match-pct-ring {
+    position: absolute; top: -3px; right: -3px;
+    width: 20px; height: 20px; border-radius: 50%;
+    background: #059669; color: #fff;
+    font-size: 8px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+  }
+  .match-pct-ring.high { background: #059669; }
+  .match-pct-ring.mid { background: #f59e0b; }
+
+  .match-info { flex: 1; min-width: 0; }
+  .match-name-row { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+  .match-name { font-size: 12px; font-weight: 800; color: #1e293b; }
+  .match-tag {
+    font-size: 8px; padding: 1px 6px; border-radius: 8px;
+    font-weight: 700; white-space: nowrap;
+  }
+  .match-tag.purple { background: #f3e8ff; color: #9333ea; }
+  .match-tag.amber { background: #fef3c7; color: #b45309; }
+  .match-tag.blue { background: #dbeafe; color: #2563eb; }
+  .match-tag.green { background: #d1fae5; color: #065f46; }
+  .match-reason { font-size: 10px; color: #9ca3af; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .match-action {
+    flex-shrink: 0; padding: 6px 14px; border-radius: 20px; border: none;
+    font-size: 10px; font-weight: 800; cursor: pointer; transition: .15s;
+  }
+  .match-action.invite { background: #059669; color: #fff; }
+  .match-action.invite:hover { background: #047857; }
+  .match-action.merge { background: #3b82f6; color: #fff; }
+  .match-action.merge:hover { background: #2563eb; }
+  .match-action.apply { background: #f3f4f6; color: #374151; }
+  .match-action.apply:hover { background: #e5e7eb; }
+
+  /* ── Team thumbnail ── */
+  .team-thumb {
+    width: 42px; height: 42px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 900; color: #fff; flex-shrink: 0;
+  }
+  .team-thumb.hike { background: linear-gradient(135deg, #a7f3d0, #34d399); color: #065f46; }
+  .team-thumb.other { background: linear-gradient(135deg, #ddd6fe, #a78bfa); color: #5b21b6; }
+
+  .team-meta-row { display: flex; align-items: center; gap: 5px; margin-top: 2px; }
+  .team-meta { font-size: 9px; color: #9ca3af; display: flex; align-items: center; gap: 3px; }
+  .team-meta-tag { font-size: 8px; padding: 1px 5px; border-radius: 5px; font-weight: 700; }
+  .team-meta-tag.hike { background: #d1fae5; color: #065f46; }
+  .team-meta-tag.other { background: #ede9fe; color: #7c3aed; }
+
+  /* ── Members row (avatars in team card) ── */
+  .member-dots { display: flex; align-items: center; gap: 1px; margin-top: 3px; }
+  .member-dot {
+    width: 13px; height: 13px; border-radius: 50%;
+    border: 1.5px solid #fff; font-size: 6px; font-weight: 800;
+    color: #fff; display: flex; align-items: center; justify-content: center;
+    margin-left: -3px;
+  }
+  .member-dot:first-child { margin-left: 0; }
+
+  /* ── Empty State ── */
+  .empty-state { padding: 24px 14px 20px; text-align: center; }
+  .empty-icon {
+    width: 40px; height: 40px; border-radius: 12px;
+    background: #f3f4f6; display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 8px;
+  }
+  .empty-icon svg { width: 20px; height: 20px; color: #d1d5db; }
+  .empty-title { font-size: 11px; color: #9ca3af; margin-bottom: 3px; }
+  .empty-desc { font-size: 9px; color: #d1d5db; margin-bottom: 10px; }
+  .empty-cta {
+    padding: 6px 16px; border-radius: 20px; border: none;
+    font-size: 10px; font-weight: 700; cursor: pointer; transition: .15s;
+  }
+  .empty-cta.green { background: #ecfdf5; color: #059669; }
+  .empty-cta.blue { background: #eff6ff; color: #3b82f6; }
+
+  /* ── Inline Merge (expands inside card) ── */
+  .merge-inline {
+    background: #f8fafc; border-top: 1px solid #e5e7eb; padding: 10px 14px;
+  }
+  .merge-select {
+    width: 100%; padding: 8px 10px; border-radius: 10px; border: 1px solid #e5e7eb;
+    font-size: 11px; color: #374151; background: #fff; margin-bottom: 8px;
+  }
+  .merge-summary {
+    background: #eff6ff; border-radius: 10px; padding: 10px; margin-bottom: 8px;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .merge-from, .merge-to { font-size: 10px; text-align: center; }
+  .merge-from .name, .merge-to .name { font-weight: 800; color: #1e293b; }
+  .merge-from .meta, .merge-to .meta { color: #9ca3af; font-size: 9px; }
+  .merge-arrow { color: #3b82f6; font-weight: 900; font-size: 14px; }
+  .merge-result { font-size: 10px; color: #6b7280; text-align: center; margin-bottom: 8px; }
+  .merge-result strong { color: #3b82f6; }
+  .merge-buttons { display: flex; gap: 6px; }
+  .merge-buttons button { flex: 1; padding: 8px 0; border-radius: 10px; border: none; font-size: 10px; font-weight: 700; cursor: pointer; }
+  .merge-buttons .cancel { background: #f3f4f6; color: #6b7280; }
+  .merge-buttons .confirm { background: #3b82f6; color: #fff; }
+  .merge-buttons .confirm:disabled { opacity: .4; }
+
+  /* ── Section Divider ── */
+  .divider-label {
+    font-size: 9px; font-weight: 700; color: #d1d5db;
+    padding: 4px 4px 4px 4px; letter-spacing: .5px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 场景 1：匹配已开启 + 有数据 ═══════════ -->
+<div class="phone">
+  <div class="phone-header" style="justify-content:center">📋 匹配面板 — 活跃状态</div>
+
+  <!-- 状态头卡 -->
+  <div class="header-card active">
+    <div class="header-top">
+      <div class="match-label active">
+        <span class="pulse-dot active"></span>AI 匹配中
+      </div>
+      <div class="toggle on"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="header-stats">
+      <div class="stat"><div class="stat-val">5</div><div class="stat-label">匹配成员</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">匹配队伍</div></div>
+      <div class="stat"><div class="stat-val">87%</div><div class="stat-label">平均匹配度</div></div>
+    </div>
+    <div class="header-hint">系统持续为你寻找合适的队友和队伍…</div>
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn active">👤 成员推荐</button>
+    <button class="tab-btn">🏔️ 队伍推荐</button>
+  </div>
+
+  <!-- ═══ 成员推荐 ═══ -->
+  <div class="section">
+    <div class="section-header blue">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v2"/></svg>
+        推荐成员
+      </div>
+      <span class="section-badge blue">5人</span>
+    </div>
+
+    <!-- 成员卡片 1 -->
+    <div class="match-card">
+      <div class="match-avatar" style="background: #f59e0b;">张</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">张山峰</span>
+          <span class="match-tag purple">🧭 领航者</span>
+        </div>
+        <div class="match-reason">你们偏好相同的徒步路线，曾去过黄山</div>
+      </div>
+      <div class="match-pct-ring high">95</div>
+      <button class="match-action invite">邀请</button>
+    </div>
+
+    <!-- 成员卡片 2 -->
+    <div class="match-card">
+      <div class="match-avatar" style="background: #7c3aed;">李</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">李小溪</span>
+          <span class="match-tag green">🌿 享受者</span>
+        </div>
+        <div class="match-reason">对"深圳梧桐山"有相同兴趣，时间同步</div>
+      </div>
+      <div class="match-pct-ring high">89</div>
+      <button class="match-action invite">邀请</button>
+    </div>
+
+    <!-- 成员卡片 3 -->
+    <div class="match-card">
+      <div class="match-avatar" style="background: #2563eb;">王</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">王大力</span>
+          <span class="match-tag amber">🔥 挑战者</span>
+        </div>
+        <div class="match-reason">经验等级相当，配速相近</div>
+      </div>
+      <div class="match-pct-ring mid">74</div>
+      <button class="match-action invite">邀请</button>
+    </div>
+
+    <!-- 成员卡片 4 -->
+    <div class="match-card">
+      <div class="match-avatar" style="background: #059669;">陈</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">陈小雅</span>
+          <span class="match-tag blue">💬 社交者</span>
+        </div>
+        <div class="match-reason">队伍提示词匹配：不抽烟、周末出发</div>
+      </div>
+      <div class="match-pct-ring mid">72</div>
+      <button class="match-action invite">邀请</button>
+    </div>
+
+    <!-- 成员卡片 5 -->
+    <div class="match-card">
+      <div class="match-avatar" style="background: #dc2626;">刘</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">刘大伟</span>
+          <span class="match-tag amber">🔥 挑战者</span>
+        </div>
+        <div class="match-reason">共同队伍：上次一起徒步「塘朗山」</div>
+      </div>
+      <div class="match-pct-ring mid">68</div>
+      <button class="match-action invite">邀请</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════ 场景 2：队伍匹配 ═══════════ -->
+<div class="phone">
+  <div class="phone-header" style="justify-content:center">🏔️ 队伍匹配 — 合并流程</div>
+
+  <div class="header-card active" style="margin-top:8px">
+    <div class="header-top">
+      <div class="match-label active">
+        <span class="pulse-dot active"></span>AI 匹配中
+      </div>
+      <div class="toggle on"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="header-stats">
+      <div class="stat"><div class="stat-val">5</div><div class="stat-label">匹配成员</div></div>
+      <div class="stat"><div class="stat-val">3</div><div class="stat-label">匹配队伍</div></div>
+      <div class="stat"><div class="stat-val">87%</div><div class="stat-label">平均匹配度</div></div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn">👤 成员推荐</button>
+    <button class="tab-btn active">🏔️ 队伍推荐</button>
+  </div>
+
+  <!-- ═══ 队伍推荐 ═══ -->
+  <div class="section">
+    <div class="section-header amber">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        推荐队伍
+      </div>
+      <span class="section-badge amber">3队</span>
+    </div>
+
+    <!-- 队伍卡片 1 — 徒步队伍 -->
+    <div class="match-card" style="cursor:pointer">
+      <div class="team-thumb hike">🥾</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">梧桐山攀登小分队</span>
+          <span class="match-tag green">徒步</span>
+        </div>
+        <div class="team-meta-row">
+          <span class="team-meta">📍 深圳梧桐山</span>
+          <span class="team-meta">📅 6.20 周六</span>
+        </div>
+        <div class="member-dots">
+          <span class="member-dot" style="background:#f59e0b">张</span>
+          <span class="member-dot" style="background:#7c3aed">李</span>
+          <span class="member-dot" style="background:#2563eb">王</span>
+          <span class="member-dot" style="background:#d1d5db; color:#9ca3af">+2</span>
+        </div>
+      </div>
+      <div class="match-pct-ring high">91</div>
+      <button class="match-action merge" onclick="this.closest('.match-card').querySelector('.merge-inline-expand').classList.toggle('hidden')">合并</button>
+    </div>
+    <!-- 行内合并展开 -->
+    <div class="merge-inline merge-inline-expand hidden">
+      <select class="merge-select">
+        <option>我的队伍：周末徒步局（4人 徒步）</option>
+      </select>
+      <div class="merge-summary">
+        <div class="merge-from">
+          <div class="name">周末徒步局</div>
+          <div class="meta">4人 · 🥾徒步</div>
+        </div>
+        <div class="merge-arrow">→</div>
+        <div class="merge-to">
+          <div class="name">梧桐山攀登小分队</div>
+          <div class="meta">5人 · 🥾徒步</div>
+        </div>
+      </div>
+      <div class="merge-result">合并后总人数：<strong>9 人</strong></div>
+      <div class="merge-buttons">
+        <button class="cancel" onclick="this.closest('.merge-inline').classList.add('hidden')">取消</button>
+        <button class="confirm">确认申请合并</button>
+      </div>
+    </div>
+
+    <!-- 队伍卡片 2 — 其他类型 -->
+    <div class="match-card">
+      <div class="team-thumb other">🎣</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">塘朗山慢摇局</span>
+          <span class="match-tag purple">其他</span>
+        </div>
+        <div class="team-meta-row">
+          <span class="team-meta">📍 深圳塘朗山</span>
+          <span class="team-meta">📅 6.21 周日</span>
+        </div>
+        <div class="member-dots">
+          <span class="member-dot" style="background:#dc2626">陈</span>
+          <span class="member-dot" style="background:#d1d5db; color:#9ca3af">+2</span>
+        </div>
+      </div>
+      <div class="match-pct-ring mid">76</div>
+      <button class="match-action merge">合并</button>
+    </div>
+
+    <!-- 队伍卡片 3 -->
+    <div class="match-card">
+      <div class="team-thumb hike">⛰️</div>
+      <div class="match-info">
+        <div class="match-name-row">
+          <span class="match-name">银湖山晨练队</span>
+          <span class="match-tag green">徒步</span>
+        </div>
+        <div class="team-meta-row">
+          <span class="team-meta">📍 深圳银湖山</span>
+          <span class="team-meta">📅 6.20 周六</span>
+        </div>
+        <div class="member-dots">
+          <span class="member-dot" style="background:#059669">赵</span>
+          <span class="member-dot" style="background:#f59e0b">钱</span>
+          <span class="member-dot" style="background:#7c3aed">孙</span>
+          <span class="member-dot" style="background:#d1d5db; color:#9ca3af">+1</span>
+        </div>
+      </div>
+      <div class="match-pct-ring mid">65</div>
+      <button class="match-action merge">合并</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ 场景 3：匹配关闭 + 空态 ═══════════ -->
+<div class="phone">
+  <div class="phone-header" style="justify-content:center">🔒 匹配关闭 — 空态</div>
+
+  <!-- 关闭状态头卡 -->
+  <div class="header-card inactive" style="margin-top:8px">
+    <div class="header-top">
+      <div class="match-label">
+        <span class="pulse-dot"></span>匹配已关闭
+      </div>
+      <div class="toggle off"><div class="toggle-knob"></div></div>
+    </div>
+    <div class="header-hint" style="margin-top:0">开启匹配后系统将自动推荐合适的队友和队伍</div>
+  </div>
+
+  <!-- 成员空态 -->
+  <div class="section">
+    <div class="section-header blue">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v2"/></svg>
+        推荐成员
+      </div>
+    </div>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="5"/><path d="M3 21v-2a7 7 0 0 1 7-7h4a7 7 0 0 1 7 7v2"/></svg>
+      </div>
+      <div class="empty-title">暂无匹配成员</div>
+      <div class="empty-desc">开启匹配后 AI 将自动为你推荐</div>
+      <button class="empty-cta green">开启匹配</button>
+    </div>
+  </div>
+
+  <!-- 队伍空态 -->
+  <div class="section">
+    <div class="section-header amber">
+      <div class="section-title">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#d97706" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+        推荐队伍
+      </div>
+    </div>
+    <div class="empty-state">
+      <div class="empty-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="empty-title">暂无匹配队伍</div>
+      <div class="empty-desc">附近队伍将自动出现在这里</div>
+      <button class="empty-cta blue">完善队伍信息提升匹配</button>
+    </div>
+  </div>
+</div>
+
+<style>
+  .hidden { display: none; }
+</style>
+
+</body>
+</html>

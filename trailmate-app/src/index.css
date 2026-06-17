@@ -18,6 +18,10 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+.dark body {
+  background: #030712;
+}
+
 /* Safe area for bottom tab bar on iOS */
 .safe-area-bottom {
   padding-bottom: env(safe-area-inset-bottom, 0px);
@@ -27,6 +31,15 @@ body {
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Scrollbar hide utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Smooth scroll */
@@ -47,3 +60,93 @@ input, select, textarea {
 .animate-slide-up {
   animation: slide-up 0.3s ease-out;
 }
+
+/* Slide in from right animation */
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+.animate-slide-in-right {
+  animation: slideInRight 0.2s ease-out;
+}
+
+/* Countdown bounce animation */
+@keyframes countdownBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-countdown-bounce {
+  animation: countdownBounce 0.4s ease-out;
+}
+
+/* Ping once animation */
+@keyframes pingOnce {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.7; }
+}
+.animate-ping-once {
+  animation: pingOnce 0.8s ease-in-out;
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+  from { opacity: 0; transform: translate(-50%, -20px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
+/* Slide in from left animation */
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
+
+/* Leaflet flag marker: allow badge overflow */
+.flag-marker {
+  background: none !important;
+  border: none !important;
+  overflow: visible !important;
+  white-space: nowrap;
+}
+
+/* 移除 Leaflet 地图容器的默认内边距 */
+.leaflet-container {
+  padding: 0 !important;
+}
+
+/* SOS 红色闪烁动画 */
+@keyframes sos-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(1.4); }
+}
+.sos-marker {
+  background: none !important;
+  border: none !important;
+  animation: sos-pulse 1s ease-in-out infinite;
+}
+
+/* contentEditable placeholder */
+[contenteditable]:empty:before {
+  content: attr(data-placeholder);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+/* 公告富文本内容样式 */
+.rte-content h1 { font-size: 1.2em; font-weight: 700; margin: 0.5em 0; }
+.rte-content h2 { font-size: 1.1em; font-weight: 700; margin: 0.4em 0; }
+.rte-content h3 { font-size: 1em; font-weight: 700; margin: 0.3em 0; }
+.rte-content p { margin: 0.3em 0; }
+.rte-content ul, .rte-content ol { padding-left: 1.5em; margin: 0.3em 0; }
+.rte-content li { margin: 0.15em 0; }
+.rte-content b, .rte-content strong { font-weight: 700; }
+.rte-content i, .rte-content em { font-style: italic; }
+.rte-content u { text-decoration: underline; }
+.rte-content a { color: #16a34a; text-decoration: underline; }
+.rte-content blockquote { border-left: 2px solid #d1d5db; padding-left: 0.75em; margin: 0.3em 0; color: #6b7280; }
+.rte-content table { border-collapse: collapse; margin: 0.3em 0; font-size: 0.9em; }
+.rte-content th, .rte-content td { border: 1px solid #d1d5db; padding: 0.3em 0.5em; }
+.rte-content img { max-width: 100%; height: auto; border-radius: 0.5em; margin: 0.3em 0; }

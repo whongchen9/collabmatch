@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PlanPanel Mockup</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a2e; display: flex; justify-content: center; padding-top: 20px; }
+    .phone { width: 375px; height: 720px; background: #f7f3ee; border-radius: 32px; overflow: hidden; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+
+    /* Header */
+    .panel-header { padding: 14px 16px; background: #fff; border-bottom: 1px solid #eee; display: flex; align-items: center; justify-content: space-between; }
+    .panel-header h2 { font-size: 14px; font-weight: 700; color: #1a1a2e; }
+    .close-btn { width: 28px; height: 28px; border-radius: 8px; border: 1px solid #e0e0e0; background: #fff; display: flex; align-items: center; justify-content: center; color: #999; cursor: pointer; font-size: 16px; }
+
+    /* Content area */
+    .panel-body { padding: 12px; overflow-y: auto; height: calc(100% - 48px); }
+
+    /* Team info card */
+    .team-card { background: linear-gradient(135deg, #10b981, #059669); border-radius: 16px; padding: 16px; color: #fff; margin-bottom: 14px; }
+    .team-card .row { display: flex; align-items: center; justify-content: space-between; }
+    .team-card h3 { font-size: 15px; font-weight: 700; }
+    .team-card .meta { font-size: 11px; opacity: 0.85; margin-top: 4px; }
+    .team-card .status { background: rgba(255,255,255,0.2); border-radius: 20px; padding: 4px 10px; font-size: 10px; font-weight: 600; }
+    .team-card .stats { display: flex; gap: 16px; margin-top: 10px; }
+    .team-card .stat { text-align: center; }
+    .team-card .stat-val { font-size: 18px; font-weight: 800; }
+    .team-card .stat-lbl { font-size: 9px; opacity: 0.7; text-transform: uppercase; }
+
+    /* Section cards */
+    .section { background: #fff; border-radius: 14px; margin-bottom: 10px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+    .section-header { padding: 12px 14px; display: flex; align-items: center; justify-content: space-between; border-left: 3px solid transparent; }
+    .section-header.green { border-left-color: #10b981; }
+    .section-header.blue  { border-left-color: #3b82f6; }
+    .section-header.amber { border-left-color: #f59e0b; }
+    .section-header.gray  { border-left-color: #9ca3af; }
+    .section-header h4 { font-size: 12px; font-weight: 700; color: #374151; }
+    .section-header .add-btn { width: 26px; height: 26px; border-radius: 8px; background: #f0fdf4; color: #10b981; border: none; cursor: pointer; font-size: 18px; line-height: 1; }
+
+    /* Photo grid (with content) */
+    .photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 14px 12px; }
+    .photo-grid .photo { aspect-ratio: 1; border-radius: 10px; background: #e5e7eb; }
+    .photo:nth-child(1) { background: linear-gradient(135deg, #fbbf24, #f59e0b); }
+    .photo:nth-child(4) { background: linear-gradient(135deg, #34d399, #10b981); }
+    .photo:nth-child(6) { background: linear-gradient(135deg, #60a5fa, #3b82f6); }
+
+    /* Empty state */
+    .empty-state { padding: 24px 14px 18px; text-align: center; }
+    .empty-state .icon { width: 48px; height: 48px; border-radius: 14px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .empty-state .icon.green { background: #ecfdf5; color: #10b981; }
+    .empty-state .icon.blue  { background: #eff6ff; color: #3b82f6; }
+    .empty-state .icon.gray  { background: #f3f4f6; color: #9ca3af; }
+    .empty-state p { font-size: 11px; color: #9ca3af; margin-bottom: 8px; }
+    .empty-state .cta { font-size: 10px; color: #10b981; font-weight: 600; cursor: pointer; }
+
+    /* Plan preview */
+    .plan-preview { padding: 0 14px 12px; }
+    .plan-preview p { font-size: 11px; color: #6b7280; line-height: 1.6; }
+
+    /* Comments */
+    .comment-item { padding: 8px 14px; display: flex; gap: 8px; align-items: flex-start; border-top: 1px solid #f3f4f6; }
+    .comment-avatar { width: 28px; height: 28px; border-radius: 10px; background: #10b981; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .comment-content { flex: 1; }
+    .comment-content .name { font-size: 10px; font-weight: 600; color: #374151; }
+    .comment-content .text { font-size: 10px; color: #6b7280; margin-top: 2px; }
+    .comment-content .time { font-size: 8px; color: #d1d5db; margin-top: 2px; }
+    .comment-input-row { padding: 8px 14px 12px; display: flex; gap: 6px; align-items: center; border-top: 1px solid #f3f4f6; background: #fafaf9; border-radius: 0 0 14px 14px; }
+    .comment-input-row input { flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid #e5e7eb; font-size: 11px; outline: none; }
+    .comment-input-row button { width: 32px; height: 32px; border-radius: 50%; background: #10b981; color: #fff; border: none; cursor: pointer; font-size: 16px; }
+
+    /* Tags */
+    .tag-row { padding: 0 14px 10px; display: flex; gap: 6px; flex-wrap: wrap; }
+    .tag { padding: 4px 10px; border-radius: 14px; font-size: 10px; font-weight: 500; }
+    .tag.green { background: #ecfdf5; color: #059669; }
+    .tag.amber { background: #fffbeb; color: #d97706; }
+
+    .scrollbar-hide::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div class="phone">
+    <!-- Header -->
+    <div class="panel-header">
+      <h2>计划</h2>
+      <button class="close-btn">✕</button>
+    </div>
+
+    <!-- Body -->
+    <div class="panel-body scrollbar-hide" style="overflow-y: auto;">
+      <!-- Team summary -->
+      <div class="team-card">
+        <div class="row">
+          <div>
+            <h3>梧桐山日归小分队</h3>
+            <p class="meta">📍 深圳梧桐山 · 周六 07:00</p>
+          </div>
+          <span class="status">⚪ 等待出发</span>
+        </div>
+        <div class="stats">
+          <div class="stat"><div class="stat-val">3</div><div class="stat-lbl">队员</div></div>
+          <div class="stat"><div class="stat-val">6</div><div class="stat-lbl">上限</div></div>
+          <div class="stat"><div class="stat-val">4</div><div class="stat-lbl">打卡点</div></div>
+          <div class="stat"><div class="stat-val">50%</div><div class="stat-lbl">满员</div></div>
+        </div>
+      </div>
+
+      <!-- Photo section (with content) -->
+      <div class="section">
+        <div class="section-header green">
+          <h4>📷 相册</h4>
+          <button class="add-btn">+</button>
+        </div>
+        <div class="photo-grid">
+          <div class="photo"></div>
+          <div class="photo"></div>
+          <div class="photo"></div>
+          <div class="photo"></div>
+          <div class="photo"></div>
+          <div class="photo"></div>
+        </div>
+      </div>
+
+      <!-- Plan section (with content) -->
+      <div class="section">
+        <div class="section-header blue">
+          <h4>📋 行动计划</h4>
+          <button class="add-btn" style="background:#eff6ff;color:#3b82f6;">✎</button>
+        </div>
+        <div class="plan-preview">
+          <p>🎯 <b>日程</b><br>08:00 梧桐山北大门口集合<br>08:30 泰山涧上山<br>11:00 登顶打卡<br>12:00 山顶野餐休息<br>14:00 好汉坡下山<br>16:00 返回北门解散</p>
+          <p style="margin-top:6px">🧳 <b>装备</b><br>登山鞋、防晒霜、2L 水、路餐</p>
+        </div>
+      </div>
+
+      <!-- Prompts (with content) -->
+      <div class="section">
+        <div class="section-header amber">
+          <h4>💡 匹配提示词</h4>
+        </div>
+        <div class="tag-row">
+          <span class="tag green">#梧桐山</span>
+          <span class="tag green">#日归</span>
+          <span class="tag green">#非吸烟</span>
+          <span class="tag amber">#中等强度</span>
+          <span class="tag amber">#周六</span>
+        </div>
+      </div>
+
+      <!-- Comments -->
+      <div class="section">
+        <div class="section-header gray">
+          <h4>💬 讨论</h4>
+        </div>
+        <div class="comment-item">
+          <div class="comment-avatar">S</div>
+          <div class="comment-content">
+            <div class="name">Shan</div>
+            <div class="text">我带了炉头和气罐，山顶可以煮茶</div>
+            <div class="time">10 分钟前</div>
+          </div>
+        </div>
+        <div class="comment-item">
+          <div class="comment-avatar">Y</div>
+          <div class="comment-content">
+            <div class="name">Yuki</div>
+            <div class="text">北门停车场周末很堵，建议提前出发</div>
+            <div class="time">30 分钟前</div>
+          </div>
+        </div>
+        <!-- Fixed comment input -->
+        <div class="comment-input-row">
+          <input type="text" placeholder="说点什么...">
+          <button>↑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

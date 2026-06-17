@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Location 页面重设计 Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, sans-serif;
+    background: #f0ede7; display: flex; flex-direction: column; align-items: center;
+    padding: 20px 12px; gap: 40px;
+  }
+  .phone {
+    width: 390px; min-height: 700px;
+    background: #f5f3ef; border-radius: 36px; overflow: hidden;
+    box-shadow: 0 30px 60px rgba(0,0,0,.12);
+  }
+  .phone-header {
+    height: 42px; background: #f5f3ef;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #6b7280;
+  }
+
+  /* ── 公共 ── */
+  .header-card {
+    margin: 8px 4px 0; border-radius: 18px; padding: 14px 16px;
+  }
+  .header-card.green { background: linear-gradient(135deg, #10b981, #059669); color: #fff; box-shadow: 0 4px 14px rgba(16,185,129,.12); }
+  .header-card.white { background: #fff; color: #6b7280; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .header-label { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 800; }
+  .status-dot { width: 7px; height: 7px; border-radius: 50%; }
+  .status-dot.idle { background: #9ca3af; }
+  .status-dot.hiking { background: #10b981; animation: pulse 1.5s infinite; }
+  .status-dot.completed { background: #3b82f6; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+  .status-badge {
+    font-size: 9px; padding: 2px 8px; border-radius: 10px; font-weight: 800;
+  }
+  .status-badge.idle { background: rgba(255,255,255,.2); }
+  .status-badge.hiking { background: rgba(255,255,255,.25); }
+  .status-badge.completed { background: rgba(255,255,255,.2); }
+  .header-stats { display: flex; gap: 20px; }
+  .stat { text-align: center; }
+  .stat-val { font-size: 17px; font-weight: 900; }
+  .stat-val.light { color: #1e293b; }
+  .stat-label { font-size: 9px; opacity: .55; margin-top: 1px; }
+
+  .panel { padding: 0 12px; }
+
+  .section { background: #fff; border-radius: 16px; overflow: hidden; margin: 8px 4px; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+  .section-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-left: 3px solid; }
+  .section-header.green { border-left-color: #34d399; }
+  .section-header.blue { border-left-color: #60a5fa; }
+  .section-header.amber { border-left-color: #f59e0b; }
+  .section-title { font-size: 11px; font-weight: 800; color: #374151; display: flex; align-items: center; gap: 6px; }
+
+  /* ── 迷你地图 ── */
+  .mini-map {
+    height: 180px; margin: 0 14px 14px;
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 40%, #a5d6a7 70%, #81c784 100%);
+    border-radius: 14px; position: relative; overflow: hidden;
+  }
+  .mini-map::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(0,0,0,.03) 19px, rgba(0,0,0,.03) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(0,0,0,.03) 19px, rgba(0,0,0,.03) 20px);
+  }
+  .map-pin {
+    position: absolute; width: 20px; height: 20px;
+    border-radius: 50% 50% 50% 0; background: #ef4444;
+    transform: rotate(-45deg); box-shadow: 0 2px 6px rgba(239,68,68,.4);
+  }
+  .map-pin::after {
+    content: ''; position: absolute; top: 4px; left: 4px;
+    width: 12px; height: 12px; border-radius: 50%; background: #fff;
+  }
+  .map-pin.p2 { top: 55px; left: 60px; }
+  .map-pin.p3 { top: 90px; left: 210px; }
+  .map-pin.p4 { top: 35px; left: 270px; background: #10b981; }
+  .map-full-btn {
+    position: absolute; bottom: 8px; right: 8px;
+    background: rgba(255,255,255,.92); backdrop-filter: blur(6px);
+    border: none; border-radius: 10px; padding: 5px 10px;
+    font-size: 9px; font-weight: 800; color: #374151;
+    box-shadow: 0 1px 4px rgba(0,0,0,.1); cursor: pointer;
+  }
+
+  /* ── 打卡点行 ── */
+  .cp-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid #f3f4f6;
+  }
+  .cp-row:last-child { border-bottom: none; }
+  .cp-row.next { background: #eff6ff; }
+  .cp-num {
+    width: 24px; height: 24px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; font-weight: 800; flex-shrink: 0;
+  }
+  .cp-num.done { background: #d1fae5; color: #065f46; }
+  .cp-num.next-num { background: #3b82f6; color: #fff; }
+  .cp-num.pending { background: #f3f4f6; color: #9ca3af; }
+  .cp-info { flex: 1; min-width: 0; }
+  .cp-name { font-size: 11px; font-weight: 800; color: #374151; }
+  .cp-name.next-name { color: #1d4ed8; }
+  .cp-meta { font-size: 9px; color: #9ca3af; margin-top: 1px; }
+  .cp-badge { font-size: 9px; padding: 1px 7px; border-radius: 8px; font-weight: 700; white-space: nowrap; }
+  .cp-badge.done { background: #d1fae5; color: #065f46; }
+  .cp-badge.next-badge { background: #dbeafe; color: #1d4ed8; }
+  .cp-dist { font-size: 10px; font-weight: 800; color: #6b7280; white-space: nowrap; }
+
+  /* ── 签到进度行 ── */
+  .checkin-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 14px; border-bottom: 1px solid #f3f4f6;
+  }
+  .checkin-row:last-child { border-bottom: none; }
+  .member-avatar {
+    width: 28px; height: 28px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 800; color: #fff; flex-shrink: 0;
+  }
+  .member-info { flex: 1; min-width: 0; }
+  .member-name { font-size: 11px; font-weight: 800; color: #374151; }
+  .member-progress { font-size: 9px; color: #9ca3af; margin-top: 1px; }
+  .progress-bar {
+    height: 4px; background: #f3f4f6; border-radius: 2px;
+    margin-top: 3px; overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 2px; background: #10b981;
+    transition: width .3s;
+  }
+  .member-count { font-size: 12px; font-weight: 900; color: #374151; }
+
+  .empty-state { padding: 22px 14px; text-align: center; }
+  .empty-icon {
+    width: 36px; height: 36px; border-radius: 10px; background: #f3f4f6;
+    margin: 0 auto 8px; display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: #d1d5db;
+  }
+  .empty-title { font-size: 11px; color: #9ca3af; }
+  .empty-desc { font-size: 9px; color: #d1d5db; margin-top: 3px; }
+
+  /* ═══════ FULL MAP PAGE STYLES ═══════ */
+  .full-map-phone { width: 390px; min-height: 780px; position: relative; background: #f5f3ef; }
+
+  .fm-topbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: #fff; border-bottom: 1px solid #f3f4f6;
+  }
+  .fm-back {
+    width: 32px; height: 32px; border-radius: 10px; background: #f3f4f6;
+    border: none; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; color: #6b7280;
+  }
+  .fm-title { flex: 1; min-width: 0; }
+  .fm-title h1 { font-size: 13px; font-weight: 900; color: #1e293b; }
+  .fm-title p { font-size: 9px; color: #9ca3af; margin-top: 1px; }
+  .fm-actions { display: flex; gap: 6px; }
+  .fm-btn {
+    padding: 6px 12px; border-radius: 10px; border: none;
+    font-size: 10px; font-weight: 800; cursor: pointer;
+  }
+  .fm-btn.share { background: #10b981; color: #fff; }
+  .fm-btn.sos { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+
+  /* ── 全屏地图信息卡 ── */
+  .fm-info-card {
+    margin: 8px 12px; background: #fff; border-radius: 18px;
+    overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  }
+  .fm-info-header {
+    padding: 10px 14px; border-left: 3px solid #60a5fa;
+    font-size: 11px; font-weight: 800; color: #374151;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .fm-cp-chips {
+    display: flex; gap: 6px; padding: 6px 14px 12px; overflow-x: auto;
+  }
+  .fm-cp-chip {
+    flex-shrink: 0; display: flex; flex-direction: column; align-items: center;
+    gap: 3px; cursor: pointer;
+  }
+  .fm-cp-dot {
+    width: 36px; height: 36px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 800;
+    position: relative; transition: transform .15s;
+  }
+  .fm-cp-dot:hover { transform: scale(1.08); }
+  .fm-cp-dot.checked { background: #fef2f2; color: #ef4444; }
+  .fm-cp-dot.unchecked { background: #f3f4f6; color: #9ca3af; }
+  .fm-cp-dot.selected { background: #dbeafe; color: #2563eb; box-shadow: 0 0 0 2px #93c5fd; }
+  .fm-cp-count {
+    position: absolute; top: -4px; right: -4px;
+    min-width: 15px; height: 15px; border-radius: 8px;
+    background: #ef4444; color: #fff; font-size: 8px; font-weight: 900;
+    display: flex; align-items: center; justify-content: center; padding: 0 3px;
+  }
+  .fm-cp-count.blue { background: #6b7280; }
+  .fm-cp-label { font-size: 8px; color: #9ca3af; text-align: center; max-width: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .fm-divider { border: none; border-top: 1px solid #f3f4f6; margin: 0 14px; }
+  .fm-checkin-row { padding: 10px 14px; }
+  .fm-checkin-label { font-size: 9px; color: #9ca3af; font-weight: 700; margin-bottom: 6px; }
+  .fm-avatar-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .fm-avatar {
+    width: 26px; height: 26px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px; font-weight: 800; color: #fff;
+    border: 2px solid #fff; box-shadow: 0 1px 2px rgba(0,0,0,.08);
+    cursor: pointer; transition: transform .15s;
+  }
+  .fm-avatar:hover { transform: scale(1.15); }
+  .fm-avatar.ghost { opacity: .25; filter: grayscale(1); }
+
+  /* ── 全屏地图区域 ── */
+  .fm-map-wrap {
+    margin: 8px 12px; flex: 1; min-height: 300px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 30%, #90caf9 60%, #64b5f6 100%);
+    border-radius: 20px; position: relative; overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0,0,0,.06);
+  }
+  .fm-map-wrap::before {
+    content: ''; position: absolute; inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 29px, rgba(255,255,255,.05) 29px, rgba(255,255,255,.05) 30px),
+                repeating-linear-gradient(90deg, transparent, transparent 29px, rgba(255,255,255,.05) 29px, rgba(255,255,255,.05) 30px);
+  }
+  .fm-route { position: absolute; height: 3px; background: rgba(59,130,246,.5); border-radius: 2px; }
+  .fm-route.r1 { top: 90px; left: 50px; width: 180px; transform: rotate(15deg); }
+  .fm-route.r2 { top: 120px; left: 160px; width: 100px; transform: rotate(-10deg); }
+  .fm-locate-btn {
+    position: absolute; top: 10px; right: 10px;
+    width: 34px; height: 34px; border-radius: 10px; background: #fff;
+    border: none; box-shadow: 0 2px 8px rgba(0,0,0,.1);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 16px; color: #3b82f6;
+  }
+  .fm-empty-overlay {
+    position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+    background: rgba(255,255,255,.4); pointer-events: none;
+    font-size: 12px; color: #9ca3af; font-weight: 700;
+  }
+
+  .fm-bottom {
+    padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .fm-bottom-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; background: #ecfdf5; border-radius: 14px;
+  }
+  .fm-bottom-bar span { font-size: 10px; color: #065f46; font-weight: 700; }
+  .fm-bottom-btn {
+    padding: 5px 14px; background: #10b981; color: #fff;
+    border-radius: 10px; border: none; font-size: 10px; font-weight: 800; cursor: pointer;
+  }
+
+</style>
+</head>
+<body>
+
+<!-- ═══════════ 面板 1：LocationPanel（侧边栏版）— 活跃徒步中 ═══════════ -->
+<div class="phone">
+  <div class="phone-header">📍 位置分享（侧边栏 · 徒步中）</div>
+
+  <!-- 头卡 -->
+  <div class="header-card green">
+    <div class="header-top">
+      <div class="header-label">
+        <span class="status-dot hiking"></span>征途中
+      </div>
+      <span class="status-badge hiking">4/6 人定位</span>
+    </div>
+    <div class="header-stats">
+      <div class="stat"><div class="stat-val">5</div><div class="stat-label">打卡点</div></div>
+      <div class="stat"><div class="stat-val">3/6</div><div class="stat-label">已签到</div></div>
+      <div class="stat"><div class="stat-val">380m</div><div class="stat-label">下个打卡点</div></div>
+    </div>
+  </div>
+
+  <!-- 地图区 -->
+  <div class="section">
+    <div class="section-header green">
+      <span class="section-title">🗺️ 队伍地图</span>
+    </div>
+    <div class="mini-map">
+      <div class="map-pin p2"></div>
+      <div class="map-pin p3"></div>
+      <div class="map-pin p4"></div>
+      <button class="map-full-btn">🔍 打开完整地图</button>
+    </div>
+  </div>
+
+  <!-- 打卡点 -->
+  <div class="section">
+    <div class="section-header blue">
+      <span class="section-title">📍 打卡点</span>
+      <span style="font-size:9px;color:#3b82f6;font-weight:800;background:#eff6ff;padding:1px 7px;border-radius:8px;">5个</span>
+    </div>
+
+    <!-- 下一个打卡点（高亮） -->
+    <div class="cp-row next">
+      <div class="cp-num next-num">⏭</div>
+      <div class="cp-info">
+        <div class="cp-name next-name">山顶观景台</div>
+        <div class="cp-meta">6人已签到</div>
+      </div>
+      <span class="cp-badge next-badge">380m</span>
+    </div>
+
+    <!-- 已签到 -->
+    <div class="cp-row">
+      <div class="cp-num done">✓</div>
+      <div class="cp-info">
+        <div class="cp-name">梧桐山南门</div>
+        <div class="cp-meta">6人已签到</div>
+      </div>
+      <span class="cp-badge done">已签到</span>
+    </div>
+
+    <!-- 未签到 -->
+    <div class="cp-row">
+      <div class="cp-num pending">3</div>
+      <div class="cp-info">
+        <div class="cp-name">蝴蝶谷</div>
+        <div class="cp-meta">2人已签到</div>
+      </div>
+      <span class="cp-dist">1.2km</span>
+    </div>
+
+    <div class="cp-row">
+      <div class="cp-num pending">4</div>
+      <div class="cp-info">
+        <div class="cp-name">好汉坡</div>
+        <div class="cp-meta">0人已签到</div>
+      </div>
+      <span class="cp-dist">2.4km</span>
+    </div>
+
+    <div class="cp-row">
+      <div class="cp-num pending">5</div>
+      <div class="cp-info">
+        <div class="cp-name">终点：仙湖植物园</div>
+        <div class="cp-meta">0人已签到</div>
+      </div>
+      <span class="cp-dist">3.6km</span>
+    </div>
+  </div>
+
+  <!-- 签到情况 -->
+  <div class="section" style="margin-bottom:12px">
+    <div class="section-header amber">
+      <span class="section-title">✅ 签到进度</span>
+    </div>
+    <div class="checkin-row">
+      <div class="member-avatar" style="background:#f59e0b;">张</div>
+      <div class="member-info">
+        <div class="member-name">张山峰</div>
+        <div class="member-progress">5/5 已全部签到</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:100%"></div></div>
+      </div>
+      <div class="member-count">5/5</div>
+    </div>
+    <div class="checkin-row">
+      <div class="member-avatar" style="background:#7c3aed;">李</div>
+      <div class="member-info">
+        <div class="member-name">李小溪</div>
+        <div class="member-progress">3/5 已签到</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
+      </div>
+      <div class="member-count">3/5</div>
+    </div>
+    <div class="checkin-row">
+      <div class="member-avatar" style="background:#2563eb;">王</div>
+      <div class="member-info">
+        <div class="member-name">王大力</div>
+        <div class="member-progress">2/5 已签到</div>
+        <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+      </div>
+      <div class="member-count">2/5</div>
+    </div>
+    <div class="checkin-row">
+      <div class="member-avatar" style="background:#d1d5db;color:#9ca3af;">+3</div>
+      <div class="member-info">
+        <div class="member-name">其他队员</div>
+        <div class="member-progress">1-2 个打卡点</div>
+      </div>
+      <div class="member-count" style="color:#9ca3af;">1-2</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ 面板 2：LocationPanel — 空态（未出发） ═══════════ -->
+<div class="phone">
+  <div class="phone-header">📍 位置分享（侧边栏 · 未出发）</div>
+
+  <div class="header-card green" style="background: #fff; color: #6b7280; box-shadow: 0 1px 3px rgba(0,0,0,.04);">
+    <div class="header-top">
+      <div class="header-label" style="color: #6b7280;">
+        <span class="status-dot idle"></span>等待出发
+      </div>
+      <span class="status-badge idle" style="background:#f3f4f6; color:#9ca3af;">队长未出发</span>
+    </div>
+    <div class="header-stats">
+      <div class="stat"><div class="stat-val light">0</div><div class="stat-label">打卡点</div></div>
+      <div class="stat"><div class="stat-val light">—</div><div class="stat-label">已签到</div></div>
+      <div class="stat"><div class="stat-val light">—</div><div class="stat-label">距离</div></div>
+    </div>
+    <p style="font-size:9px; color:#9ca3af; margin-top:8px;">远征出发后将自动启用位置共享</p>
+  </div>
+
+  <div class="section">
+    <div class="section-header green">
+      <span class="section-title">🗺️ 队伍地图</span>
+    </div>
+    <div class="empty-state">
+      <div class="empty-icon">🗺️</div>
+      <div class="empty-title">位置共享未开启</div>
+      <div class="empty-desc">出发后队长设置打卡点，地图将在此显示</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ 面板 3：LocationMap（全屏页） ═══════════ -->
+<div class="phone full-map-phone" style="border-radius:36px;overflow:hidden;background:#f5f3ef;display:flex;flex-direction:column;width:390px;">
+  <div class="phone-header">🌏 完整地图（/location/:id）</div>
+
+  <!-- Top Bar -->
+  <div class="fm-topbar" style="shrink:0">
+    <button class="fm-back">←</button>
+    <div class="fm-title">
+      <h1>梧桐山攀登小分队</h1>
+      <p>🟢 征途中 · 4人定位 · 5个打卡点</p>
+    </div>
+    <div class="fm-actions">
+      <button class="fm-btn sos">🆘 SOS</button>
+      <button class="fm-btn share">📤 分享</button>
+    </div>
+  </div>
+
+  <!-- Info Card -->
+  <div class="fm-info-card" style="shrink:0">
+    <div class="fm-info-header">
+      <span>📍 打卡点</span>
+      <span style="font-size:9px;color:#9ca3af;">点击签到（500米内）</span>
+    </div>
+    <div class="fm-cp-chips">
+      <div class="fm-cp-chip">
+        <div class="fm-cp-dot checked">
+          ✓<span class="fm-cp-count">6</span>
+        </div>
+        <span class="fm-cp-label">南门</span>
+      </div>
+      <div class="fm-cp-chip">
+        <div class="fm-cp-dot selected">
+          ⏭<span class="fm-cp-count blue">2</span>
+        </div>
+        <span class="fm-cp-label" style="color:#2563eb;font-weight:700;">观景台</span>
+      </div>
+      <div class="fm-cp-chip">
+        <div class="fm-cp-dot unchecked">
+          3<span class="fm-cp-count blue">0</span>
+        </div>
+        <span class="fm-cp-label">蝴蝶谷</span>
+      </div>
+      <div class="fm-cp-chip">
+        <div class="fm-cp-dot unchecked">
+          4<span class="fm-cp-count blue">0</span>
+        </div>
+        <span class="fm-cp-label">好汉坡</span>
+      </div>
+      <div class="fm-cp-chip">
+        <div class="fm-cp-dot unchecked">
+          🏁<span class="fm-cp-count blue">0</span>
+        </div>
+        <span class="fm-cp-label">终点</span>
+      </div>
+    </div>
+
+    <hr class="fm-divider" />
+
+    <div class="fm-checkin-row">
+      <div class="fm-checkin-label">
+        观景台 · 签到情况（<span style="color:#1d4ed8;font-weight:800;">已选</span>）
+      </div>
+      <div class="fm-avatar-row">
+        <div class="fm-avatar" style="background:#f59e0b;" title="张山峰 · 已签到">张</div>
+        <div class="fm-avatar" style="background:#7c3aed;" title="李小溪 · 已签到">李</div>
+        <div class="fm-avatar ghost" style="background:#9ca3af;" title="王大力 · 未签到">王</div>
+        <div class="fm-avatar ghost" style="background:#9ca3af;" title="陈小雅 · 未签到">陈</div>
+        <div class="fm-avatar ghost" style="background:#9ca3af;" title="刘大伟 · 未签到">刘</div>
+        <div class="fm-avatar ghost" style="background:#9ca3af;" title="赵六 · 未签到">赵</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Map Area -->
+  <div class="fm-map-wrap" style="flex:1;min-height:260px;">
+    <div class="map-pin" style="top:40px;left:50px;"></div>
+    <div class="map-pin" style="top:100px;left:140px;background:#3b82f6;"></div>
+    <div class="map-pin" style="top:70px;left:240px;"></div>
+    <div style="position:absolute;top:55px;left:55px;width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 4px rgba(34,197,94,.5);"></div>
+    <div style="position:absolute;top:115px;left:145px;width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 4px rgba(34,197,94,.5);"></div>
+    <div style="position:absolute;top:85px;left:245px;width:8px;height:8px;border-radius:50%;background:#22c55e;border:2px solid #fff;box-shadow:0 0 4px rgba(34,197,94,.5);"></div>
+    <div class="fm-route r1"></div>
+    <div class="fm-route r2"></div>
+    <button class="fm-locate-btn">📍</button>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="fm-bottom" style="shrink:0">
+    <div class="fm-bottom-bar">
+      <span>✅ 已设置 5 个打卡点</span>
+      <button class="fm-bottom-btn">返回队伍出发 →</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

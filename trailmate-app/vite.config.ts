@@ -2,6 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tsconfigPaths from "vite-tsconfig-paths";
 import { traeBadgePlugin } from 'vite-plugin-trae-solo-badge';
+import { copyFileSync } from 'fs';
 
 // https://vite.dev/config/
 export default defineConfig({
@@ -11,8 +12,9 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://localhost:3001',
+        target: 'https://cloudbase-d6g8yog0ub3e56efe.service.tcloudbase.com',
         changeOrigin: true,
+        secure: true,
       },
     },
   },
@@ -32,7 +34,15 @@ export default defineConfig({
       clickUrl: 'https://www.trae.ai/solo?showJoin=1',
       autoTheme: true,
       autoThemeTarget: '#root'
-    }), 
-    tsconfigPaths()
+    }),
+    tsconfigPaths(),
+    {
+      name: 'copy-404',
+      closeBundle() {
+        try {
+          copyFileSync('dist/index.html', 'dist/404.html');
+        } catch {}
+      }
+    }
   ],
 })

@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>TrailMate · 徒步匹配 · 原型</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; background: #f5f5f8; color: #1a1a2e; overflow: hidden; height: 100vh; }
+
+/* App frame */
+.app { max-width: 420px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; background: #fff; position: relative; box-shadow: 0 0 30px rgba(0,0,0,0.08); }
+
+/* Status bar */
+.status-bar { padding: 10px 16px 6px; display: flex; justify-content: space-between; font-size: 11px; color: #666; background: #fff; }
+
+/* Top header */
+.top-header { padding: 6px 16px 10px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #f0f0f2; }
+.top-header h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+.top-header .actions { display: flex; gap: 12px; }
+.top-header .actions span { font-size: 20px; cursor: pointer; }
+
+/* Screen container */
+.screens { flex: 1; overflow: hidden; position: relative; }
+.screen { display: none; height: 100%; overflow-y: auto; padding: 0 0 80px; }
+.screen.active { display: block; }
+
+/* Bottom nav */
+.bottom-nav { position: absolute; bottom: 0; left: 0; right: 0; background: rgba(255,255,255,0.96); backdrop-filter: blur(10px); border-top: 1px solid #eee; display: flex; z-index: 100; }
+.nav-item { flex: 1; text-align: center; padding: 6px 0 8px; cursor: pointer; font-size: 10px; color: #999; transition: all 0.2s; border: none; background: none; }
+.nav-item .icon { font-size: 20px; display: block; margin-bottom: 1px; }
+.nav-item.active { color: #4f46e5; }
+.nav-item.active .icon { }
+.nav-item.create-btn { position: relative; top: -8px; }
+.nav-item.create-btn .icon { background: #4f46e5; color: #fff; width: 40px; height: 40px; line-height: 40px; border-radius: 50%; display: inline-block; font-size: 22px; box-shadow: 0 2px 8px rgba(79,70,229,0.3); }
+
+/* Cards */
+.feed { padding: 12px 16px; }
+.card { background: #fff; border-radius: 14px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.04); border: 1px solid #f0f0f2; overflow: hidden; }
+.card-img { height: 140px; background-size: cover; background-position: center; position: relative; }
+.card-img .difficulty { position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 6px; font-size: 10px; font-weight: 600; color: #fff; }
+.card-img .save-btn { position: absolute; top: 10px; right: 10px; background: rgba(255,255,255,0.8); backdrop-filter: blur(4px); border: none; width: 28px; height: 28px; border-radius: 50%; font-size: 14px; cursor: pointer; }
+.card-body { padding: 12px 14px 14px; }
+.card-body .title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.card-body .meta { font-size: 12px; color: #888; line-height: 1.6; }
+.card-body .tags { display: flex; gap: 4px; margin: 6px 0 8px; flex-wrap: wrap; }
+.card-body .tags span { font-size: 10px; padding: 2px 6px; border-radius: 4px; background: #f0f0f5; color: #666; }
+.card-footer { display: flex; align-items: center; justify-content: space-between; padding: 0 14px 12px; }
+.card-footer .match-badge { background: #eef2ff; color: #4f46e5; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 6px; }
+.card-footer .btn-join { background: #4f46e5; color: #fff; border: none; padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 500; cursor: pointer; }
+.card-footer .btn-join:active { opacity: 0.8; }
+
+/* Form */
+.form-scroll { padding: 16px; }
+.form-group { margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 600; color: #333; display: block; margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea { width: 100%; padding: 10px 12px; border: 1px solid #e0e0e5; border-radius: 10px; font-size: 14px; outline: none; background: #fafafc; }
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: #4f46e5; background: #fff; }
+.form-group textarea { resize: vertical; min-height: 60px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.btn-primary { width: 100%; padding: 12px; background: #4f46e5; color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 600; cursor: pointer; }
+.btn-primary:active { opacity: 0.85; }
+
+/* Profile */
+.profile-header { text-align: center; padding: 20px 16px; background: linear-gradient(135deg, #eef2ff, #fff); }
+.profile-avatar { width: 64px; height: 64px; border-radius: 50%; background: #4f46e5; color: #fff; line-height: 64px; font-size: 28px; margin: 0 auto 8px; font-weight: 600; }
+.profile-name { font-size: 18px; font-weight: 700; }
+.profile-level { font-size: 12px; color: #4f46e5; background: #eef2ff; display: inline-block; padding: 2px 10px; border-radius: 10px; margin-top: 4px; }
+.profile-stats { display: flex; gap: 0; padding: 12px 16px; border-bottom: 1px solid #f0f0f2; }
+.stat-item { flex: 1; text-align: center; }
+.stat-num { font-size: 20px; font-weight: 700; color: #1a1a2e; }
+.stat-label { font-size: 10px; color: #999; margin-top: 2px; }
+
+/* Settings */
+.setting-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid #f5f5f8; }
+.setting-item .left { display: flex; align-items: center; gap: 12px; }
+.setting-item .left .icon { font-size: 18px; }
+.setting-item .left .text { font-size: 14px; }
+.setting-item .arrow { color: #ccc; font-size: 14px; }
+
+/* Tabs */
+.tabs { display: flex; border-bottom: 1px solid #f0f0f2; background: #fff; }
+.tab { flex: 1; text-align: center; padding: 10px 0; font-size: 13px; color: #999; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab.active { color: #4f46e5; border-bottom-color: #4f46e5; font-weight: 600; }
+
+/* Match result */
+.match-item { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #f5f5f8; }
+.match-avatar { width: 40px; height: 40px; border-radius: 50%; background: #eef2ff; display: flex; align-items: center; justify-content: center; font-size: 16px; color: #4f46e5; }
+.match-info { flex: 1; }
+.match-info .name { font-size: 14px; font-weight: 600; }
+.match-info .hike-level { font-size: 11px; color: #888; }
+.match-score { font-size: 13px; font-weight: 700; color: #4f46e5; }
+.match-score small { font-size: 10px; font-weight: 400; color: #999; }
+.match-reason { font-size: 10px; color: #888; margin-top: 2px; }
+
+/* Toast */
+.toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%); background: rgba(0,0,0,0.75); color: #fff; padding: 12px 24px; border-radius: 10px; font-size: 13px; z-index: 999; display: none; backdrop-filter: blur(4px); }
+
+/* Activity detail overlay */
+.detail-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: #fff; z-index: 200; display: none; overflow-y: auto; }
+.detail-overlay.show { display: block; }
+.detail-header { position: relative; height: 200px; background-size: cover; background-position: center; }
+.detail-header .back { position: absolute; top: 12px; left: 12px; width: 32px; height: 32px; background: rgba(255,255,255,0.85); border-radius: 50%; border: none; font-size: 16px; cursor: pointer; }
+.detail-header .diff-badge { position: absolute; top: 12px; right: 12px; padding: 4px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; color: #fff; }
+.detail-content { padding: 16px; }
+.detail-content h2 { font-size: 20px; margin-bottom: 6px; }
+.detail-meta { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin: 12px 0; }
+.detail-meta-item { background: #f8f8fc; border-radius: 10px; padding: 10px; text-align: center; }
+.detail-meta-item .num { font-size: 16px; font-weight: 700; }
+.detail-meta-item .lbl { font-size: 10px; color: #888; margin-top: 2px; }
+.detail-desc { font-size: 13px; color: #555; line-height: 1.6; margin: 12px 0; }
+.detail-tags { display: flex; gap: 4px; flex-wrap: wrap; margin: 8px 0; }
+.detail-tags span { font-size: 10px; padding: 2px 8px; border-radius: 4px; background: #f0f0f5; }
+.detail-actions { display: flex; gap: 10px; margin-top: 16px; }
+.detail-actions .btn { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; font-weight: 600; border: none; cursor: pointer; }
+.detail-actions .btn-primary { background: #4f46e5; color: #fff; }
+.detail-actions .btn-outline { background: none; border: 1px solid #ddd; color: #333; }
+.detail-actions .btn-save { background: none; border: 1px solid #ddd; flex: 0; padding: 10px 14px; font-size: 18px; }
+
+/* Cover images */
+.c-img-1 { background-image: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.c-img-2 { background-image: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.c-img-3 { background-image: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.c-img-4 { background-image: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+.c-img-5 { background-image: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+.c-img-6 { background-image: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); }
+
+/* Empty state */
+.empty-state { padding: 40px 20px; text-align: center; color: #999; }
+.empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+.empty-state p { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <!-- Status Bar -->
+  <div class="status-bar"><span>9:41</span><span>📶 🔋 98%</span></div>
+
+  <!-- Top Header -->
+  <div class="top-header" id="topHeader">
+    <h1 id="pageTitle">🏔️ TrailMate</h1>
+    <div class="actions"><span onclick="showToast('搜索功能开发中')">🔍</span><span onclick="showToast('消息中心')">🔔</span></div>
+  </div>
+
+  <!-- Screens -->
+  <div class="screens">
+
+    <!-- SCREEN: Home Feed -->
+    <div class="screen active" id="screen-home">
+      <div class="tabs" style="margin:0 16px;">
+        <div class="tab active" data-tab="recommend" onclick="switchTab(this)">推荐</div>
+        <div class="tab" data-tab="nearby" onclick="switchTab(this)">附近</div>
+        <div class="tab" data-tab="hot" onclick="switchTab(this)">热门</div>
+      </div>
+      <div class="feed" id="feedContainer"></div>
+    </div>
+
+    <!-- SCREEN: Match -->
+    <div class="screen" id="screen-match">
+      <div class="tabs" style="margin:0 16px;">
+        <div class="tab active" data-tab="reverse" onclick="switchMatchTab(this)">为你推荐</div>
+        <div class="tab" data-tab="forward" onclick="switchMatchTab(this)">推荐给你</div>
+      </div>
+      <div id="matchContainer"></div>
+    </div>
+
+    <!-- SCREEN: Create -->
+    <div class="screen" id="screen-create">
+      <div class="form-scroll">
+        <div class="form-group"><label>活动标题</label><input placeholder="例如：深圳塘朗山郊野径徒步"></div>
+        <div class="form-row">
+          <div class="form-group"><label>难度</label><select><option>休闲 🌿</option><option selected>进阶 ⛰️</option><option>挑战 🏔️</option></select></div>
+          <div class="form-group"><label>类型</label><select><option selected>日归 ☀️</option><option>多日 ⛺</option><option>长线 🗺️</option></select></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>出发日期</label><input type="datetime-local" value="2026-06-20T08:00"></div>
+          <div class="form-group"><label>人数上限</label><input type="number" value="8" min="2" max="50"></div>
+        </div>
+        <div class="form-group"><label>集合地点</label><input placeholder="例如：塘朗山公园入口"></div>
+        <div class="form-row">
+          <div class="form-group"><label>距离 (km)</label><input type="number" value="8"></div>
+          <div class="form-group"><label>爬升 (m)</label><input type="number" value="400"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>预计时长(小时)</label><input type="number" value="4"></div>
+          <div class="form-group"><label>费用方式</label><select><option selected>AA</option><option>免费</option><option>各自付</option></select></div>
+        </div>
+        <div class="form-group"><label>活动描述</label><textarea placeholder="详细描述路线、集合时间、所需装备等…"></textarea></div>
+        <div class="form-group"><label>标签</label><input placeholder="例如：风景 摄影 轻松"></div>
+        <button class="btn-primary" onclick="showToast('✅ 活动已发布！等待匹配参与者')">发布活动</button>
+        <div style="height:20px;"></div>
+      </div>
+    </div>
+
+    <!-- SCREEN: Profile -->
+    <div class="screen" id="screen-profile">
+      <div class="profile-header">
+        <div class="profile-avatar">🏔️</div>
+        <div class="profile-name">山野行者</div>
+        <div class="profile-level">🥾 有经验 · 深圳</div>
+      </div>
+      <div class="profile-stats">
+        <div class="stat-item"><div class="stat-num">12</div><div class="stat-label">徒步次数</div></div>
+        <div class="stat-item"><div class="stat-num">186</div><div class="stat-label">总里程 km</div></div>
+        <div class="stat-item"><div class="stat-num">92</div><div class="stat-label">信用分</div></div>
+        <div class="stat-item"><div class="stat-num">🏅</div><div class="stat-label">领队</div></div>
+      </div>
+      <div class="setting-item" onclick="showToast('编辑资料')"><div class="left"><span class="icon">👤</span><span class="text">个人资料</span></div><span class="arrow">›</span></div>
+      <div class="setting-item" onclick="showToast('徒步档案')"><div class="left"><span class="icon">🥾</span><span class="text">徒步档案</span></div><span class="arrow">›</span></div>
+      <div class="setting-item" onclick="showToast('紧急联系人')"><div class="left"><span class="icon">🆘</span><span class="text">紧急联系人</span></div><span class="arrow">›</span></div>
+      <div class="setting-item" onclick="showToast('我的日志')"><div class="left"><span class="icon">📝</span><span class="text">徒步日志</span></div><span class="arrow">›</span></div>
+      <div class="setting-item" onclick="showToast('信用分详情')"><div class="left"><span class="icon">⭐</span><span class="text">信用分</span></div><span class="arrow">›</span></div>
+      <div class="setting-item" onclick="showToast('设置')"><div class="left"><span class="icon">⚙️</span><span class="text">设置</span></div><span class="arrow">›</span></div>
+    </div>
+  </div>
+
+  <!-- Bottom Nav -->
+  <div class="bottom-nav">
+    <button class="nav-item active" data-screen="home" onclick="switchScreen('home',this)"><span class="icon">🏠</span>首页</button>
+    <button class="nav-item" data-screen="match" onclick="switchScreen('match',this)"><span class="icon">🔍</span>匹配</button>
+    <button class="nav-item create-btn" data-screen="create" onclick="switchScreen('create',this)"><span class="icon">＋</span><br>发布</button>
+    <button class="nav-item" data-screen="groups" onclick="showToast('我的队伍')"><span class="icon">👥</span>队伍</button>
+    <button class="nav-item" data-screen="profile" onclick="switchScreen('profile',this)"><span class="icon">👤</span>我的</button>
+  </div>
+</div>
+
+<!-- Detail Overlay -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-header c-img-1" id="detailImg">
+    <button class="back" onclick="closeDetail()">←</button>
+    <span class="diff-badge" id="detailDiff" style="background:#f59e0b;">进阶</span>
+  </div>
+  <div class="detail-content" id="detailContent"></div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ====== DATA ======
+const ACTIVITIES = [
+  { id:1, title:'深圳塘朗山郊野径', diff:'进阶', type:'日归', date:'6月20日', loc:'塘朗山公园', dist:8, elev:400, hours:4, max:10, fee:'AA', tags:['风景','摄影','城市绿肺'], desc:'深圳经典城市徒步路线，全程树荫覆盖，山顶可俯瞰深圳湾。适合周末放松，中途有补给点。', match:92, img:'c-img-1', members:6, saved:false, color:'#f59e0b' },
+  { id:2, title:'广州白云山休闲徒步', diff:'休闲', type:'日归', date:'6月22日', loc:'白云山南门', dist:6, elev:200, hours:3, max:15, fee:'免费', tags:['轻松','风景','新手友好'], desc:'白云山是广州的城市绿肺，路线平缓，适合新手入门和轻松周末。可以在山顶喝茶聊天。', match:88, img:'c-img-2', members:8, saved:false, color:'#4ade80' },
+  { id:3, title:'惠州大南山穿越', diff:'挑战', type:'多日', date:'6月27-28日', loc:'惠州大南山', dist:22, elev:1200, hours:10, max:6, fee:'AA', tags:['挑战','露营','高山草甸'], desc:'广东顶级徒步路线之一，高山草甸风光，两日重装穿越。需要帐篷和睡袋，建议有重装经验。', match:75, img:'c-img-3', members:3, saved:false, color:'#ef4444' },
+  { id:4, title:'深圳东西涌海岸线', diff:'进阶', type:'日归', date:'6月29日', loc:'东涌社区', dist:10, elev:300, hours:5, max:8, fee:'AA', tags:['海岸线','摄影','挑战'], desc:'中国最美海岸线之一，全程沿海岸线礁石行走，风景绝佳。需要一定体力，注意防晒。', match:85, img:'c-img-4', members:4, saved:false, color:'#f59e0b' },
+  { id:5, title:'珠海凤凰山夜爬', diff:'休闲', type:'日归', date:'7月4日', loc:'凤凰山森林公园', dist:5, elev:150, hours:2, fee:'免费', tags:['夜爬','城市夜景','社交'], desc:'夜爬凤凰山看珠海夜景，路线短平快，适合下班后出发。头灯必带，结束后可约宵夜。', match:90, img:'c-img-5', members:11, saved:false, color:'#4ade80' },
+  { id:6, title:'香港麦理浩径二段', diff:'进阶', type:'长线', date:'7月5-6日', loc:'西贡北潭凹', dist:15, elev:500, hours:7, max:8, fee:'AA', tags:['海岸线','露营','国际路线'], desc:'麦理浩径二段是香港最精华的海岸徒步路线，拥有世界级地质景观。需办理港澳通行证。', match:68, img:'c-img-6', members:5, saved:false, color:'#f59e0b' },
+];
+
+const USERS = [
+  { name:'Alex', avatar:'🥾', level:'老驴', city:'深圳', match:94, reason:'体能匹配 95% · 偏好匹配 90%' },
+  { name:'小鹿', avatar:'🦌', level:'有经验', city:'深圳', match:91, reason:'体能匹配 100% · 距离匹配 85%' },
+  { name:'风行者', avatar:'🌪️', level:'老驴', city:'广州', match:87, reason:'偏好匹配 90% · 时间匹配 80%' },
+  { name:'山猫', avatar:'🐱', level:'有经验', city:'深圳', match:85, reason:'体能匹配 80% · 时间匹配 95%' },
+  { name:'叶子', avatar:'🍃', level:'新手', city:'东莞', match:72, reason:'偏好匹配 75% · 距离匹配 60%' },
+];
+
+// ====== RENDER ======
+function renderFeed(filter) {
+  const c = document.getElementById('feedContainer');
+  let list = [...ACTIVITIES];
+  if (filter === 'nearby') list.sort((a,b)=>a.dist-b.dist);
+  if (filter === 'hot') list.sort((a,b)=>b.members-a.members);
+  c.innerHTML = list.map(a => `
+    <div class="card" onclick="openDetail(${a.id})">
+      <div class="card-img ${a.img}">
+        <span class="difficulty" style="background:${a.color}">${a.diff}</span>
+        <button class="save-btn" onclick="event.stopPropagation();toggleSave(${a.id})">${a.saved?'❤️':'🤍'}</button>
+      </div>
+      <div class="card-body">
+        <div class="title">${a.title}</div>
+        <div class="meta">📅 ${a.date}  ·  📍 ${a.loc}  ·  👥 ${a.members}/${a.max}</div>
+        <div class="tags">${a.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+      </div>
+      <div class="card-footer">
+        <span class="match-badge">${a.match}% 匹配</span>
+        <button class="btn-join" onclick="event.stopPropagation();showToast('✅ 已报名！等待领队审核')">报名参加</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderMatch(type) {
+  const c = document.getElementById('matchContainer');
+  if (type === 'forward') {
+    c.innerHTML = `<div class="feed">${ACTIVITIES.filter(a=>a.id<4).map(a=>`
+      <div class="card" onclick="openDetail(${a.id})" style="cursor:pointer;">
+        <div class="card-body"><div class="title">${a.title}</div><div class="meta" style="display:flex;justify-content:space-between;"><span>${a.diff} · ${a.type}</span><span style="font-weight:600;color:#4f46e5;">${a.match}%</span></div></div>
+      </div>
+    `).join('')}</div>`;
+  } else {
+    c.innerHTML = `<div class="feed">${USERS.map(u => `
+      <div class="match-item">
+        <div class="match-avatar">${u.avatar}</div>
+        <div class="match-info"><div class="name">${u.name}</div><div class="hike-level">${u.level} · ${u.city}</div><div class="match-reason">${u.reason}</div></div>
+        <div class="match-score">${u.match}<small>%</small></div>
+      </div>
+    `).join('')}</div>`;
+  }
+}
+
+function openDetail(id) {
+  const a = ACTIVITIES.find(x=>x.id===id);
+  if (!a) return;
+  const el = document.getElementById('detailOverlay');
+  document.getElementById('detailImg').className = 'detail-header ' + a.img;
+  document.getElementById('detailImg').querySelector('.diff-badge').textContent = a.diff;
+  document.getElementById('detailImg').querySelector('.diff-badge').style.background = a.color;
+  document.getElementById('detailContent').innerHTML = `
+    <h2>${a.title}</h2>
+    <div class="detail-tags">${a.tags.map(t=>`<span>${t}</span>`).join('')}</div>
+    <div class="detail-meta">
+      <div class="detail-meta-item"><div class="num">${a.dist}km</div><div class="lbl">距离</div></div>
+      <div class="detail-meta-item"><div class="num">${a.elev}m</div><div class="lbl">爬升</div></div>
+      <div class="detail-meta-item"><div class="num">${a.hours}h</div><div class="lbl">时长</div></div>
+    </div>
+    <div class="detail-meta">
+      <div class="detail-meta-item"><div class="num">${a.date}</div><div class="lbl">日期</div></div>
+      <div class="detail-meta-item"><div class="num">${a.loc}</div><div class="lbl">集合</div></div>
+      <div class="detail-meta-item"><div class="num">${a.fee}</div><div class="lbl">费用</div></div>
+    </div>
+    <div class="detail-desc">${a.desc}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin:8px 0;font-size:12px;color:#888;">
+      <span>👥 ${a.members}/${a.max} 人已报名</span>
+      <span>🎯 ${a.match}% 匹配度</span>
+    </div>
+    <div class="detail-actions">
+      <button class="btn btn-primary" onclick="showToast('✅ 已报名！等待领队审核')">报名参加</button>
+      <button class="btn btn-outline" onclick="showToast('💬 已发送提问')">咨询领队</button>
+      <button class="btn btn-save" onclick="toggleSave(${a.id})">${a.saved?'❤️':'🤍'}</button>
+    </div>
+  `;
+  el.classList.add('show');
+}
+
+function closeDetail() { document.getElementById('detailOverlay').classList.remove('show'); }
+
+function toggleSave(id) {
+  const a = ACTIVITIES.find(x=>x.id===id);
+  if (!a) return;
+  a.saved = !a.saved;
+  renderFeed(getActiveTab());
+  showToast(a.saved ? '❤️ 已收藏' : '已取消收藏');
+}
+
+function getActiveTab() {
+  const t = document.querySelector('#screen-home .tab.active');
+  return t ? t.dataset.tab : 'recommend';
+}
+
+function switchTab(el) {
+  document.querySelectorAll('#screen-home .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderFeed(el.dataset.tab);
+}
+
+function switchMatchTab(el) {
+  document.querySelectorAll('#screen-match .tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderMatch(el.dataset.tab);
+}
+
+function switchScreen(name, btn) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const titles = { home:'🏔️ TrailMate', match:'🎯 智能匹配', create:'📝 发布活动', groups:'👥 我的队伍', profile:'👤 我的档案' };
+  document.getElementById('pageTitle').textContent = titles[name] || 'TrailMate';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(t._timer);
+  t._timer = setTimeout(()=>{ t.style.display = 'none'; }, 1800);
+}
+
+// Init
+renderFeed('recommend');
+renderMatch('reverse');
+</script>
+</body>
+</html>

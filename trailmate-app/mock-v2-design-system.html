@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrailMate V2 — Design System</title>
+<style>
+  :root {
+    /* Brand */
+    --brand-50: #ecfdf5;
+    --brand-100: #d1fae5;
+    --brand-200: #a7f3d0;
+    --brand-300: #6ee7b7;
+    --brand-400: #34d399;
+    --brand-500: #10b981;
+    --brand-600: #059669;
+    --brand-700: #047857;
+    --brand-800: #065f46;
+
+    /* Surface */
+    --bg-page: #faf7f2;
+    --bg-card: #ffffff;
+    --bg-overlay: rgba(0,0,0,.4);
+
+    /* Text */
+    --text-primary: #1e293b;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --text-inverse: #ffffff;
+
+    /* Border */
+    --border-light: #e2e8f0;
+    --border-default: #cbd5e1;
+
+    /* Semantic */
+    --accent-warm: #f59e0b;
+    --accent-warm-light: #fef3c7;
+    --success: #10b981;
+    --success-light: #d1fae5;
+    --danger: #ef4444;
+    --danger-light: #fee2e2;
+    --info: #3b82f6;
+    --info-light: #dbeafe;
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 12px;
+    --space-lg: 16px;
+    --space-xl: 20px;
+    --space-2xl: 24px;
+    --space-3xl: 32px;
+
+    /* Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --radius-xl: 20px;
+    --radius-full: 9999px;
+
+    /* Shadow */
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.06);
+    --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+    --shadow-lg: 0 8px 24px rgba(0,0,0,.12);
+    --shadow-brand: 0 4px 18px rgba(5,150,105,.15);
+
+    /* Font */
+    --font-sans: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+    --text-xs: 11px;
+    --text-sm: 13px;
+    --text-base: 15px;
+    --text-lg: 17px;
+    --text-xl: 20px;
+    --text-2xl: 24px;
+    --text-3xl: 30px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { 
+    font-family: var(--font-sans);
+    background: var(--bg-page);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: var(--space-xl);
+  }
+
+  h1 { font-size: var(--text-2xl); font-weight: 800; margin-bottom: var(--space-lg); }
+  h2 { font-size: var(--text-lg); font-weight: 700; margin: var(--space-2xl) 0 var(--space-md); color: var(--text-secondary); text-transform: uppercase; letter-spacing: .05em; }
+  h3 { font-size: var(--text-base); font-weight: 600; margin-bottom: var(--space-sm); }
+
+  /* Color Swatches */
+  .swatch-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: var(--space-sm); }
+  .swatch { border-radius: var(--radius-md); overflow: hidden; }
+  .swatch-color { height: 48px; }
+  .swatch-label { padding: 4px 8px; font-size: 10px; font-weight: 500; color: var(--text-secondary); background: var(--bg-card); text-align: center; }
+
+  /* Component Showcase */
+  .showcase-row { display: flex; gap: var(--space-sm); flex-wrap: wrap; align-items: center; margin-bottom: var(--space-md); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 10px 20px; border-radius: var(--radius-md); font-size: var(--text-sm);
+    font-weight: 600; border: none; cursor: pointer; transition: all .15s;
+    font-family: var(--font-sans);
+  }
+  .btn-primary { background: var(--brand-600); color: white; }
+  .btn-primary:hover { background: var(--brand-700); }
+  .btn-secondary { background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-light); }
+  .btn-ghost { background: transparent; color: var(--brand-600); }
+  .btn-danger { background: var(--danger); color: white; }
+  .btn-sm { padding: 6px 14px; font-size: var(--text-xs); border-radius: var(--radius-sm); }
+  .btn-lg { padding: 14px 28px; font-size: var(--text-base); border-radius: var(--radius-lg); }
+  .btn-block { width: 100%; justify-content: center; }
+
+  .badge {
+    display: inline-flex; align-items: center; padding: 2px 8px;
+    border-radius: var(--radius-full); font-size: 10px; font-weight: 600;
+  }
+  .badge-success { background: var(--success-light); color: var(--brand-700); }
+  .badge-warning { background: var(--accent-warm-light); color: #92400e; }
+  .badge-danger { background: var(--danger-light); color: #b91c1c; }
+  .badge-info { background: var(--info-light); color: #1d4ed8; }
+
+  .card {
+    background: var(--bg-card); border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm); padding: var(--space-lg);
+  }
+
+  .avatar {
+    width: 40px; height: 40px; border-radius: var(--radius-full);
+    display: flex; align-items: center; justify-content: center;
+    font-size: var(--text-sm); font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .avatar-sm { width: 32px; height: 32px; font-size: var(--text-xs); }
+  .avatar-lg { width: 56px; height: 56px; font-size: var(--text-lg); }
+
+  .input {
+    width: 100%; padding: 10px 14px; border: 1px solid var(--border-light);
+    border-radius: var(--radius-md); font-size: var(--text-base);
+    font-family: var(--font-sans); outline: none; transition: border-color .15s;
+  }
+  .input:focus { border-color: var(--brand-500); box-shadow: 0 0 0 3px var(--brand-100); }
+
+  .divider { height: 1px; background: var(--border-light); margin: var(--space-lg) 0; }
+
+  .gradient-hero {
+    background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+    border-radius: var(--radius-xl); padding: var(--space-3xl) var(--space-xl);
+    color: white;
+  }
+
+  /* Typography showcase */
+  .type-sample { margin-bottom: var(--space-lg); }
+  .type-sample .label { font-size: var(--text-xs); color: var(--text-tertiary); margin-bottom: 4px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="gradient-hero" style="margin-bottom: var(--space-2xl);">
+    <div style="font-size: var(--text-sm); opacity: .8; margin-bottom: 4px;">TrailMate Design System</div>
+    <div style="font-size: var(--text-3xl); font-weight: 900;">V2.0</div>
+    <div style="font-size: var(--text-sm); opacity: .8; margin-top: 8px;">Mobile-first · Design Tokens · Component Library</div>
+  </div>
+
+  <h2>🎨 Color Palette</h2>
+  <h3>Brand — Emerald Green</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-50)"></div><div class="swatch-label">50</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-100)"></div><div class="swatch-label">100</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-200)"></div><div class="swatch-label">200</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-300)"></div><div class="swatch-label">300</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-400)"></div><div class="swatch-label">400</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-500)"></div><div class="swatch-label">500</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-600)"></div><div class="swatch-label">600</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--brand-700)"></div><div class="swatch-label">700</div></div>
+  </div>
+
+  <h3>Semantic</h3>
+  <div class="swatch-grid">
+    <div class="swatch"><div class="swatch-color" style="background:var(--success)"></div><div class="swatch-label">Success</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--accent-warm)"></div><div class="swatch-label">Warning</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--danger)"></div><div class="swatch-label">Danger</div></div>
+    <div class="swatch"><div class="swatch-color" style="background:var(--info)"></div><div class="swatch-label">Info</div></div>
+  </div>
+
+  <h2>🔤 Typography</h2>
+  <div class="type-sample"><div class="label">text-3xl / font-black — Page Hero</div><div style="font-size:var(--text-3xl);font-weight:900">征途开始</div></div>
+  <div class="type-sample"><div class="label">text-2xl / font-extrabold — Section Title</div><div style="font-size:var(--text-2xl);font-weight:800">热门路线</div></div>
+  <div class="type-sample"><div class="label">text-xl / font-bold — Card Title</div><div style="font-size:var(--text-xl);font-weight:700">白云山徒步</div></div>
+  <div class="type-sample"><div class="label">text-base / font-medium — Body</div><div style="font-size:var(--text-base);font-weight:500">3位队友正在组队，预计周六出发</div></div>
+  <div class="type-sample"><div class="label">text-sm / font-normal — Secondary</div><div style="font-size:var(--text-sm);color:var(--text-secondary)">广东广州 · 15km · 中级</div></div>
+  <div class="type-sample"><div class="label">text-xs / font-semibold — Badge</div><div><span class="badge badge-success">进行中</span></div></div>
+
+  <h2>🧩 Components</h2>
+
+  <h3>Buttons</h3>
+  <div class="showcase-row">
+    <button class="btn btn-primary">主操作</button>
+    <button class="btn btn-secondary">次要操作</button>
+    <button class="btn btn-ghost">文字按钮</button>
+    <button class="btn btn-danger">危险操作</button>
+  </div>
+  <div class="showcase-row">
+    <button class="btn btn-primary btn-sm">小按钮</button>
+    <button class="btn btn-primary btn-lg">大按钮</button>
+    <button class="btn btn-primary btn-block">块级按钮</button>
+  </div>
+
+  <h3>Badges</h3>
+  <div class="showcase-row">
+    <span class="badge badge-success">已完成</span>
+    <span class="badge badge-warning">进行中</span>
+    <span class="badge badge-danger">紧急</span>
+    <span class="badge badge-info">新消息</span>
+  </div>
+
+  <h3>Avatars</h3>
+  <div class="showcase-row">
+    <div class="avatar avatar-sm" style="background:var(--brand-500)">张</div>
+    <div class="avatar" style="background:var(--info)">李</div>
+    <div class="avatar avatar-lg" style="background:var(--accent-warm)">王</div>
+    <div class="avatar avatar-lg" style="background:linear-gradient(135deg,var(--brand-500),var(--info))">TM</div>
+  </div>
+
+  <h3>Cards</h3>
+  <div class="card" style="margin-bottom:var(--space-md)">
+    <div style="display:flex;align-items:center;gap:var(--space-md);margin-bottom:var(--space-md)">
+      <div class="avatar" style="background:var(--brand-600)">白</div>
+      <div>
+        <div style="font-weight:700;font-size:var(--text-base)">白云山周末徒步</div>
+        <div style="font-size:var(--text-sm);color:var(--text-secondary)">广东广州 · 6月21日 周六</div>
+      </div>
+      <span class="badge badge-success" style="margin-left:auto">招募中</span>
+    </div>
+    <div style="display:flex;gap:var(--space-lg);font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:var(--space-md)">
+      <span>15km</span><span>中级</span><span>3/5人</span>
+    </div>
+    <button class="btn btn-primary btn-block btn-sm">加入队伍</button>
+  </div>
+
+  <h3>Input</h3>
+  <input class="input" placeholder="描述你想去的徒步路线..." style="margin-bottom:var(--space-sm)">
+
+  <h2>📐 Spacing Scale</h2>
+  <div style="display:flex;flex-direction:column;gap:var(--space-sm)">
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">4px</span><div style="height:4px;background:var(--brand-400);border-radius:2px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">8px</span><div style="height:8px;background:var(--brand-400);border-radius:4px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">12px</span><div style="height:12px;background:var(--brand-400);border-radius:6px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">16px</span><div style="height:16px;background:var(--brand-500);border-radius:8px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">20px</span><div style="height:20px;background:var(--brand-500);border-radius:10px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">24px</span><div style="height:24px;background:var(--brand-600);border-radius:12px;flex:1"></div></div>
+    <div style="display:flex;align-items:center;gap:var(--space-md)"><span style="width:40px;font-size:var(--text-xs);color:var(--text-tertiary)">32px</span><div style="height:32px;background:var(--brand-700);border-radius:16px;flex:1"></div></div>
+  </div>
+
+  <h2>📱 Layout Architecture</h2>
+  <div class="card" style="margin-bottom:var(--space-lg)">
+    <h3>Tab-Based Navigation</h3>
+    <pre style="background:var(--brand-50);padding:var(--space-md);border-radius:var(--radius-sm);font-size:11px;overflow-x:auto;line-height:1.6">
+App
+├── BottomTabBar (Home / Explore / Teams / Profile)
+├── /home → HomeScreen
+│   ├── HeroBanner (AI匹配入口)
+│   ├── QuickActions (创建意图/快速匹配/加入队伍)
+│   ├── ActiveIntents (当前意图卡片)
+│   └── RecommendedRoutes (热门路线)
+├── /explore → ExploreScreen
+│   ├── SearchBar + Filters
+│   ├── FeaturedRoute (精选大图)
+│   └── RouteGrid (路线网格)
+├── /teams → TeamsScreen
+│   ├── MyTeams (我的队伍列表)
+│   └── LobbyEntry (组队大厅入口)
+├── /team/:id → TeamDetailScreen (Tab切换)
+│   ├── TabBar: [聊天] [成员] [计划] [地图]
+│   ├── ChatTab → 消息列表 + 输入框
+│   ├── MembersTab → 成员网格 + 邀请
+│   ├── PlanTab → AI计划 + 打卡点
+│   └── MapTab → Leaflet地图 + GPS轨迹
+├── /profile → ProfileScreen
+│   ├── UserCard (头像/数据/称号)
+│   ├── GamificationStats (段位/领域/图鉴)
+│   ├── HikeHistory (徒步日志)
+│   └── Settings Entry
+└── /lobby → LobbyScreen (游戏风格组队大厅)
+    ├── RoomGrid (房间卡片网格)
+    ├── QuickMatch (快速匹配按钮)
+    └── CreateRoom (创建房间)
+    </pre>
+  </div>
+
+  <div class="card" style="margin-bottom:var(--space-lg)">
+    <h3>State Management (Zustand Slices)</h3>
+    <pre style="background:var(--brand-50);padding:var(--space-md);border-radius:var(--radius-sm);font-size:11px;overflow-x:auto;line-height:1.6">
+store/
+├── authSlice.ts      → user, token, login/logout/register
+├── intentSlice.ts    → intents[], matching state, createIntent
+├── teamSlice.ts      → groups[], activeTeam, loadGroups
+├── locationSlice.ts  → track[], checkpoints, GPS polling
+├── matchSlice.ts     → matchedUsers/Teams, merge logic
+├── gamificationSlice → rank, badges, titles
+├── uiSlice.ts        → activeTab, panels, toasts, theme
+└── index.ts          → combine slices into single store
+    </pre>
+  </div>
+
+  <div class="card">
+    <h3>Component Architecture (Atomic Design)</h3>
+    <pre style="background:var(--brand-50);padding:var(--space-md);border-radius:var(--radius-sm);font-size:11px;overflow-x:auto;line-height:1.6">
+components/
+├── ui/ (Atoms)
+│   ├── Button.tsx        → btn variants
+│   ├── Badge.tsx         → status/type badges
+│   ├── Avatar.tsx        → user avatar with fallback
+│   ├── Input.tsx         → text input variants
+│   ├── Card.tsx          → card container
+│   ├── Divider.tsx       → horizontal divider
+│   └── Skeleton.tsx      → loading skeleton
+├── shared/ (Molecules)
+│   ├── UserRow.tsx       → avatar + name + meta
+│   ├── RouteCard.tsx     → route summary card
+│   ├── TeamCard.tsx      → team summary card
+│   ├── IntentCard.tsx    → intent card
+│   ├── CheckpointChip.tsx → checkpoint chip
+│   ├── MapPreview.tsx    → static map preview
+│   └── EmptyState.tsx    → empty state with CTA
+├── features/ (Organisms)
+│   ├── chat/
+│   │   ├── ChatMessages.tsx
+│   │   ├── ChatInput.tsx
+│   │   └── SystemMessage.tsx
+│   ├── match/
+│   │   ├── MatchResults.tsx
+│   │   └── MatchCard.tsx
+│   ├── location/
+│   │   ├── LiveMap.tsx
+│   │   └── CheckpointTracker.tsx
+│   └── lobby/
+│       ├── RoomGrid.tsx
+│       └── RoomCard.tsx
+└── layout/ (Templates)
+    ├── BottomTabBar.tsx
+    ├── PageHeader.tsx
+    ├── BottomSheet.tsx
+    └── ScreenContainer.tsx
+    </pre>
+  </div>
+
+</div>
+</body>
+</html>
