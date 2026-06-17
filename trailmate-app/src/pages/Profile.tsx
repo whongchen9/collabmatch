@@ -336,7 +336,7 @@ export default function Profile() {
                 {gamiData.allTitles.map(title => {
                   const unlocked = gamiData.titles.some(t => t.id === title.id);
                   return (
-                    <div key={title.id} className={`p-3 rounded-xl border ${unlocked ? 'bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-900/30 dark:to-yellow-800/30 border-amber-200 dark:border-amber-800' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800 opacity-50'}`}>
+                    <div key={title.id} className={`p-3 rounded-xl border ${unlocked ? 'bg-gradient-to-br from-amber-100 to-yellow-200 dark:from-amber-900/30 dark:to-yellow-800/30 border-amber-200 dark:border-amber-800' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700 opacity-50'}`}>
                       <div className="flex items-center gap-1.5 mb-1">
                         <span className="text-sm">{unlocked ? '✦' : '✧'}</span>
                         <span className={`text-xs font-bold ${unlocked ? 'text-amber-700 dark:text-amber-300' : 'text-gray-400'}`}>{title.name}</span>
@@ -360,7 +360,7 @@ export default function Profile() {
               </div>
               <div className="space-y-2">
                 {gamiData.codex.map(mountain => (
-                  <div key={mountain.id} className={`p-3 rounded-xl border ${mountain.unlocked ? 'bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900/30 dark:to-green-800/30 border-emerald-200 dark:border-emerald-800' : 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-800'}`}>
+                  <div key={mountain.id} className={`p-3 rounded-xl border ${mountain.unlocked ? 'bg-gradient-to-br from-emerald-100 to-green-200 dark:from-emerald-900/30 dark:to-green-800/30 border-emerald-200 dark:border-emerald-800' : 'bg-gray-100 dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <Mountain className={`w-4 h-4 ${mountain.unlocked ? 'text-emerald-600' : 'text-gray-300'}`} />
