@@ -3,43 +3,17 @@ import { useNavigate } from 'react-router-dom';
 import { groupsApi, intentApi, usersApi, traillogsApi } from '@/api';
 import { useStore } from '@/store';
 import { useConfirm } from '@/components/ConfirmDialog';
-import type { Group, GroupMessage } from '@/types';
-import { haversineDistance } from '@/lib/utils';
+import type { Group, GroupMessage, Intent, MatchedUser, MatchedTeam } from '@/types';
+import { haversineDistance, calcTrackStats } from '@/lib/utils';
 
-/** 简单 HTML 清理 */
-export function sanitizeHTML(html: string): string {
-  if (!html) return '';
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, '')
-    .replace(/<script[\s\S]*?\/>/gi, '')
-    .replace(/<style[\s\S]*?<\/style>/gi, '')
-    .replace(/<iframe[\s\S]*?<\/iframe>/gi, '')
-    .replace(/<object[\s\S]*?<\/object>/gi, '')
-    .replace(/<embed[\s\S]*?>/gi, '')
-    .replace(/\son\w+\s*=\s*["'][^"']*["']/gi, '')
-    .replace(/\son\w+\s*=\s*[^\s>]*/gi, '');
-}
+/** 检测用户消息是否为修改意图的指令（如改地点/时间/重新匹配等） */
+const MODIFY_INTENT_PATTERN = /修改|更新|更改|换.*地点|换.*时间|换.*日期|改.*目的地|改.*时间|重新匹配|再匹配/;
 
-export function isHTML(str: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(str);
-}
-
-/** 格式化消息时间 */
-export function formatMsgTime(time: string | number): string {
-  const date = new Date(time);
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  const hh = String(date.getHours()).padStart(2, '0');
-  const mm = String(date.getMinutes()).padStart(2, '0');
-  const timeStr = `${hh}:${mm}`;
-  if (msgDate.getTime() === today.getTime()) return timeStr;
-  if (msgDate.getTime() === yesterday.getTime()) return `昨天 ${timeStr}`;
-  const MM = String(date.getMonth() + 1).padStart(2, '0');
-  const DD = String(date.getDate()).padStart(2, '0');
-  return `${MM}/${DD} ${timeStr}`;
-}
+type TeamCard = Partial<Group> & { id: string; name: string; matchPct: number; tags?: string[]; reason?: string; location?: string; date?: string };
+type MergeTarget = { id: string; name: string; essentials?: Group['essentials'] };
+type Member = Group['members'][number];
+type Checkpoint = NonNullable<Group['checkpoints']>[number];
+type Checkin = NonNullable<Checkpoint['checkins']>[number];
 
 export function useTeamChat(id?: string) {
   const navigate = useNavigate();
@@ -49,7 +23,7 @@ export function useTeamChat(id?: string) {
   // ── 基础数据 ──
   const [group, setGroup] = useState<Group | null>(null);
   const [loadError, setLoadError] = useState('');
-  const [comments, setComments] = useState<any[]>([]);
+  const [comments, setComments] = useState<Group['comments']>([]);
   const [matchingEnabled, setMatchingEnabled] = useState(true);
 
   // ── 消息 ──
@@ -60,8 +34,8 @@ export function useTeamChat(id?: string) {
 
   // ── 匹配 ──
   const [matchTab, setMatchTab] = useState<'members' | 'teams'>('members');
-  const [matchedUsers, setMatchedUsers] = useState<any[]>([]);
-  const [matchTeams, setMatchTeams] = useState<any[]>([]);
+  const [matchedUsers, setMatchedUsers] = useState<MatchedUser[]>([]);
+  const [matchTeams, setMatchTeams] = useState<TeamCard[]>([]);
 
   // ── 侧边栏 ──
   const [sidebarPanel, setSidebarPanel] = useState<'members' | 'plan' | 'match' | 'location' | 'photo' | null>(null);
@@ -82,7 +56,7 @@ export function useTeamChat(id?: string) {
 
   // ── 计划编辑 ──
   const [editingPlan, setEditingPlan] = useState(false);
-  const planEditorRef = useRef<HTMLDivElement>(null);
+  const planEditorRef = useRef<HTMLTextAreaElement>(null);
 
   // ── 提示词编辑 ──
   const [editingPrompts, setEditingPrompts] = useState(false);
@@ -99,7 +73,7 @@ export function useTeamChat(id?: string) {
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [hikingActionLoading, setHikingActionLoading] = useState(false);
   const [showMemberModal, setShowMemberModal] = useState(false);
-  const [selectedMember, setSelectedMember] = useState<any>(null);
+  const [selectedMember, setSelectedMember] = useState<Group['members'][number] | null>(null);
   const [completeTrackStats, setCompleteTrackStats] = useState<{ dist: number; dur: number; pace: number } | null>(null);
 
   // ── 打卡点引导 ──
@@ -109,8 +83,8 @@ export function useTeamChat(id?: string) {
 
   // ── 合并 ──
   const [merging, setMerging] = useState(false);
-  const [mergeConfirmTeam, setMergeConfirmTeam] = useState<any>(null);
-  const [myLeaderTeams, setMyLeaderTeams] = useState<any[]>([]);
+  const [mergeConfirmTeam, setMergeConfirmTeam] = useState<MergeTarget | null>(null);
+  const [myLeaderTeams, setMyLeaderTeams] = useState<Group[]>([]);
   const [selectedFromTeamId, setSelectedFromTeamId] = useState('');
 
   // ── 图片上传 ──
@@ -129,6 +103,8 @@ export function useTeamChat(id?: string) {
     setSelectedMember(null);
     setShowPromptsConfirm(false);
     setMergeConfirmTeam(null);
+    // 同时关闭侧边栏面板，保持状态一致
+    setSidebarPanel(null);
   }, []);
 
   // ── 加载队伍 ──
@@ -142,9 +118,9 @@ export function useTeamChat(id?: string) {
       setComments(g.comments || []);
       if (g.matchingEnabled !== undefined) setMatchingEnabled(g.matchingEnabled);
       setLoadError('');
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('[TeamChat] Failed to load group:', e);
-      setLoadError(e.message || '加载失败');
+      setLoadError(e instanceof Error ? e.message : '加载失败');
     } finally {
       loadingRef.current = false;
     }
@@ -154,7 +130,22 @@ export function useTeamChat(id?: string) {
   useEffect(() => {
     loadGroup();
     pollRef.current = window.setInterval(loadGroup, 3000);
-    return () => clearInterval(pollRef.current);
+
+    // 页面不可见时暂停轮询，可见时恢复并立即拉取一次
+    const handleVisibility = () => {
+      if (document.hidden) {
+        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = 0; }
+      } else {
+        loadGroup();
+        if (!pollRef.current) pollRef.current = window.setInterval(loadGroup, 3000);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      clearInterval(pollRef.current);
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [id, loadGroup]);
 
   // ── 清理倒计时定时器 ──
@@ -167,15 +158,9 @@ export function useTeamChat(id?: string) {
   // ── 计划编辑器填充 ──
   useEffect(() => {
     if (editingPlan && planEditorRef.current && group) {
-      const el = planEditorRef.current;
-      el.innerHTML = group.plan || '';
-      el.focus();
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.collapse(false);
-      const sel = window.getSelection();
-      sel?.removeAllRanges();
-      sel?.addRange(range);
+      // 使用 textContent 而非 innerHTML，避免 XSS 风险
+      planEditorRef.current.value = group.plan || '';
+      planEditorRef.current.focus();
     }
   }, [editingPlan, group]);
 
@@ -184,6 +169,7 @@ export function useTeamChat(id?: string) {
     if (!sidebarExpanded && sidebarPanel) {
       setSidebarPanel(null);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidebarExpanded]);
 
   // ── 位置面板打开时获取位置 ──
@@ -205,7 +191,7 @@ export function useTeamChat(id?: string) {
       setMatchedUsers(intent.matchedUsers || []);
       // 如果后端返回了 matchedTeams，直接使用
       if (intent.matchedTeams && intent.matchedTeams.length > 0) {
-        setMatchTeams(intent.matchedTeams.map((t: any) => ({
+        setMatchTeams(intent.matchedTeams.map((t: MatchedTeam) => ({
           id: t.groupId,
           name: t.groupName || '未命名队伍',
           members: t.groupMembers || [],
@@ -228,7 +214,7 @@ export function useTeamChat(id?: string) {
         .filter(t => t.id !== id);
       const prompts = group.prompts || [];
       const scored = all.map(t => {
-        const tags = t.tags || t.prompts || [];
+        const tags = t.prompts || [];
         const overlap = tags.filter((tag: string) => prompts.some(p => tag.includes(p) || p.includes(tag))).length;
         const matchPct = prompts.length > 0 ? Math.min(99, Math.round(50 + (overlap / prompts.length) * 45)) : 0;
         return { ...t, matchPct };
@@ -240,6 +226,7 @@ export function useTeamChat(id?: string) {
         return [...prev, ...newTeams].sort((a, b) => b.matchPct - a.matchPct);
       });
     }).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [group?.intentId, id]);
 
   // ── 消息滚动 ──
@@ -257,15 +244,15 @@ export function useTeamChat(id?: string) {
         if (!id) return;
         setHikingActionLoading(true);
         try {
-          await groupsApi.update(id, { hikeStatus: 'hiking' as any });
-          try { await groupsApi.update(id, { matchingEnabled: false }); } catch {}
+          await groupsApi.update(id, { hikeStatus: 'hiking' });
+          try { await groupsApi.update(id, { matchingEnabled: false }); } catch { /* ignore */ }
           setMatchingEnabled(false);
           setShowGoModal(false);
-          try { await traillogsApi.generateFromGroup(id); } catch {}
+          try { await traillogsApi.generateFromGroup(id); } catch { /* ignore */ }
           showToast('征途开始！🏔');
           await loadGroup();
-        } catch (err: any) {
-          showToast(err.message || '出发失败');
+        } catch (err: unknown) {
+          showToast(err instanceof Error ? err.message : '出发失败');
         } finally {
           setHikingActionLoading(false);
         }
@@ -289,7 +276,7 @@ export function useTeamChat(id?: string) {
     } finally {
       setSending(false);
     }
-  }, [msg, id, sending, loadGroup]);
+  }, [msg, id, sending, loadGroup, showToast]);
 
   // ── SOS ──
   const handleSOS = useCallback(async () => {
@@ -303,11 +290,11 @@ export function useTeamChat(id?: string) {
           navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
         );
         location = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      } catch {}
+      } catch { /* ignore */ }
       await groupsApi.sos(id, location);
       showToast(location ? 'SOS 已发送！(含位置)' : 'SOS 已发送！');
-    } catch (err: any) { showToast(err.message || 'SOS 发送失败'); }
-  }, [id, showToast]);
+    } catch (err: unknown) { showToast(err instanceof Error ? err.message : 'SOS 发送失败'); }
+  }, [id, showToast, confirmDialog]);
 
   // ── 出发 ──
   const handleGo = useCallback(() => {
@@ -321,7 +308,7 @@ export function useTeamChat(id?: string) {
     countdownStarted.current = false;
     goExecutedRef.current = false;
     setShowGoModal(true);
-  }, [group?.checkpoints, closeAllModals]);
+  }, [group?.checkpoints, group?.hikeStatus, closeAllModals]);
 
   const startCountdown = useCallback(() => {
     if (isCountingDown.current) return;
@@ -339,7 +326,7 @@ export function useTeamChat(id?: string) {
         }
         return prev - 1;
       });
-    }, 800);
+    }, 1000);
   }, []);
 
   const cancelCountdown = useCallback(() => {
@@ -353,10 +340,8 @@ export function useTeamChat(id?: string) {
   const handleComplete = useCallback(() => {
     closeAllModals();
     if (track.length > 1) {
-      const dist = track.slice(1).reduce((sum, pt, i) => sum + haversineDistance(track[i].lat, track[i].lng, pt.lat, pt.lng), 0);
-      const dur = (track[track.length - 1].timestamp - track[0].timestamp) / 1000;
-      const pace = dist > 0 ? dur / (dist / 1000) : 0;
-      setCompleteTrackStats({ dist: Math.round(dist), dur: Math.round(dur), pace: Math.round(pace) });
+      const { distance, duration, pace } = calcTrackStats(track);
+      setCompleteTrackStats({ dist: Math.round(distance), dur: Math.round(duration), pace: Math.round(pace) });
     } else {
       setCompleteTrackStats(null);
     }
@@ -365,40 +350,34 @@ export function useTeamChat(id?: string) {
 
   const doComplete = useCallback(async () => {
     if (!id || !group || !user) return;
-    const isLeader = (group.members || []).some((m: any) => (m.id || m) === user.id && m.role === 'leader');
+    const isLeader = (group.members || []).some((m: Member) => (m.id || m) === user.id && m.role === 'leader');
     setHikingActionLoading(true);
     try {
-      const trackDist = track.length > 1
-        ? track.slice(1).reduce((sum, pt, i) => sum + haversineDistance(track[i].lat, track[i].lng, pt.lat, pt.lng), 0)
-        : 0;
-      const trackDuration = track.length > 1
-        ? (track[track.length - 1].timestamp - track[0].timestamp) / 1000
-        : 0;
-      const trackPace = trackDist > 0 && trackDuration > 0 ? trackDuration / (trackDist / 1000) : 0;
+      const { distance: trackDist, duration: trackDuration, pace: trackPace } = calcTrackStats(track);
 
       // 仅队长更新队伍状态为已完成
       if (isLeader) {
-        await groupsApi.update(id, { hikeStatus: 'completed' as any });
+        await groupsApi.update(id, { hikeStatus: 'completed' });
       }
       // 为当前用户生成日志（使用自己的轨迹数据）
       try {
         const cps = group.checkpoints || [];
-        const startCp = cps.find((cp: any) => cp.type === 'start');
-        const endCp = cps.find((cp: any) => cp.type === 'end');
+        const startCp = cps.find((cp: Checkpoint) => cp.type === 'start');
+        const endCp = cps.find((cp: Checkpoint) => cp.type === 'end');
         let distance = 0;
         if (startCp && endCp) {
           distance = Math.round(haversineDistance(startCp.lat, startCp.lng, endCp.lat, endCp.lng)) / 1000;
         }
-        const startCheckin = startCp?.checkins?.find((ci: any) => ci.userId === user.id);
-        const endCheckin = endCp?.checkins?.find((ci: any) => ci.userId === user.id);
+        const startCheckin = startCp?.checkins?.find((ci: Checkin) => ci.userId === user.id);
+        const endCheckin = endCp?.checkins?.find((ci: Checkin) => ci.userId === user.id);
         let duration = 0;
         if (startCheckin?.checkedInAt && endCheckin?.checkedInAt) {
           duration = Math.round((endCheckin.checkedInAt - startCheckin.checkedInAt) / 60000);
         }
         const checkpointRecords = cps
-          .filter((cp: any) => cp.checkins?.some((ci: any) => ci.userId === user.id))
-          .map((cp: any) => {
-            const ci = cp.checkins.find((c: any) => c.userId === user.id);
+          .filter((cp: Checkpoint) => cp.checkins?.some((ci: Checkin) => ci.userId === user.id))
+          .map((cp: Checkpoint) => {
+            const ci = (cp.checkins || []).find((c: Checkin) => c.userId === user.id);
             return { label: cp.label, type: cp.type, checkedInAt: ci?.checkedInAt, notes: ci?.notes, photos: ci?.photos };
           });
         await traillogsApi.generateForUser(id, user.id, {
@@ -410,13 +389,13 @@ export function useTeamChat(id?: string) {
           avgPace: Math.round(trackPace),
           track: track,
         });
-      } catch {}
+      } catch { /* ignore */ }
       clearTrack();
       setShowCompleteModal(false);
       showToast(isLeader ? '凯旋而归！日志已生成' : '征途完成！日志已生成');
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || '操作失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '操作失败');
     } finally {
       setHikingActionLoading(false);
     }
@@ -430,8 +409,8 @@ export function useTeamChat(id?: string) {
       showToast('已退出队伍');
       await loadGroups();
       navigate('/teams');
-    } catch (err: any) {
-      showToast(err.message || '退出失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '退出失败');
     }
   }, [id, showToast, navigate, loadGroups]);
 
@@ -455,7 +434,7 @@ export function useTeamChat(id?: string) {
       await loadGroup();
 
       // 检查是否是修改意图的指令
-      const isModifyIntent = /修改|更新|更改|换.*地点|换.*时间|换.*日期|改.*目的地|改.*时间|重新匹配|再匹配/.test(question);
+      const isModifyIntent = MODIFY_INTENT_PATTERN.test(question);
       if (isModifyIntent && group.intentId) {
         const extracted = await intentApi.extract(question);
         const newEssentials = extracted.essentials || {};
@@ -465,7 +444,7 @@ export function useTeamChat(id?: string) {
         const mergedEssentials = { ...currentEssentials, ...newEssentials };
         const mergedPrompts = [...new Set([...currentPrompts, ...newPrompts])];
 
-        await intentApi.modifyIntent(group.intentId, { essentials: mergedEssentials, prompts: mergedPrompts });
+        await intentApi.modifyIntent(group.intentId, { essentials: mergedEssentials as Intent['essentials'], prompts: mergedPrompts });
         await groupsApi.sendMessage(id, `🤖 AI助手：已更新意图！地点：${mergedEssentials.location || '未定'}，日期：${mergedEssentials.date || '未定'}，已重新发起匹配`, 'system');
         await loadGroup();
         setAiAssistantLoading(false);
@@ -474,8 +453,8 @@ export function useTeamChat(id?: string) {
       }
 
       const chatMsgs = (group.messages || [])
-        .filter((m: any) => m.type !== 'system' && m.user?.name)
-        .map((m: any) => ({ content: m.content, userName: m.user?.name || '未知' }));
+        .filter((m: GroupMessage) => m.type !== 'system' && m.user?.name)
+        .map((m: GroupMessage) => ({ content: m.content, userName: m.user?.name || '未知' }));
       chatMsgs.push({ content: `@AI助手 ${question}`, userName: user?.name || '我' });
       const prompts = group.prompts || [];
       const essentials = group.essentials || {};
@@ -493,8 +472,8 @@ export function useTeamChat(id?: string) {
         setPendingBulletin(bulletinContent);
       }
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || 'AI 助手回复失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'AI 助手回复失败');
     } finally {
       setAiAssistantLoading(false);
       setSending(false);
@@ -509,23 +488,23 @@ export function useTeamChat(id?: string) {
       setPendingBulletin(null);
       showToast('行动计划已更新');
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || '更新失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '更新失败');
     }
   }, [id, pendingBulletin, loadGroup, showToast]);
 
   // ── 合并队伍 ──
-  const handleMergeTeam = useCallback(async (targetTeam: any) => {
+  const handleMergeTeam = useCallback(async (targetTeam: string | MergeTarget) => {
     closeAllModals();
     if (!id || !group || !user?.id) return;
-    const teamId = typeof targetTeam === 'string' ? targetTeam : targetTeam?.id || targetTeam;
+    const teamId = typeof targetTeam === 'string' ? targetTeam : targetTeam?.id;
     const teamObj = typeof targetTeam === 'object' ? targetTeam : null;
-    setMergeConfirmTeam(teamObj || { id: teamId, name: '目标队伍', essentials: {} });
+    setMergeConfirmTeam(teamObj || { id: teamId || '', name: '目标队伍', essentials: {} });
     try {
       const allTeams = await groupsApi.list();
-      const leaderTeams = allTeams.filter((t: any) => {
+      const leaderTeams = allTeams.filter((t: Group) => {
         const members = t.members || [];
-        return members.some((m: any) => String(m.id || m) === String(user.id) && m.role === 'leader') || String(t.creatorId || '') === String(user.id);
+        return members.some((m: Member) => String(m.id || m) === String(user.id) && m.role === 'leader') || String(t.createdBy || '') === String(user.id);
       });
       setMyLeaderTeams(leaderTeams);
       setSelectedFromTeamId(id || '');
@@ -538,8 +517,8 @@ export function useTeamChat(id?: string) {
     try {
       const result = await groupsApi.applyMerge(selectedFromTeamId, mergeConfirmTeam.id);
       showToast(result.message || '合并申请已发送');
-    } catch (err: any) {
-      showToast(err.message || '申请失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '申请失败');
     } finally {
       setMerging(false);
       setMergeConfirmTeam(null);
@@ -566,8 +545,8 @@ export function useTeamChat(id?: string) {
       await groupsApi.update(id, { comments: newComments });
       setNewComment('');
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || '评论失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '评论失败');
     }
   }, [id, newComment, user, loadGroup, showToast]);
 
@@ -585,8 +564,8 @@ export function useTeamChat(id?: string) {
       const { url } = await usersApi.uploadImage(base64, file.name);
       await groupsApi.sendMessage(id, url, 'image');
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || '图片发送失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '图片发送失败');
     } finally {
       setSending(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
@@ -603,24 +582,27 @@ export function useTeamChat(id?: string) {
         reader.readAsDataURL(file);
       });
       const { url } = await usersApi.uploadImage(base64, file.name);
-      const photos = group?.photos || [];
-      const newPhotos = [...photos, url];
+      // 重新获取最新数据，避免并发覆盖其他用户刚上传的照片
+      const latest = await groupsApi.get(id);
+      const latestPhotos = latest.photos || [];
+      const newPhotos = [...latestPhotos, url];
       await groupsApi.update(id, { photos: newPhotos });
       await loadGroup();
-    } catch (err: any) {
-      showToast(err.message || '上传失败');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : '上传失败');
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
     }
-  }, [id, group?.photos, loadGroup, showToast]);
+  }, [id, loadGroup, showToast]);
 
   // ── 提示词保存 ──
   const handleSavePrompts = useCallback(async () => {
+    if (!id) return;
     setShowPromptsConfirm(false);
     const newPrompts = editPromptsText.split(/[、,，]/).map(s => s.trim()).filter(Boolean);
     try {
-      await groupsApi.update(id!, { prompts: newPrompts });
+      await groupsApi.update(id, { prompts: newPrompts });
       if (group?.intentId) {
         const updated = await intentApi.update(group.intentId, { prompts: newPrompts });
         setMatchedUsers(updated.matchedUsers || []);
@@ -628,23 +610,24 @@ export function useTeamChat(id?: string) {
       setEditingPrompts(false);
       showToast('提示词已更新，匹配已刷新');
       await loadGroup();
-    } catch (err: any) { showToast(err.message || '保存失败'); }
+    } catch (err: unknown) { showToast(err instanceof Error ? err.message : '保存失败'); }
   }, [id, editPromptsText, group?.intentId, loadGroup, showToast]);
 
   // ── 计划保存 ──
   const handleSavePlan = useCallback(async () => {
     if (!id) return;
-    const rawHtml = planEditorRef.current?.innerHTML || '';
+    // 使用 value 而非 innerHTML，避免 XSS
+    const planText = planEditorRef.current?.value || '';
     try {
-      await groupsApi.update(id, { plan: rawHtml, photos: group?.photos || [] });
+      await groupsApi.update(id, { plan: planText });
       setEditingPlan(false);
       showToast('行动计划已保存');
       await loadGroup();
-    } catch (err: any) { showToast(err.message || '保存失败'); }
-  }, [id, group?.photos, loadGroup, showToast]);
+    } catch (err: unknown) { showToast(err instanceof Error ? err.message : '保存失败'); }
+  }, [id, loadGroup, showToast]);
 
   // ── 队长变更 ──
-  const handleTransferLeader = useCallback(async (member: any) => {
+  const handleTransferLeader = useCallback(async (member: Member) => {
     if (!id || !member?.id) return;
     try {
       await groupsApi.transferLeader(id, member.id);
@@ -652,7 +635,16 @@ export function useTeamChat(id?: string) {
       setShowMemberModal(false);
       setSelectedMember(null);
       await loadGroup();
-    } catch (err: any) { showToast(err.message || '移交失败'); }
+    } catch (err: unknown) { showToast(err instanceof Error ? err.message : '移交失败'); }
+  }, [id, loadGroup, showToast]);
+
+  const handleClaimLeader = useCallback(async () => {
+    if (!id) return;
+    try {
+      await groupsApi.claimLeader(id);
+      showToast('你已成为队长！');
+      await loadGroup();
+    } catch (err: unknown) { showToast(err instanceof Error ? err.message : '认领失败'); }
   }, [id, loadGroup, showToast]);
 
   // ── 派生数据 ──
@@ -661,8 +653,10 @@ export function useTeamChat(id?: string) {
   const hikeStatus = group?.hikeStatus || 'idle';
   const checkpoints = group?.checkpoints || [];
   const checkedInCount = checkpoints.filter(cp => (cp.checkins || []).some(ci => ci.userId === user?.id)).length;
-  const isLeader = members.some((m: any) => (m.id || m) === user?.id && m.role === 'leader');
-  const isMember = members.some((m: any) => (m.id || m) === user?.id);
+  const isLeader = members.some((m: Member) => (m.id || m) === user?.id && m.role === 'leader')
+    || (group?.leaderId && String(group.leaderId) === user?.id)
+    || (!group?.leaderId && members.length > 0 && (members[0]?.id || members[0]) === user?.id);
+  const isMember = members.some((m: Member) => (m.id || m) === user?.id);
   const isVisitor = !isMember;
   const groupPrompts = (group?.prompts && group.prompts.length > 0) ? group.prompts : intentPrompts;
 
@@ -698,7 +692,7 @@ export function useTeamChat(id?: string) {
     completeTrackStats, hikingActionLoading,
     // 成员弹窗
     showMemberModal, setShowMemberModal, selectedMember, setSelectedMember,
-    handleTransferLeader,
+    handleTransferLeader, handleClaimLeader,
     // SOS / 退出
     handleSOS, handleLeave,
     // 合并

@@ -66,21 +66,26 @@ export default function PrivacyPolicy() {
 
             <section>
               <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">5. 您的权利</h3>
-              <p className="text-gray-500 dark:text-gray-400">您有权访问、更正或删除您的个人信息。您可以在应用的"设置 → 个人资料"中管理大部分信息。如需完全删除账户，请联系我们的支持团队。</p>
+              <p className="text-gray-500 dark:text-gray-400">您有权访问、更正或删除您的个人信息。您可以在应用的"设置 → 个人资料"中管理大部分信息。如需完全删除账户，请联系我们的支持团队。您还有权举报不当内容和屏蔽其他用户。</p>
             </section>
 
             <section>
-              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">6. Cookie 和追踪</h3>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">6. 内容审核与举报</h3>
+              <p className="text-gray-500 dark:text-gray-400">我们重视用户内容安全。您可以通过长按消息或在用户资料页举报不当内容。我们收到举报后会进行审核，并可能删除违规内容或限制相关账户。您也可以屏蔽特定用户，被屏蔽用户的消息将不会显示给您。</p>
+            </section>
+
+            <section>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">7. Cookie 和追踪</h3>
               <p className="text-gray-500 dark:text-gray-400">我们使用必要的 Cookie 来维持您的登录状态和应用设置，不用于追踪目的。您可以在浏览器设置中管理 Cookie 偏好。</p>
             </section>
 
             <section>
-              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">7. 隐私政策更新</h3>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">8. 隐私政策更新</h3>
               <p className="text-gray-500 dark:text-gray-400">我们可能会不时更新本隐私政策。更新后的政策将在本页面发布，重大变更将通过应用内通知告知。</p>
             </section>
 
             <section>
-              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">8. 联系我们</h3>
+              <h3 className="font-bold text-gray-800 dark:text-gray-200 text-sm mb-1">9. 联系我们</h3>
               <p className="text-gray-500 dark:text-gray-400">如果您对本隐私政策有任何疑问或建议，请通过 TrailMate 的"意见反馈"功能联系我们，或发送邮件至 privacy@trailmate.app。</p>
             </section>
           </div>

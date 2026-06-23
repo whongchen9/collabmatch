@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { X } from 'lucide-react';
 
 interface InlinePanelProps {
   title: string;
@@ -22,9 +21,10 @@ export default function InlinePanel({
     if (e.key === 'Escape') onClose();
   }, [onClose]);
 
-  // 点击面板外部关闭
+  // 点击面板外部关闭 — 用 composedPath 避免 React 重渲染后 ref 失效
+  // 使用 click 而非 mousedown，避免与按钮 click 事件冲突导致面板刚打开就被关闭
   const handleClickOutside = useCallback((e: MouseEvent) => {
-    if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+    if (panelRef.current && !e.composedPath().includes(panelRef.current)) {
       onClose();
     }
   }, [onClose]);
@@ -32,12 +32,16 @@ export default function InlinePanel({
   useEffect(() => {
     if (visible) {
       document.addEventListener('keydown', handleKeyDown);
-      document.addEventListener('mousedown', handleClickOutside);
+      // 延迟添加 click 监听，避免触发面板打开的同一个事件
+      const timer = setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+      }, 0);
+      return () => {
+        clearTimeout(timer);
+        document.removeEventListener('keydown', handleKeyDown);
+        document.removeEventListener('click', handleClickOutside);
+      };
     }
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, [visible, handleKeyDown, handleClickOutside]);
 
   if (!visible) return null;
@@ -55,14 +59,8 @@ export default function InlinePanel({
       }}
     >
       {/* Header */}
-      <div className="shrink-0 px-4 py-3 flex items-center justify-between border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="shrink-0 px-4 py-3 flex items-center border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
         <h2 className="text-sm font-bold text-gray-800 dark:text-gray-200">{title}</h2>
-        <button
-          onClick={onClose}
-          className="w-7 h-7 rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 flex items-center justify-center text-gray-400 dark:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
-        >
-          <X className="w-4 h-4" />
-        </button>
       </div>
       
       {/* Content */}

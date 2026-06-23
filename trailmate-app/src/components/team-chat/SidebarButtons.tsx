@@ -1,4 +1,4 @@
-import { Navigation, Users, FileText, Sparkles, Image, AlertTriangle, LogOut } from 'lucide-react';
+import { Navigation, Users, FileText, Image, AlertTriangle, LogOut } from 'lucide-react';
 
 interface SidebarButtonsProps {
   sidebarPanel: string | null;
@@ -24,13 +24,12 @@ export default function SidebarButtons({
     { key: 'members', label: '成员', icon: Users, badge: memberCount },
     { key: 'plan', label: '计划', icon: FileText },
     { key: 'photo', label: '相册', icon: Image, badge: photoCount || undefined },
-    ...(isLeader ? [{ key: 'match', label: '匹配', icon: Sparkles }] : []),
   ];
 
   return (
     <div className="absolute right-3.5 top-[68px] z-20 flex flex-col items-center gap-1 p-1.5 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md rounded-2xl shadow-lg shadow-black/[0.04] dark:shadow-black/20">
       {buttons.map(({ key, label, icon: Icon, badge }) => (
-        <button key={key} onClick={() => { closeAllModals(); onToggle(sidebarPanel === key ? null : key as any); }}
+        <button key={key} onClick={() => { closeAllModals(); onToggle(sidebarPanel === key ? null : key); }}
           title={label}
           className={`relative w-9 h-9 rounded-xl flex items-center justify-center transition-all active:scale-90 ${
             sidebarPanel === key

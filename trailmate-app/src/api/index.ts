@@ -1,8 +1,6 @@
-import type { User, Group, Intent, MatchNotice, TrailLog } from '@/types';
+import type { User, Group, GroupMessage, Intent, MatchNotice, TrailLog, ReportReason, BlockedUser } from '@/types';
 
-const API_BASE = import.meta.env.VITE_API_BASE || (window.location.hostname.includes('tcloudbaseapp.com')
-  ? 'https://cloudbase-d6g8yog0ub3e56efe.service.tcloudbase.com/api'
-  : '/api');
+const API_BASE = import.meta.env.VITE_API_BASE || 'https://cloudbase-d6g8yog0ub3e56efe.service.tcloudbase.com/api';
 
 let token: string | null = localStorage.getItem('trailmate_token');
 
@@ -28,7 +26,8 @@ async function api<T = unknown>(path: string, opts: RequestInit = {}): Promise<T
       const text = await res.text();
       const body = JSON.parse(text);
       errMsg = body.error || body.message || errMsg;
-    } catch {}
+    } catch { // ignore
+    }
     throw new Error(errMsg);
   }
   return res.json() as Promise<T>;
@@ -56,7 +55,7 @@ export const authApi = {
 export const intentApi = {
   /** AI 提炼提示词（不创建 Intent） */
   extract: (text: string) =>
-    api<{ prompts: string[]; essentials: any; essentialsComplete: boolean; reply: string }>('/intents/extract', { method: 'POST', body: JSON.stringify({ text }) }),
+    api<{ prompts: string[]; essentials: Intent['essentials']; essentialsComplete: boolean; reply: string }>('/intents/extract', { method: 'POST', body: JSON.stringify({ text }) }),
   /** 一句话创建匹配意图 → AI 提取必要因素 + 提示词 → 自动匹配 */
   create: async (rawInput: string) => {
     const res = await api<{ intent: Intent }>('/intents', { method: 'POST', body: JSON.stringify({ rawInput }) });
@@ -119,7 +118,7 @@ export const intentApi = {
     return res.intent;
   },
   /** 修改意图（更新essentials/prompts并重新匹配） */
-  modifyIntent: async (id: string, data: { essentials?: any; prompts?: string[] }) => {
+  modifyIntent: async (id: string, data: { essentials?: Intent['essentials']; prompts?: string[] }) => {
     const res = await api<{ intent: Intent }>(`/intents/${id}/update`, { method: 'POST', body: JSON.stringify(data) });
     return res.intent;
   },
@@ -156,6 +155,8 @@ export const groupsApi = {
     api<{ ok: boolean }>(`/groups/${id}/leave`, { method: 'POST' }),
   transferLeader: (id: string, newLeaderId: string) =>
     api<{ ok: boolean }>(`/groups/${id}/transfer-leader`, { method: 'POST', body: JSON.stringify({ newLeaderId }) }),
+  claimLeader: (id: string) =>
+    api<{ ok: boolean }>(`/groups/${id}/claim-leader`, { method: 'POST' }),
   update: (id: string, data: Partial<Group>) =>
     api<{ ok: boolean }>(`/groups/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   merge: (fromId: string, toId: string) =>
@@ -175,30 +176,53 @@ export const groupsApi = {
   likeGroup: (id: string) =>
     api<{ ok: boolean; likes: number }>(`/groups/${id}/likes`, { method: 'PUT', body: JSON.stringify({ increment: 1 }) }),
   publicGroups: (type: string, page = 1, limit = 6) =>
-    api<{ items: any[]; total: number; hasMore: boolean }>(`/groups/public?type=${type}&page=${page}&limit=${limit}`),
+    api<{ items: Group[]; total: number; hasMore: boolean }>(`/groups/public?type=${type}&page=${page}&limit=${limit}`),
   reportLocation: (id: string, lat: number, lng: number) =>
     api<{ ok: boolean }>(`/groups/${id}/location`, { method: 'POST', body: JSON.stringify({ lat, lng }) }),
   getLocations: (id: string, token?: string) =>
-    api<{ locations: any[]; checkpoints: any[]; groupName: string; teamInfo: any }>(`/groups/${id}/location${token ? `?token=${token}` : ''}`),
+    api<{ locations: { userId: string; userName: string; lat: number; lng: number; updatedAt: number }[]; checkpoints: NonNullable<Group['checkpoints']>; groupName: string; teamInfo: unknown }>(`/groups/${id}/location${token ? `?token=${token}` : ''}`),
   generateShareToken: (id: string) =>
     api<{ shareToken: string }>(`/groups/${id}/share-token`, { method: 'POST' }),
+  /** 创建/查找 1v1 私聊群组 */
+  createDM: (userId: string) =>
+    api<{ group: Group }>(`/groups/dm/${userId}`, { method: 'POST' }),
+  /** 删除消息（队长/管理员） */
+  deleteMessage: (groupId: string, messageIndex: number) =>
+    api<{ ok: boolean }>(`/groups/${groupId}/messages/${messageIndex}`, { method: 'DELETE' }),
 };
 
+interface CloudBaseMessage {
+  user?: { id: string; name: string; avatar?: string };
+  userId?: string;
+  userName?: string;
+  avatar?: string;
+  type?: string;
+  content?: string;
+  text?: string;
+  createdAt?: number;
+  time?: string | number;
+}
+
+interface CloudBaseGroup extends Omit<Group, 'messages' | 'members'> {
+  messages?: CloudBaseMessage[];
+  members?: Array<Group['members'][number] | string>;
+}
+
 /** Normalize group data from CloudBase format */
-function normalizeGroup(g: any): Group {
-  if (!g) return g;
+function normalizeGroup(g: CloudBaseGroup): Group {
+  if (!g) return g as unknown as Group;
   return {
     ...g,
-    messages: (g.messages || []).map((m: any) => {
-      if (m.user) return { ...m, type: m.type || 'text' }; // already normalized
+    messages: (g.messages || []).map((m): GroupMessage => {
+      if (m.user) return { ...m, type: m.type || 'text' } as GroupMessage; // already normalized
       return {
         user: { id: m.userId || '', name: m.userName || '', avatar: m.avatar || '' },
         type: m.type || 'text',
         content: m.content || m.text || '',
         time: m.createdAt || m.time || Date.now(),
-      };
+      } as unknown as GroupMessage;
     }),
-    members: (g.members || []).map((m: any) => {
+    members: (g.members || []).map((m) => {
       if (typeof m === 'string') return { id: m, name: '', avatar: '' };
       return m;
     }),
@@ -215,7 +239,7 @@ export const usersApi = {
   updateAvatar: (avatarUrl: string) =>
     api<{ ok: boolean }>('/users/me/avatar', { method: 'PUT', body: JSON.stringify({ avatarUrl }) }),
   getSettings: () => api<{ sosNotifyNearby?: boolean }>('/users/me/settings'),
-  updateSettings: (settings: Record<string, any>) =>
+  updateSettings: (settings: Record<string, unknown>) =>
     api<{ ok: boolean }>('/users/me/settings', { method: 'PUT', body: JSON.stringify(settings) }),
   uploadImage: (base64: string, filename: string) =>
     api<{ url: string }>('/upload', { method: 'POST', body: JSON.stringify({ base64, filename }) }),
@@ -223,6 +247,35 @@ export const usersApi = {
     api<{ token: string }>('/users/me/api-token/generate', { method: 'POST' }),
   revokeApiToken: () =>
     api<{ ok: boolean }>('/users/me/api-token/revoke', { method: 'POST' }),
+  // 屏蔽/拉黑（localStorage 兜底）
+  getBlockedUsers: (): BlockedUser[] => {
+    try { return JSON.parse(localStorage.getItem('trailmate_blocked') || '[]'); } catch { return []; }
+  },
+  blockUser: (userId: string, userName: string, avatarColor?: string): BlockedUser[] => {
+    const list = usersApi.getBlockedUsers();
+    if (!list.find(u => u.userId === userId)) {
+      list.push({ userId, userName, avatarColor, blockedAt: Date.now() });
+      localStorage.setItem('trailmate_blocked', JSON.stringify(list));
+    }
+    return list;
+  },
+  unblockUser: (userId: string): BlockedUser[] => {
+    const list = usersApi.getBlockedUsers().filter(u => u.userId !== userId);
+    localStorage.setItem('trailmate_blocked', JSON.stringify(list));
+    return list;
+  },
+};
+
+// 举报
+export const reportApi = {
+  reportUser: (data: { targetUserId: string; reason: ReportReason; description?: string; targetMessageId?: string; groupId?: string }) =>
+    api<{ ok: boolean }>('/reports', { method: 'POST', body: JSON.stringify(data) }).catch(() => {
+      // API 不可用时记录到 localStorage
+      const reports = JSON.parse(localStorage.getItem('trailmate_reports') || '[]');
+      reports.push({ ...data, id: Date.now().toString(), reporterId: 'me', createdAt: Date.now() });
+      localStorage.setItem('trailmate_reports', JSON.stringify(reports));
+      return { ok: true };
+    }),
 };
 
 export const traillogsApi = {
@@ -232,7 +285,7 @@ export const traillogsApi = {
   update: (id: string, data: Partial<TrailLog>) => api<{ ok: boolean }>(`/traillogs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => api<{ ok: boolean }>(`/traillogs/${id}`, { method: 'DELETE' }),
   generateFromGroup: (groupId: string) => api<{ ok: boolean; count: number }>(`/groups/${groupId}/generate-logs`, { method: 'POST' }),
-  generateForUser: (groupId: string, userId: string, data: any) => api<{ ok: boolean }>(`/groups/${groupId}/generate-log/${userId}`, { method: 'POST', body: JSON.stringify(data) }),
+  generateForUser: (groupId: string, userId: string, data: Partial<TrailLog> & { checkpointRecords?: unknown[]; track?: { lat: number; lng: number; timestamp: number }[] }) => api<{ ok: boolean }>(`/groups/${groupId}/generate-log/${userId}`, { method: 'POST', body: JSON.stringify(data) }),
 };
 
 // Lobby (Game-style team matching)
@@ -311,7 +364,7 @@ export const lobbyApi = {
   createRoom: (data: {
     name?: string; location?: string; date?: string; difficulty?: string;
     eventType?: string; groupSize?: number; prompts?: string[]; rawInput?: string;
-  }) => api<{ ok: boolean; roomId: string; room: any }>('/lobby/create-room', { method: 'POST', body: JSON.stringify(data) }),
+  }) => api<{ ok: boolean; roomId: string; room: LobbyRoom }>('/lobby/create-room', { method: 'POST', body: JSON.stringify(data) }),
   /** 快速匹配 */
   quickMatch: (data: {
     location?: string; date?: string; difficulty?: string;
@@ -401,13 +454,16 @@ export const reviewApi = {
 /* ── 山志图鉴：经典路线 ── */
 import type { ClassicRoute, RouteComment } from '@/types';
 import routesData from '@/data/routes';
+import routesExtra from '@/data/routes-extra';
+
+const allRoutes = [...routesData, ...routesExtra];
 
 export const routesApi = {
   /** 获取所有经典路线 */
-  list: async (): Promise<ClassicRoute[]> => routesData,
+  list: async (): Promise<ClassicRoute[]> => allRoutes,
   /** 获取单条路线详情 */
-  get: async (id: string): Promise<ClassicRoute | undefined> => routesData.find(r => r.id === id),
-  /** 添加评论 */
+  get: async (id: string): Promise<ClassicRoute | undefined> => allRoutes.find(r => r.id === id),
+  /** 添加评论（持久化到 localStorage，避免修改静态导入数据） */
   addComment: async (routeId: string, comment: Omit<RouteComment, 'id' | 'createdAt' | 'time' | 'likes'>): Promise<RouteComment> => {
     const newComment: RouteComment = {
       ...comment,
@@ -416,12 +472,37 @@ export const routesApi = {
       time: '刚刚',
       likes: 0,
     };
-    const route = routesData.find(r => r.id === routeId);
-    if (route) {
-      // 深拷贝 comments 避免修改静态导入数据
-      route.comments = [...route.comments];
-      route.comments.unshift(newComment);
+    try {
+      const storageKey = `trailmate_route_comments_${routeId}`;
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '[]') as RouteComment[];
+      stored.unshift(newComment);
+      localStorage.setItem(storageKey, JSON.stringify(stored));
+    } catch { // ignore
     }
     return newComment;
   },
+  /** 获取路线的本地评论（与静态评论合并） */
+  getLocalComments: (routeId: string): RouteComment[] => {
+    try {
+      return JSON.parse(localStorage.getItem(`trailmate_route_comments_${routeId}`) || '[]') as RouteComment[];
+    } catch {
+      return [];
+    }
+  },
+};
+
+/* ── 信号系统 API ── */
+
+export const signalsApi = {
+  send: (type: 'help' | 'sos', lat: number, lng: number) =>
+    api<{ signal: import('@/types').Signal }>('/signals', { method: 'POST', body: JSON.stringify({ type, lat, lng }) }),
+  getNearby: (lat: number, lng: number, radius: number) =>
+    api<{ signals: import('@/types').Signal[] }>(`/signals/nearby?lat=${lat}&lng=${lng}&radius=${radius}`),
+};
+
+export const userLocationApi = {
+  reportLocation: (lat: number, lng: number) =>
+    api<{ ok: boolean }>('/users/me/location', { method: 'POST', body: JSON.stringify({ lat, lng }) }),
+  updateSettings: (settings: Record<string, unknown>) =>
+    api<{ ok: boolean }>('/users/me/settings', { method: 'PUT', body: JSON.stringify(settings) }),
 };

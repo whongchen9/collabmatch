@@ -6,10 +6,10 @@ interface ChatHeaderProps {
   isLeader: boolean;
   isVisitor: boolean;
   hikeStatus: string;
-  checkpoints: any[];
+  checkpoints: NonNullable<Group['checkpoints']>;
   checkedInCount: number;
   photos: string[];
-  members: any[];
+  members: Group['members'];
   went: boolean;
   showGoModal: boolean;
   showNoCheckpointModal: boolean;

@@ -1,10 +1,13 @@
-import { Camera, Sparkles, Send, RefreshCw, FileText, Bell } from 'lucide-react';
-import type { GroupMessage } from '@/types';
-import { formatMsgTime } from '@/hooks/useTeamChat';
+import { useState, useRef, useCallback } from 'react';
+import { Camera, Sparkles, Send, RefreshCw, Bell, Flag, Trash2, Shield, X } from 'lucide-react';
+import type { GroupMessage, User, ReportReason } from '@/types';
+import { formatMsgTime } from '@/lib/utils';
+import { useStore } from '@/store';
+import { reportApi } from '@/api';
 
 interface ChatMessagesProps {
   messages: GroupMessage[];
-  user: { id: string } | null;
+  user: User | null;
   msg: string;
   setMsg: (v: string) => void;
   onSend: () => void;
@@ -20,6 +23,8 @@ interface ChatMessagesProps {
   hikeStatus: string;
   isVisitor?: boolean;
   isLeader?: boolean;
+  groupId?: string;
+  onDeleteMessage?: (index: number) => void;
 }
 
 function getSystemMsgStyle(content: string): string {
@@ -35,12 +40,84 @@ function getSystemMsgStyle(content: string): string {
   return 'text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800';
 }
 
+const REPORT_REASONS: { value: ReportReason; label: string }[] = [
+  { value: 'spam', label: '垃圾广告' },
+  { value: 'abuse', label: '辱骂攻击' },
+  { value: 'inappropriate', label: '不当内容' },
+  { value: 'illegal', label: '违法信息' },
+  { value: 'other', label: '其他' },
+];
+
 export default function ChatMessages({
   messages, user, msg, setMsg, onSend, sending, bottomRef,
   onAiAssistant, aiAssistantLoading, pendingBulletin,
   onConfirmBulletin, onDismissBulletin, onImageUpload, imageInputRef,
-  hikeStatus, isVisitor, isLeader,
+  hikeStatus, isVisitor, isLeader, groupId, onDeleteMessage,
 }: ChatMessagesProps) {
+  const { blockedUsers, blockUser, isBlocked, showToast } = useStore();
+  const [actionMenu, setActionMenu] = useState<{ msgIndex: number; x: number; y: number } | null>(null);
+  const [reportModal, setReportModal] = useState<{ userId: string; userName: string; messageId?: string } | null>(null);
+  const [reportReason, setReportReason] = useState<ReportReason>('spam');
+  const [reportDesc, setReportDesc] = useState('');
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 过滤被屏蔽用户的消息
+  const visibleMessages = messages.filter(m => {
+    if (m.type === 'system') return true;
+    return !isBlocked(m.user?.id);
+  });
+
+  const handleLongPressStart = useCallback((e: React.TouchEvent, index: number) => {
+    const touch = e.touches[0];
+    longPressTimer.current = setTimeout(() => {
+      setActionMenu({ msgIndex: index, x: touch.clientX, y: touch.clientY });
+    }, 500);
+  }, []);
+
+  const handleLongPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+  }, []);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent, index: number) => {
+    e.preventDefault();
+    setActionMenu({ msgIndex: index, x: e.clientX, y: e.clientY });
+  }, []);
+
+  const handleReport = async () => {
+    if (!reportModal) return;
+    try {
+      await reportApi.reportUser({
+        targetUserId: reportModal.userId,
+        reason: reportReason,
+        description: reportDesc || undefined,
+        targetMessageId: reportModal.messageId,
+        groupId,
+      });
+      showToast('举报已提交，我们会尽快处理');
+    } catch {
+      showToast('举报提交失败，请稍后重试');
+    }
+    setReportModal(null);
+    setReportDesc('');
+    setReportReason('spam');
+  };
+
+  const handleBlock = (userId: string, userName: string, avatarColor?: string) => {
+    blockUser(userId, userName, avatarColor);
+    showToast(`已屏蔽 ${userName}`);
+    setActionMenu(null);
+  };
+
+  const handleDelete = () => {
+    if (actionMenu && onDeleteMessage) {
+      onDeleteMessage(actionMenu.msgIndex);
+    }
+    setActionMenu(null);
+  };
+
   return (
     <div className="flex-1 flex flex-col">
       {hikeStatus === 'hiking' && (
@@ -54,7 +131,14 @@ export default function ChatMessages({
       )}
 
       <div className="flex-1 overflow-y-auto px-4 pr-4 py-3 space-y-2.5">
-        {messages?.map((m: GroupMessage, i: number) => {
+        {blockedUsers.length > 0 && (
+          <div className="text-center py-1">
+            <span className="inline-block px-2.5 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-500 rounded-full text-[9px]">
+              已屏蔽 {blockedUsers.length} 人的消息
+            </span>
+          </div>
+        )}
+        {visibleMessages?.map((m: GroupMessage, i: number) => {
           const isMe = m.user?.id === user?.id;
           const isSystem = m.type === 'system';
           if (isSystem) {
@@ -67,10 +151,15 @@ export default function ChatMessages({
             );
           }
           return (
-            <div key={i} className={`flex gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}>
+            <div key={i} className={`flex gap-2.5 ${isMe ? 'justify-end' : 'justify-start'}`}
+              onTouchStart={(e) => handleLongPressStart(e, i)}
+              onTouchEnd={handleLongPressEnd}
+              onTouchMove={handleLongPressEnd}
+              onContextMenu={(e) => handleContextMenu(e, i)}
+            >
               {!isMe && (
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 mt-4"
-                  style={{ background: (m.user as any)?.avatarColor || '#10b981' }}>
+                  style={{ background: m.user?.avatarColor || '#10b981' }}>
                   {(m.user?.name || '?')[0]}
                 </div>
               )}
@@ -93,13 +182,12 @@ export default function ChatMessages({
                 </div>
                 <p className={`text-[9px] text-gray-300 dark:text-gray-600 mt-0.5 ${isMe ? 'text-right mr-1' : 'ml-1'}`}>
                   {formatMsgTime(m.time)}
-
                 </p>
               </div>
               {isMe && (
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center text-[11px] font-extrabold text-white shrink-0 mt-4"
-                  style={{ background: (user as any)?.avatarColor || '#059669' }}>
-                  {((user as any)?.name || '?')[0]}
+                  style={{ background: user?.avatarColor || '#059669' }}>
+                  {(user?.name || '?')[0]}
                 </div>
               )}
             </div>
@@ -155,6 +243,76 @@ export default function ChatMessages({
           {aiAssistantLoading ? <RefreshCw className="w-4 h-4 text-white animate-spin" /> : <Send className="w-4 h-4 text-white" />}
         </button>
       </div>
+      )}
+
+      {/* 消息操作菜单 */}
+      {actionMenu && (() => {
+        const m = visibleMessages[actionMenu.msgIndex];
+        if (!m || m.type === 'system') return null;
+        const isMe = m.user?.id === user?.id;
+        return (
+          <>
+            <div className="fixed inset-0 z-50" onClick={() => setActionMenu(null)} />
+            <div className="fixed z-50 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-100 dark:border-gray-700 py-1 min-w-[140px]"
+              style={{ left: Math.min(actionMenu.x, window.innerWidth - 160), top: Math.min(actionMenu.y, window.innerHeight - 200) }}>
+              {!isMe && (
+                <button onClick={() => {
+                  setReportModal({ userId: m.user.id, userName: m.user.name, messageId: m.id });
+                  setActionMenu(null);
+                }}
+                  className="w-full px-4 py-2.5 flex items-center gap-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <Flag className="w-4 h-4" />举报
+                </button>
+              )}
+              {!isMe && (
+                <button onClick={() => handleBlock(m.user.id, m.user.name, m.user.avatarColor)}
+                  className="w-full px-4 py-2.5 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700">
+                  <Shield className="w-4 h-4" />屏蔽
+                </button>
+              )}
+              {(isLeader || isMe) && onDeleteMessage && (
+                <button onClick={handleDelete}
+                  className="w-full px-4 py-2.5 flex items-center gap-2 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20">
+                  <Trash2 className="w-4 h-4" />删除
+                </button>
+              )}
+            </div>
+          </>
+        );
+      })()}
+
+      {/* 举报弹窗 */}
+      {reportModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-5" onClick={() => setReportModal(null)}>
+          <div className="w-full max-w-xs bg-white dark:bg-gray-900 rounded-2xl p-5 shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-base font-bold text-gray-800 dark:text-gray-200">举报 {reportModal.userName}</h3>
+              <button onClick={() => setReportModal(null)} className="text-gray-400">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-2 mb-4">
+              {REPORT_REASONS.map(r => (
+                <button key={r.value} onClick={() => setReportReason(r.value)}
+                  className={`w-full px-3 py-2.5 rounded-xl text-sm font-medium text-left transition-colors ${
+                    reportReason === r.value
+                      ? 'bg-red-50 dark:bg-red-900/20 text-red-600 border border-red-200 dark:border-red-800'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-600 dark:text-gray-300 border border-transparent'
+                  }`}>
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <textarea value={reportDesc} onChange={e => setReportDesc(e.target.value)}
+              placeholder="补充说明（可选）"
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800/50 rounded-xl text-sm text-gray-700 dark:text-gray-300 outline-none focus:ring-1 focus:ring-red-400 resize-none mb-4"
+              rows={2} />
+            <button onClick={handleReport}
+              className="w-full py-2.5 rounded-xl bg-red-500 text-white text-sm font-bold hover:bg-red-600 transition-colors">
+              提交举报
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

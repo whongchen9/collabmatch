@@ -134,6 +134,7 @@ export interface Group {
   desc?: string;
   eventId?: string | null;
   intentId?: string | null;
+  leaderId?: string | null;
   status: 'forming' | 'ready' | 'ongoing' | 'completed' | 'recruiting';
   hikeStatus?: 'idle' | 'hiking' | 'completed';
   matchingEnabled?: boolean;
@@ -167,12 +168,33 @@ export interface Group {
 }
 
 export interface GroupMessage {
+  id?: string;
   user: { id: string; name: string; avatar?: string; avatarUrl?: string; avatarColor?: string };
   type: 'text' | 'file' | 'system' | 'image';
   content: string;
   fileName?: string;
   fileSize?: string;
   time: string;
+}
+
+export type ReportReason = 'spam' | 'abuse' | 'inappropriate' | 'illegal' | 'other';
+
+export interface Report {
+  id: string;
+  reporterId: string;
+  targetUserId: string;
+  targetMessageId?: string;
+  groupId?: string;
+  reason: ReportReason;
+  description?: string;
+  createdAt: number;
+}
+
+export interface BlockedUser {
+  userId: string;
+  userName: string;
+  avatarColor?: string;
+  blockedAt: number;
 }
 
 export interface TrailLog {
@@ -227,12 +249,18 @@ export interface RouteComment {
   titleBadge?: string;
 }
 
+export interface RouteCoverAuthor {
+  id: string;
+  name: string;
+}
+
 export interface ClassicRoute {
   id: string;
   name: string;
   province: string;
   theme: string;
   coverImage?: string;
+  coverImageAuthor?: RouteCoverAuthor;
   coverGradient: string;
   difficulty: 1 | 2 | 3 | 4 | 5;
   distance: string;
@@ -246,4 +274,33 @@ export interface ClassicRoute {
   titles: RouteTitle[];
   comments: RouteComment[];
   relatedTeamIds: string[];
+  /** 当地特色美食 */
+  localFood?: string[];
+  /** 地方习俗/文化 */
+  customs?: string[];
+  /** 地方特色/特产 */
+  specialties?: string[];
+}
+
+/* ── 信号系统：全屏地图求助/求救 ── */
+
+export type SignalType = 'help' | 'sos';
+
+export interface Signal {
+  id: string;
+  userId: string;
+  userName: string;
+  avatarColor?: string;
+  type: SignalType;
+  lat: number;
+  lng: number;
+  createdAt: number;
+  expiresAt: number;
+  message?: string;
+}
+
+export interface SignalNotificationSettings {
+  notifyHelpEnabled: boolean;
+  notifySOSEnabled: boolean;
+  signalRange: number; // 1-10 km, default 5
 }

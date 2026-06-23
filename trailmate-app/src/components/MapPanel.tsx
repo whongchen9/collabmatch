@@ -2,9 +2,10 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import type { Group } from '@/types';
 
 // Fix leaflet default icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
+delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
   iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
@@ -19,12 +20,12 @@ const flagIcon = L.divIcon({
 });
 
 interface MapPanelProps {
-  checkpoints: Array<{ lat: number; lng: number; label?: string; checkins?: any[] }>;
+  checkpoints: NonNullable<Group['checkpoints']>;
   visible: boolean;  // used to trigger invalidateSize
 }
 
 export default function MapPanel({ checkpoints, visible }: MapPanelProps) {
-  const mapRef = useRef<any>(null);
+  const mapRef = useRef<L.Map | null>(null);
 
   // Invalidate size when panel opens
   useEffect(() => {

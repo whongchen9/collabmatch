@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { BrowserRouter as Router, Routes as RouterRoutes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useStore } from '@/store';
 import Login from '@/pages/Login';
@@ -13,7 +13,10 @@ import LocationMap from '@/pages/LocationMap';
 import PrivacyPolicy from '@/pages/PrivacyPolicy';
 import Feedback from '@/pages/Feedback';
 import Lobby from '@/pages/Lobby';
+import RouteGuide from '@/pages/RouteGuide';
 import RouteDetail from '@/pages/RouteDetail';
+import TermsOfService from '@/pages/TermsOfService';
+import BlockedUsers from '@/pages/BlockedUsers';
 import TabBar from '@/components/TabBar';
 import { CheckCircle } from 'lucide-react';
 
@@ -27,6 +30,7 @@ function GlobalToast() {
   const [visible, setVisible] = useState(false);
   const [message, setMessage] = useState('');
   const [type, setType] = useState<'success' | 'error'>('success');
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const handler = (e: Event) => {
@@ -36,10 +40,15 @@ function GlobalToast() {
       setMessage(msg);
       setType(t);
       setVisible(true);
-      setTimeout(() => setVisible(false), 2500);
+      // 清除前一个定时器，避免快速连续触发时提前关闭后续 toast
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => setVisible(false), 2500);
     };
     window.addEventListener('toast', handler);
-    return () => window.removeEventListener('toast', handler);
+    return () => {
+      window.removeEventListener('toast', handler);
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   if (!visible) return null;
@@ -57,20 +66,23 @@ function GlobalToast() {
 function AppContent() {
   const { isLoggedIn, loadAll } = useStore();
   const location = useLocation();
-  const hideTabBarPaths = ['/team/', '/login', '/settings', '/hike-log', '/location/', '/privacy-policy', '/feedback', '/route/'];
-  const showTabBar = isLoggedIn && !hideTabBarPaths.some(p => location.pathname.startsWith(p));
+  const hideTabBarPaths = ['/team/', '/login', '/settings', '/hike-log', '/location/', '/privacy-policy', '/terms', '/blocked-users', '/feedback', '/route/'];
+  // 使用精确匹配避免 /team-xxx 误匹配 /team/
+  const showTabBar = isLoggedIn && !hideTabBarPaths.some(p => p.endsWith('/') ? location.pathname.startsWith(p) : location.pathname === p);
 
   useEffect(() => {
     if (!isLoggedIn) return;
-    const isGuest = !!localStorage.getItem('trailmate_guest');
-    if (isGuest) {
-      // 访客模式：从 localStorage 恢复用户数据
+    const guestData = localStorage.getItem('trailmate_guest');
+    if (guestData) {
+      // 访客模式：guest 键存储的是 JSON 用户对象
       try {
-        const guestUser = JSON.parse(localStorage.getItem('trailmate_guest') || 'null');
+        const guestUser = JSON.parse(guestData);
         if (guestUser && !useStore.getState().user) {
           useStore.setState({ user: guestUser });
         }
-      } catch {}
+      } catch {
+        // ignore
+      }
     } else {
       loadAll();
     }
@@ -80,23 +92,28 @@ function AppContent() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('code');
-    if (code && !isLoggedIn) {
-      import('@/api').then(({ authApi }) => {
-        authApi.githubLogin(code).then(({ token, user }) => {
-          authApi.setToken(token);
-          useStore.setState({ user, isLoggedIn: true });
-          window.history.replaceState({}, '', '/');
-        }).catch((e) => {
-          window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'GitHub 登录失败：' + (e instanceof Error ? e.message : '请重试'), type: 'error' } }));
-        });
-      });
+    if (!code) return;
+    // 使用 ref 引用最新的 isLoggedIn，避免闭包过期
+    if (useStore.getState().isLoggedIn) {
+      window.history.replaceState({}, '', '/');
+      return;
     }
+    import('@/api').then(({ authApi }) => {
+      authApi.githubLogin(code).then(({ token, user }) => {
+        authApi.setToken(token);
+        useStore.setState({ user, isLoggedIn: true });
+        window.history.replaceState({}, '', '/');
+      }).catch((e) => {
+        window.dispatchEvent(new CustomEvent('toast', { detail: { message: 'GitHub 登录失败：' + (e instanceof Error ? e.message : '请重试'), type: 'error' } }));
+      });
+    });
   }, []);
 
   // Handle 401 unauthorized
   useEffect(() => {
     const handler = () => {
-      useStore.setState({ user: null, isLoggedIn: false });
+      useStore.setState({ user: null, isLoggedIn: false, isGuest: false });
+      window.dispatchEvent(new CustomEvent('toast', { detail: { message: '登录已过期，请重新登录', type: 'error' } }));
     };
     window.addEventListener('unauthorized', handler);
     return () => window.removeEventListener('unauthorized', handler);
@@ -115,9 +132,13 @@ function AppContent() {
         <Route path="/notices" element={<AuthGuard><Notices /></AuthGuard>} />
         <Route path="/settings" element={<AuthGuard><Settings /></AuthGuard>} />
         <Route path="/hike-log" element={<AuthGuard><HikeLog /></AuthGuard>} />
-        <Route path="/location/:id" element={<LocationMap />} />
+        <Route path="/hike-log/:userId" element={<AuthGuard><HikeLog /></AuthGuard>} />
+        <Route path="/location/:id" element={<AuthGuard><LocationMap /></AuthGuard>} />
         <Route path="/privacy-policy" element={<AuthGuard><PrivacyPolicy /></AuthGuard>} />
+        <Route path="/terms" element={<AuthGuard><TermsOfService /></AuthGuard>} />
+        <Route path="/blocked-users" element={<AuthGuard><BlockedUsers /></AuthGuard>} />
         <Route path="/feedback" element={<AuthGuard><Feedback /></AuthGuard>} />
+        <Route path="/route-guide" element={<AuthGuard><RouteGuide /></AuthGuard>} />
         <Route path="/route/:id" element={<AuthGuard><RouteDetail /></AuthGuard>} />
       </RouterRoutes>
       {showTabBar && <TabBar />}

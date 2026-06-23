@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, ChevronDown, ChevronUp, Image, X, MapPin, Clock, Trash2, Pencil, Share2, Star, Upload, Mountain, Users, Navigation } from 'lucide-react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { ArrowLeft, Plus, ChevronDown, ChevronUp, Image, X, MapPin, Trash2, Pencil, Share2, Star, Upload, Mountain, Users, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
 import { traillogsApi, usersApi } from '@/api';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -8,7 +8,8 @@ import { useStore } from '@/store';
 import type { TrailLog } from '@/types';
 import Empty from '@/components/Empty';
 
-const yearTabs = [2024, 2025, 2026];
+const currentYear = new Date().getFullYear();
+const yearTabs = [currentYear - 2, currentYear - 1, currentYear];
 
 // 队伍类型 → 中文标签
 const typeLabels: Record<string, string> = {
@@ -18,11 +19,14 @@ const typeLabels: Record<string, string> = {
 
 export default function HikeLog() {
   const navigate = useNavigate();
+  const { userId } = useParams<{ userId: string }>();
+  const { user, showToast } = useStore();
+  const isSelf = !userId || userId === user?.id;
+  const displayName = isSelf ? '我的活动日志' : `用户分享的路线`;
   const { confirm: confirmDialog, ConfirmDialog } = useConfirm();
-  const { showToast } = useStore();
   const [logs, setLogs] = useState<TrailLog[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeYear, setActiveYear] = useState(2026);
+  const [activeYear, setActiveYear] = useState(currentYear);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -49,7 +53,9 @@ export default function HikeLog() {
       try {
         const stored = localStorage.getItem('trailmate_hike_logs');
         if (stored) setLogs(JSON.parse(stored));
-      } catch {}
+      } catch {
+        // ignore
+      }
     } finally {
       setLoading(false);
     }
@@ -72,22 +78,6 @@ export default function HikeLog() {
     '09': '九月', '10': '十月', '11': '十一月', '12': '十二月',
   };
 
-  // 按 groupId 聚合：同一次徒步的多条签到日志合并为一个条目
-  const groupedEntries = Object.entries(groupedLogs)
-    .sort(([a], [b]) => b.localeCompare(a));
-  const aggregatedEntries = groupedEntries.map(([month, entries]) => {
-    const groups: Record<string, TrailLog[]> = {};
-    const standalone: TrailLog[] = [];
-    entries.forEach(log => {
-      if (log.groupId) {
-        if (!groups[log.groupId]) groups[log.groupId] = [];
-        groups[log.groupId].push(log);
-      } else {
-        standalone.push(log);
-      }
-    });
-    return { month, standalone, groups: Object.entries(groups) };
-  });
   const totalHikes = filteredLogs.length;
   const totalHours = filteredLogs.reduce((s, l) => s + (l.duration || 0), 0);
   const totalDistance = filteredLogs.reduce((s, l) => s + (l.distance || 0), 0);
@@ -122,8 +112,8 @@ export default function HikeLog() {
       setFormPhotos([]);
       setFormRating(0);
       await loadLogs();
-    } catch (e: any) {
-      showToast(e?.message || '保存失败');
+    } catch (e: unknown) {
+      showToast((e as Error)?.message || '保存失败');
     } finally {
       setSaving(false);
     }
@@ -135,7 +125,10 @@ export default function HikeLog() {
     try {
       await traillogsApi.delete(id);
       await loadLogs();
-    } catch {}
+      showToast('日志已删除');
+    } catch (err: unknown) {
+      showToast((err as Error)?.message || '删除失败');
+    }
   };
 
   const handleEdit = (log: TrailLog) => {
@@ -173,8 +166,8 @@ export default function HikeLog() {
         uploadedUrls.push(url);
       }
       setFormPhotos(prev => [...prev, ...uploadedUrls]);
-    } catch (err: any) {
-      showToast(err.message || '照片上传失败');
+    } catch (err: unknown) {
+      showToast((err as Error).message || '照片上传失败');
     } finally {
       setUploadingPhoto(false);
       if (photoInputRef.current) photoInputRef.current.value = '';
@@ -217,7 +210,7 @@ export default function HikeLog() {
         <button onClick={() => navigate(-1)} className="text-gray-500 dark:text-gray-400">
           <ArrowLeft className="w-5 h-5" />
         </button>
-        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">活动日志</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-gray-200">{isSelf ? '活动日志' : displayName}</h1>
       </div>
 
       <div className="px-5 mt-4 space-y-4">
@@ -332,7 +325,7 @@ export default function HikeLog() {
                                     <Mountain className="w-3.5 h-3.5" />打卡记录
                                   </h5>
                                   <div className="space-y-1.5">
-                                    {log.checkpoints.map((cp: any, i: number) => (
+                                    {log.checkpoints.map((cp: NonNullable<TrailLog['checkpoints']>[number], i: number) => (
                                       <div key={i} className="flex items-center gap-2 text-xs">
                                         <div className="w-1.5 h-1.5 rounded-full bg-green-500 shrink-0" />
                                         <span className="text-gray-700 dark:text-gray-300 font-medium">{cp.label || '打卡点'}</span>
@@ -457,13 +450,15 @@ export default function HikeLog() {
         )}
       </div>
 
-      {/* Floating add button */}
-      <button
-        onClick={() => { setShowModal(true); setEditingLog(null); setForm({ type: 'hike', title: '', date: new Date().toISOString().split('T')[0], distance: 0, duration: 0, notes: '' }); setFormPhotos([]); setFormRating(0); }}
-        className="fixed bottom-20 right-5 w-14 h-14 bg-green-600 rounded-full shadow-lg dark:shadow-gray-900/50 shadow-green-200 flex items-center justify-center text-white z-40 active:scale-90 transition-transform"
-      >
-        <Plus className="w-6 h-6" />
-      </button>
+      {/* Floating add button - only for self */}
+      {isSelf && (
+        <button
+          onClick={() => { setShowModal(true); setEditingLog(null); setForm({ type: 'hike', title: '', date: new Date().toISOString().split('T')[0], distance: 0, duration: 0, notes: '' }); setFormPhotos([]); setFormRating(0); }}
+          className="fixed bottom-20 right-5 w-14 h-14 bg-green-600 rounded-full shadow-lg dark:shadow-gray-900/50 shadow-green-200 flex items-center justify-center text-white z-40 active:scale-90 transition-transform"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+      )}
 
       {/* Add log modal */}
       {showModal && (

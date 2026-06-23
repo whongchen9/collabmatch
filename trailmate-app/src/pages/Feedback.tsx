@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, MessageSquare, Send, Check } from 'lucide-react';
+import { ArrowLeft, Send, Check } from 'lucide-react';
 import { useStore } from '@/store';
 
 type FeedbackType = 'feature' | 'bug' | 'other';
@@ -30,7 +30,7 @@ export default function Feedback() {
         const { usersApi } = await import('@/api');
         await usersApi.updateSettings({ feedback: { type: feedbackType, content: content.trim(), contact: contact.trim() } });
         apiSuccess = true;
-      } catch (apiErr: any) {
+      } catch (apiErr: unknown) {
         console.error('Feedback API error:', apiErr);
         // If backend doesn't support feedback endpoint, fall back to localStorage
         try {
@@ -42,15 +42,17 @@ export default function Feedback() {
             createdAt: new Date().toISOString(),
           });
           localStorage.setItem('trailmate_feedback', JSON.stringify(stored));
-        } catch {}
+        } catch {
+          // ignore
+        }
       }
       setSubmitted(true);
       showToast(apiSuccess ? '感谢您的反馈！' : '反馈已保存到本地，联网后将自动同步');
       setTimeout(() => {
         navigate(-1);
       }, 2000);
-    } catch (err: any) {
-      showToast(err?.message || '提交失败，请重试');
+    } catch (err: unknown) {
+      showToast((err as Error)?.message || '提交失败，请重试');
     } finally {
       setSubmitting(false);
     }

@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Bell, Check, X, Sparkles, AlertCircle, RefreshCw, Merge, UserPlus, Users } from 'lucide-react';
 import { intentApi, groupsApi } from '@/api';
 import type { MatchNotice } from '@/types';
 import Empty from '@/components/Empty';
+import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useStore } from '@/store';
 
 const dateLabel: Record<string, string> = {
   this_weekend: '这周末', next_weekend: '下周末', weekend: '周末',
@@ -13,21 +15,15 @@ const dateLabel: Record<string, string> = {
 
 export default function Notices() {
   const navigate = useNavigate();
+  const isGuest = useStore(s => s.isGuest);
   const [notices, setNotices] = useState<MatchNotice[]>([]);
   const [loading, setLoading] = useState(true);
   const [responding, setResponding] = useState<string | null>(null);
   const [acceptedGroupId, setAcceptedGroupId] = useState<string | null>(null);
 
-  // 下拉刷新
-  const [refreshing, setRefreshing] = useState(false);
-  const [pullDistance, setPullDistance] = useState(0);
-  const touchStartY = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
-
   const loadNotices = async () => {
-    if (localStorage.getItem('trailmate_guest')) {
+    if (isGuest) {
       setLoading(false);
-      setRefreshing(false);
       return;
     }
     try {
@@ -37,13 +33,15 @@ export default function Notices() {
       console.error(e);
     } finally {
       setLoading(false);
-      setRefreshing(false);
     }
   };
 
   useEffect(() => {
     loadNotices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const { refreshing, pullDistance, containerRef, onTouchStart, onTouchMove, onTouchEnd } = usePullToRefresh(loadNotices);
 
   const handleRespond = async (noticeId: string, status: 'accepted' | 'rejected', noticeType?: string) => {
     setResponding(noticeId);
@@ -69,35 +67,15 @@ export default function Notices() {
       } else {
         const result = await intentApi.respondNotice(noticeId, status);
         setNotices(prev => prev.map(n => n.id === noticeId ? { ...n, status } : n));
-        if (status === 'accepted' && (result as any)?.groupId) {
-          setAcceptedGroupId((result as any).groupId);
+        if (status === 'accepted' && (result as { groupId?: string })?.groupId) {
+          setAcceptedGroupId((result as { groupId?: string }).groupId!);
         }
       }
-    } catch (err: any) {
-      window.dispatchEvent(new CustomEvent('toast', { detail: { message: err.message || '操作失败', type: 'error' } }));
+    } catch (err: unknown) {
+      window.dispatchEvent(new CustomEvent('toast', { detail: { message: (err as Error).message || '操作失败', type: 'error' } }));
     } finally {
       setResponding(null);
     }
-  };
-
-  // 下拉刷新触摸事件
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartY.current = e.touches[0].clientY;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    const diff = e.touches[0].clientY - touchStartY.current;
-    if (diff > 0 && (containerRef.current?.scrollTop || 0) <= 0) {
-      setPullDistance(Math.min(diff * 0.5, 80));
-    }
-  };
-
-  const handleTouchEnd = async () => {
-    if (pullDistance > 50) {
-      setRefreshing(true);
-      await loadNotices();
-    }
-    setPullDistance(0);
   };
 
   const pending = notices.filter(n => n.status === 'pending');
@@ -107,9 +85,9 @@ export default function Notices() {
     <div
       ref={containerRef}
       className="pb-24 min-h-screen bg-[#faf7f2] dark:bg-gray-950"
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       {/* 下拉刷新指示器 */}
       {(pullDistance > 0 || refreshing) && (
@@ -295,7 +273,7 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
                 </span>
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                {notice.targetTeamName || '未命名队伍'} · {(notice as any).targetTeamMembers || '?'}人
+                {notice.targetTeamName || '未命名队伍'} · {notice.targetTeamMembers || '?'}人
               </p>
             </div>
           </div>
@@ -307,7 +285,7 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
               <span className="text-xs font-bold text-orange-700">TrailMate 匹配引擎</span>
             </div>
             <p className="text-xs text-orange-800 leading-relaxed">{notice.reason}</p>
-            {notice.prompts?.length > 0 && (
+            {(notice.prompts || []).length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1">
                 {notice.prompts?.slice(0, 6).map((p, i) => (
                   <span key={i} className="px-2 py-0.5 bg-white text-orange-700 rounded-full text-[10px] font-medium border border-orange-200">
@@ -326,11 +304,11 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
               <p className="text-[10px] text-gray-400 dark:text-gray-500">时间</p>
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials.date ? (dateLabel[notice.essentials.date] || notice.essentials.date) : '待定'}</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials?.date ? (dateLabel[notice.essentials?.date] || notice.essentials?.date) : '待定'}</p>
             </div>
             <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
               <p className="text-[10px] text-gray-400 dark:text-gray-500">人数</p>
-              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials.groupSize ? `${notice.essentials.groupSize}人` : '待定'}</p>
+              <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials?.groupSize ? `${notice.essentials?.groupSize}人` : '待定'}</p>
             </div>
           </div>
         </div>
@@ -372,11 +350,11 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
       <div className="p-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-sm font-bold text-green-700 shrink-0">
-            {notice.fromUser.name?.[0] || '?'}
+            {notice.fromUser?.name?.[0] || '?'}
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="font-bold text-gray-800 dark:text-gray-200 text-sm">{notice.fromUser.name}</span>
+              <span className="font-bold text-gray-800 dark:text-gray-200 text-sm">{notice.fromUser?.name}</span>
               <span className="px-1.5 py-0.5 bg-green-50 text-green-600 rounded text-[10px] font-bold">
                 {notice.matchPct}% 匹配
               </span>
@@ -392,9 +370,9 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
             <span className="text-xs font-bold text-green-700">TrailMate 为你解读</span>
           </div>
           <p className="text-xs text-green-800 leading-relaxed">
-            <strong>{notice.fromUser.name}</strong>说：「{notice.rawInput}」
+            <strong>{notice.fromUser?.name}</strong>说：「{notice.rawInput}」
           </p>
-          {notice.prompts?.length > 0 && (
+          {(notice.prompts || []).length > 0 && (
             <div className="mt-2 flex flex-wrap gap-1">
               {notice.prompts?.map((p, i) => (
                 <span key={i} className="px-2 py-0.5 bg-white dark:bg-gray-900 text-green-700 rounded-full text-[10px] font-medium border border-green-200">
@@ -406,7 +384,7 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
         </div>
 
         {/* Constraint highlight */}
-        {notice.prompts?.length > 0 && isPending && (
+        {(notice.prompts || []).length > 0 && isPending && (
           <div className="mt-3 bg-amber-50 rounded-xl p-3 flex items-start gap-2">
             <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
             <div>
@@ -426,11 +404,11 @@ function NoticeCard({ notice, responding, onAccept, onReject }: {
           </div>
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
             <p className="text-[10px] text-gray-400 dark:text-gray-500">时间</p>
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials.date ? (dateLabel[notice.essentials.date] || notice.essentials.date) : '待定'}</p>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials?.date ? (dateLabel[notice.essentials?.date] || notice.essentials?.date) : '待定'}</p>
           </div>
           <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg py-1.5">
             <p className="text-[10px] text-gray-400 dark:text-gray-500">人数</p>
-            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials.groupSize ? `${notice.essentials.groupSize}人` : '待定'}</p>
+            <p className="text-xs font-medium text-gray-700 dark:text-gray-300">{notice.essentials?.groupSize ? `${notice.essentials?.groupSize}人` : '待定'}</p>
           </div>
         </div>
 

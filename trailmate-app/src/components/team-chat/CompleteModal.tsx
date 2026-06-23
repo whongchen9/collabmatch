@@ -1,7 +1,8 @@
 import { Flag, Navigation } from 'lucide-react';
+import type { Group } from '@/types';
 
 interface CompleteModalProps {
-  checkpoints: any[];
+  checkpoints: NonNullable<Group['checkpoints']>;
   photos: string[];
   completeTrackStats: { dist: number; dur: number; pace: number } | null;
   hikingActionLoading: boolean;

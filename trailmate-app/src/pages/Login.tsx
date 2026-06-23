@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { Mountain, Mail, Lock, User, Github, ArrowLeft } from 'lucide-react';
 import { useStore } from '@/store';
 import { authApi } from '@/api';
+import { useT } from '@/i18n';
 
 export default function Login() {
   const { isLoggedIn, login, register } = useStore();
-  const navigate = useNavigate();
+  const t = useT();
 
   const [mode, setMode] = useState<'login' | 'register' | 'forgot'>('login');
   const [email, setEmail] = useState('');
@@ -35,24 +36,24 @@ export default function Login() {
     setError('');
 
     if (mode === 'forgot') {
-      if (!validateEmail(email)) { setError('请输入有效的邮箱地址'); return; }
+      if (!validateEmail(email)) { setError(t('login.invalidEmail')); return; }
       setLoading(true);
       try {
         await authApi.forgotPassword(email);
         setForgotSent(true);
-      } catch (err: any) {
-        setError(err.message || '发送失败');
+      } catch (err: unknown) {
+        setError((err as Error).message || t('login.sendFailed'));
       } finally {
         setLoading(false);
       }
       return;
     }
 
-    if (!validateEmail(email)) { setError('请输入有效的邮箱地址'); return; }
-    if (!validatePassword(password)) { setError('密码至少6位'); return; }
+    if (!validateEmail(email)) { setError(t('login.invalidEmail')); return; }
+    if (!validatePassword(password)) { setError(t('login.passwordTooShort')); return; }
 
     if (mode === 'register') {
-      if (!validateName(name)) { setError('昵称至少2位'); return; }
+      if (!validateName(name)) { setError(t('login.nameTooShort')); return; }
     }
 
     setLoading(true);
@@ -62,8 +63,8 @@ export default function Login() {
       } else {
         await register(email, password, name);
       }
-    } catch (err: any) {
-      setError(err.message || '操作失败');
+    } catch (err: unknown) {
+      setError((err as Error).message || t('login.operationFailed'));
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,7 @@ export default function Login() {
           <Mountain className="w-10 h-10 text-white" />
         </div>
         <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 tracking-tight">TrailMate</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">找到志同道合的徒步伙伴</p>
+        <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">{t('login.subtitle')}</p>
       </div>
 
       {/* Form Card */}
@@ -94,22 +95,22 @@ export default function Login() {
               onClick={() => { setMode('login'); setError(''); }}
               className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${mode === 'login' ? 'bg-white dark:bg-gray-600 shadow text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-300'}`}
             >
-              登录
+              {t('login.login')}
             </button>
             <button
               onClick={() => { setMode('register'); setError(''); }}
               className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all ${mode === 'register' ? 'bg-white dark:bg-gray-600 shadow text-green-700 dark:text-green-400' : 'text-gray-500 dark:text-gray-300'}`}
             >
-              注册
+              {t('login.register')}
             </button>
           </div>
         ) : (
           <div className="mb-6">
             <button onClick={() => { setMode('login'); setError(''); setForgotSent(false); }} className="flex items-center gap-1 text-gray-500 dark:text-gray-300 text-sm mb-2">
-              <ArrowLeft className="w-4 h-4" />返回登录
+              <ArrowLeft className="w-4 h-4" />{t('login.backToLogin')}
             </button>
-            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">忘记密码</h2>
-            <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">输入注册邮箱，我们将发送重置链接</p>
+            <h2 className="text-lg font-bold text-gray-800 dark:text-gray-100">{t('login.forgotPassword')}</h2>
+            <p className="text-xs text-gray-400 dark:text-gray-400 mt-1">{t('login.inputEmailHint')}</p>
           </div>
         )}
 
@@ -118,13 +119,13 @@ export default function Login() {
             <div className="w-16 h-16 bg-green-50 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
               <Mail className="w-8 h-8 text-green-600" />
             </div>
-            <p className="text-gray-800 dark:text-gray-100 font-bold">重置链接已发送</p>
-            <p className="text-gray-400 dark:text-gray-300 text-sm mt-2">请检查你的邮箱 {email}</p>
+            <p className="text-gray-800 dark:text-gray-100 font-bold">{t('login.resetLinkSent')}</p>
+            <p className="text-gray-400 dark:text-gray-300 text-sm mt-2">{t('login.checkEmail', { email })}</p>
             <button
               onClick={() => { setMode('login'); setError(''); setForgotSent(false); }}
               className="mt-6 px-6 py-2 bg-green-600 text-white rounded-xl text-sm font-medium shadow-md shadow-green-200"
             >
-              返回登录
+              {t('login.backToLogin')}
             </button>
           </div>
         ) : (
@@ -134,7 +135,7 @@ export default function Login() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="text"
-                  placeholder="昵称（至少2位）"
+                  placeholder={t('login.nickname')}
                   value={name}
                   onChange={e => setName(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all text-sm"
@@ -145,7 +146,7 @@ export default function Login() {
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
               <input
                 type="email"
-                placeholder="邮箱"
+                placeholder={t('login.email')}
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all text-sm"
@@ -157,7 +158,7 @@ export default function Login() {
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-gray-500" />
                 <input
                   type="password"
-                  placeholder="密码（至少6位）"
+                  placeholder={t('login.password')}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 dark:bg-gray-700 rounded-xl border border-gray-200 dark:border-gray-600 focus:border-green-500 focus:ring-1 focus:ring-green-500 outline-none transition-all text-sm"
@@ -173,7 +174,7 @@ export default function Login() {
               disabled={loading}
               className="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-xl transition-all disabled:opacity-50 shadow-md shadow-green-200"
             >
-              {loading ? '请稍候...' : mode === 'login' ? '登录' : mode === 'register' ? '注册' : '发送重置链接'}
+              {loading ? t('login.pleaseWait') : mode === 'login' ? t('login.login') : mode === 'register' ? t('login.register') : t('login.sendResetLink')}
             </button>
           </form>
         )}
@@ -185,7 +186,7 @@ export default function Login() {
               onClick={() => { setMode('forgot'); setError(''); setForgotSent(false); }}
               className="text-xs text-gray-400 dark:text-gray-400 hover:text-green-600 transition-colors"
             >
-              忘记密码？
+              {t('login.forgotPasswordQuestion')}
             </button>
           </div>
         )}
@@ -195,7 +196,7 @@ export default function Login() {
           <>
             <div className="flex items-center my-5">
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
-              <span className="px-3 text-xs text-gray-400 dark:text-gray-400">或</span>
+              <span className="px-3 text-xs text-gray-400 dark:text-gray-400">{t('login.or')}</span>
               <div className="flex-1 h-px bg-gray-200 dark:bg-gray-600" />
             </div>
 
@@ -205,7 +206,7 @@ export default function Login() {
               className="w-full py-3 bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <Github className="w-5 h-5" />
-              GitHub 登录
+              {t('login.githubLogin')}
             </button>
 
             {/* Guest Mode - local only, no backend required */}
@@ -213,7 +214,7 @@ export default function Login() {
               onClick={() => {
                 const guestUser = {
                   id: 'guest-' + Date.now(),
-                  name: '访客' + Math.random().toString(36).slice(2, 6),
+                  name: t('home.guest') + Math.random().toString(36).slice(2, 6),
                   email: '',
                   hikeFrequency: 'monthly1',
                   creditScore: 100,
@@ -225,12 +226,12 @@ export default function Login() {
                 const guestToken = 'guest_' + Date.now() + '_' + Math.random().toString(36).slice(2);
                 localStorage.setItem('trailmate_token', guestToken);
                 localStorage.setItem('trailmate_guest', JSON.stringify(guestUser));
-                useStore.setState({ user: guestUser, isLoggedIn: true });
-                window.dispatchEvent(new CustomEvent('toast', { detail: '正在使用访客模式，数据仅保存在本地' }));
+                useStore.setState({ user: guestUser, isLoggedIn: true, isGuest: true });
+                window.dispatchEvent(new CustomEvent('toast', { detail: t('login.guestToast') }));
               }}
               className="w-full py-3 mt-3 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 text-sm font-medium transition-all"
             >
-              以访客模式浏览
+              {t('login.guestMode')}
             </button>
           </>
         )}

@@ -1,13 +1,20 @@
 import { useState, useEffect, useCallback, useRef, useMemo, memo } from 'react';
-import { createPortal } from 'react-dom';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
-import { ArrowLeft, Share2, LocateFixed, Flag, Navigation, MapPin, CheckCircle, Users, Camera, Upload, X, RefreshCw, Image, Play, Map, Activity, Plus } from 'lucide-react';
-import { groupsApi, usersApi, traillogsApi } from '@/api';
+import { ArrowLeft, Share2, LocateFixed, Flag, Navigation, MapPin, CheckCircle, Upload, X, RefreshCw, Map, Plus, HeartHandshake, Siren } from 'lucide-react';
+import { groupsApi, usersApi } from '@/api';
 import { useStore } from '@/store';
 import { useConfirm } from '@/components/ConfirmDialog';
+import SignalCardList from '@/components/SignalCardList';
+import { useSignals } from '@/hooks/useSignals';
+import type { Group } from '@/types';
 import 'leaflet/dist/leaflet.css';
+
+type MemberLocation = NonNullable<Group['locations']>[number] & { sos?: boolean };
+type Checkpoint = NonNullable<Group['checkpoints']>[number];
+type Checkin = NonNullable<Checkpoint['checkins']>[number];
+type Member = Group['members'][number] & { userName?: string };
 
 // Fix leaflet default icon issue
 L.Icon.Default.mergeOptions({
@@ -32,7 +39,7 @@ const teammateIcon = L.divIcon({
   className: '',
 });
 
-// SOS 红色闪烁圆点
+// SOS 红色闪烁圆点（队伍内）
 const sosIcon = L.divIcon({
   html: `<div style="width:14px;height:14px;border-radius:50%;background:#ef4444;border:2px solid #fff;box-shadow:0 0 10px rgba(239,68,68,0.7);"></div>`,
   iconSize: [14, 14],
@@ -40,12 +47,26 @@ const sosIcon = L.divIcon({
   className: 'sos-marker',
 });
 
+// Help 信号图标（琥珀色脉冲）
+const helpIcon = L.divIcon({
+  html: '<div class="help-marker" style="width:18px;height:18px;border-radius:50%;background:#f59e0b;border:3px solid #fff;box-shadow:0 0 12px rgba(245,158,11,0.7);"></div>',
+  iconSize: [18, 18],
+  iconAnchor: [9, 9],
+  className: '',
+});
+
+// SOS 信号图标（红色快速脉冲）
+const sosSignalIcon = L.divIcon({
+  html: '<div class="sos-signal-marker" style="width:22px;height:22px;border-radius:50%;background:#ef4444;border:3px solid #fff;box-shadow:0 0 16px rgba(239,68,68,0.8);"></div>',
+  iconSize: [22, 22],
+  iconAnchor: [11, 11],
+  className: '',
+});
+
 // 打卡点图标工厂：颜色根据类型变化 + 签到人数徽章
 function createFlagIcon(count: number, type?: string): L.DivIcon {
   const colorMap: Record<string, string> = { meeting: '#6366f1', start: '#10b981', end: '#ef4444' };
-  const iconMap: Record<string, string> = { meeting: '📍', start: '🚩', end: '🏁', checkpoint: '📌' };
   const color = colorMap[type || ''] || '#f59e0b';
-  const icon = iconMap[type || ''] || '📌';
   const badge = count > 0
     ? `<span style="position:absolute;top:-6px;left:18px;background:#ef4444;color:#fff;font-size:10px;font-weight:700;min-width:16px;height:16px;border-radius:8px;display:flex;align-items:center;justify-content:center;padding:0 3px;border:1.5px solid #fff;line-height:1;">${count}</span>`
     : '';
@@ -61,19 +82,22 @@ function createFlagIcon(count: number, type?: string): L.DivIcon {
   });
 }
 
-function FitBounds({ locations, checkpoints }: { locations: any[]; checkpoints: any[] }) {
+function FitBounds({ locations, checkpoints }: { locations: MemberLocation[]; checkpoints: Checkpoint[] }) {
   const map = useMap();
   const [fitted, setFitted] = useState(false);
+  const prevCountRef = useRef(0);
   useEffect(() => {
-    if (fitted) return;
     const allPoints = [
       ...locations.map(l => [l.lat, l.lng] as [number, number]),
       ...checkpoints.map(c => [c.lat, c.lng] as [number, number]),
     ];
-    if (allPoints.length > 0) {
-      const bounds = L.latLngBounds(allPoints);
-      map.fitBounds(bounds, { padding: [50, 50] });
+    if (allPoints.length === 0) return;
+    const bounds = L.latLngBounds(allPoints);
+    map.fitBounds(bounds, { padding: [50, 50] });
+    // 首次或点数变化时重新调整视野
+    if (!fitted || allPoints.length !== prevCountRef.current) {
       setFitted(true);
+      prevCountRef.current = allPoints.length;
     }
   }, [locations, checkpoints, map, fitted]);
   return null;
@@ -83,7 +107,7 @@ function FitBounds({ locations, checkpoints }: { locations: any[]; checkpoints: 
 const MemoCheckpointMarkers = memo(function MemoCheckpointMarkers({
   checkpoints, icons, locations, onSelect, onFlyToPos, onFlyVer, isLeader, onDeleteCheckpoint
 }: {
-  checkpoints: any[]; icons: L.DivIcon[]; locations: any[];
+  checkpoints: Checkpoint[]; icons: L.DivIcon[]; locations: MemberLocation[];
   onSelect: (i: number) => void;
   onFlyToPos: (pt: [number, number]) => void;
   onFlyVer: (fn: (v: number) => number) => void;
@@ -99,18 +123,18 @@ const MemoCheckpointMarkers = memo(function MemoCheckpointMarkers({
           <Popup>
             <div className="text-center min-w-[120px]">
               <p className="font-bold text-xs text-gray-800 dark:text-gray-100">
-                {iconMap[cp.type] || '📌'} {cp.label || `打卡点 ${i + 1}`}
+                {iconMap[cp.type || ''] || '📌'} {cp.label || `打卡点 ${i + 1}`}
               </p>
               {(cp.checkins || []).length > 0 && (
                 <div className="mt-1 flex items-center justify-center gap-1 flex-wrap">
-                  {(cp.checkins || []).map((c: any) => (
+                  {(cp.checkins || []).map((c: Checkin) => (
                     <span key={c.userId}
                       className="inline-block w-5 h-5 rounded-full text-[8px] font-bold text-white flex items-center justify-center cursor-pointer hover:scale-125 transition-transform"
                       style={{ backgroundColor: c.avatarColor || '#10b981' }}
                       title={`${c.userName} · 点击定位`}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const loc = locations.find((l: any) => l.userId === c.userId);
+                        const loc = locations.find((l: MemberLocation) => l.userId === c.userId);
                         if (loc) { onFlyToPos([loc.lat, loc.lng]); onFlyVer(v => v + 1); }
                       }}
                     >{(c.userName || '?')[0]}</span>
@@ -142,6 +166,7 @@ function FlyTo({ pos, ver }: { pos: [number, number] | null; ver: number }) {
   useEffect(() => {
     if (!pos) return;
     map.flyTo(pos, Math.max(map.getZoom(), 15), { duration: 1 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ver, map]); // 用 ver 而非 pos 触发，避免同坐标不响应
   return null;
 }
@@ -156,9 +181,10 @@ function MapLongPress({ isLeader, onLongPress }: { isLeader: boolean; onLongPres
   useEffect(() => {
     if (!isLeader) return;
 
-    const onDown = (e: any) => {
+    const onDown = (e: L.LeafletEvent) => {
+      const me = e as L.LeafletMouseEvent;
       downAt.current = Date.now();
-      downLatLng.current = e.latlng;
+      downLatLng.current = me.latlng;
       moved.current = false;
     };
 
@@ -166,9 +192,10 @@ function MapLongPress({ isLeader, onLongPress }: { isLeader: boolean; onLongPres
       moved.current = true;
     };
 
-    const onUp = (e: any) => {
+    const onUp = () => {
       const elapsed = Date.now() - downAt.current;
-      if (!moved.current && elapsed > 500 && elapsed < 2000 && downLatLng.current) {
+      // 长按 500ms 以上且未移动（moved 标志已排除拖动情况）
+      if (!moved.current && elapsed > 500 && downLatLng.current) {
         onLongPress(downLatLng.current.lat, downLatLng.current.lng);
       }
       downAt.current = 0;
@@ -222,11 +249,18 @@ export default function LocationMap() {
   const navigate = useNavigate();
   const { user, showToast, track, addTrackPoint } = useStore();
   const { confirm: confirmDialog, ConfirmDialog } = useConfirm();
-  const [locations, setLocations] = useState<any[]>([]);
-  const [checkpoints, setCheckpoints] = useState<any[]>([]);
+  const [locations, setLocations] = useState<MemberLocation[]>([]);
+  const [checkpoints, setCheckpoints] = useState<Checkpoint[]>(() => {
+    if (!id) return [];
+    try {
+      const raw = localStorage.getItem(`checkpoints_${id}`);
+      if (raw) return JSON.parse(raw) as Checkpoint[];
+    } catch { /* ignore */ }
+    return [];
+  });
   const [groupName, setGroupName] = useState('');
-  const [teamInfo, setTeamInfo] = useState<any>(null);
-  const [groupData, setGroupData] = useState<any>(null);
+  const [, setTeamInfo] = useState<unknown>(null);
+  const [groupData, setGroupData] = useState<Group | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [shareLink, setShareLink] = useState('');
@@ -235,10 +269,8 @@ export default function LocationMap() {
   const [flyToPos, setFlyToPos] = useState<[number, number] | null>(null);
   const [flyVer, setFlyVer] = useState(0);
   const [myPos, setMyPos] = useState<[number, number] | null>(null);
-  const checkpointsRef = useRef<any[]>([]);
-  const locationsRef = useRef<any[]>([]);
-  const [sosActive, setSosActive] = useState(false);
-  const [sendingSos, setSendingSos] = useState(false);
+  const checkpointsRef = useRef<Checkpoint[]>([]);
+  const locationsRef = useRef<MemberLocation[]>([]);
   const [selectedCp, setSelectedCp] = useState<number | null>(null);
   // 添加打卡点模式
   const [addCheckpointMode, setAddCheckpointMode] = useState(false);
@@ -252,12 +284,94 @@ export default function LocationMap() {
   const checkinPhotoInputRef = useRef<HTMLInputElement>(null);
 
   // 打卡点添加弹窗
-  const [newCheckpointType, setNewCheckpointType] = useState('checkpoint');
+  const [newCheckpointType, setNewCheckpointType] = useState<'meeting' | 'start' | 'checkpoint' | 'end'>('checkpoint');
   const [showAddCheckpointDialog, setShowAddCheckpointDialog] = useState(false);
   const [newCheckpointLat, setNewCheckpointLat] = useState(0);
   const [newCheckpointLng, setNewCheckpointLng] = useState(0);
   const [newCheckpointLabel, setNewCheckpointLabel] = useState('');
+
+  // SOS / Help 弹窗
+  const [showSOSModal, setShowSOSModal] = useState(false);
+  const [sosModalType, setSOSModalType] = useState<'help' | 'sos'>('help');
+  const [sosMessage, setSOSMessage] = useState('');
+  const [sosPendingLat, setSOSPendingLat] = useState<number | null>(null);
+  const [sosPendingLng, setSOSPendingLng] = useState<number | null>(null);
   const [loadingLocationName, setLoadingLocationName] = useState(false);
+
+  // Signal state
+  const { signals } = useStore();
+  const signalRange = useStore(s => s.signalRange || 5);
+  const [currentLat, setCurrentLat] = useState<number | null>(null);
+  const [currentLng, setCurrentLng] = useState<number | null>(null);
+  const { sendSignal } = useSignals(currentLat, currentLng, signalRange);
+
+  // Update currentLat/currentLng from myPos
+  useEffect(() => {
+    if (myPos) {
+      setCurrentLat(myPos[0]);
+      setCurrentLng(myPos[1]);
+    }
+  }, [myPos]);
+
+  // Format date helper
+  const formatDate = (ts: number): string => {
+    return new Date(ts).toLocaleTimeString('zh-CN');
+  };
+
+  // Handle help signal — show modal first
+  const handleHelp = useCallback(() => {
+    if (currentLat && currentLng) {
+      setSOSPendingLat(currentLat);
+      setSOSPendingLng(currentLng);
+      setSOSModalType('help');
+      setSOSMessage('');
+      setShowSOSModal(true);
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setSOSPendingLat(pos.coords.latitude);
+          setSOSPendingLng(pos.coords.longitude);
+          setSOSModalType('help');
+          setSOSMessage('');
+          setShowSOSModal(true);
+        },
+        () => showToast('无法获取位置，请确保已开启定位权限'),
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    }
+  }, [currentLat, currentLng, showToast]);
+
+  // Handle SOS signal — show modal first
+  const handleSOS = useCallback(() => {
+    if (currentLat && currentLng) {
+      setSOSPendingLat(currentLat);
+      setSOSPendingLng(currentLng);
+      setSOSModalType('sos');
+      setSOSMessage('');
+      setShowSOSModal(true);
+    } else {
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setSOSPendingLat(pos.coords.latitude);
+          setSOSPendingLng(pos.coords.longitude);
+          setSOSModalType('sos');
+          setSOSMessage('');
+          setShowSOSModal(true);
+        },
+        () => showToast('无法获取位置，请确保已开启定位权限'),
+        { timeout: 10000, enableHighAccuracy: true }
+      );
+    }
+  }, [currentLat, currentLng, showToast]);
+
+  // Confirm SOS/Help signal
+  const confirmSOS = useCallback(() => {
+    if (sosPendingLat && sosPendingLng) {
+      sendSignal(sosModalType, sosPendingLat, sosPendingLng);
+    }
+    setShowSOSModal(false);
+    setSOSMessage('');
+  }, [sosPendingLat, sosPendingLng, sosModalType, sendSignal]);
 
   // 逆地理编码获取地点名称
   const fetchLocationName = async (lat: number, lng: number): Promise<string> => {
@@ -271,8 +385,8 @@ export default function LocationMap() {
   };
 
   // 判断是否为队长
-  const isLeader = groupData?.members?.some((m: any) => (m.id || m) === user?.id && m.role === 'leader') ?? false;
-  const isMember = groupData?.members?.some((m: any) => (m.id || m) === user?.id) ?? false;
+  const isLeader = groupData?.members?.some((m: Member) => (m.id || m) === user?.id && m.role === 'leader') ?? false;
+  const isMember = groupData?.members?.some((m: Member) => (m.id || m) === user?.id) ?? false;
 
   // 缓存打卡点图标，避免缩放时图标引用失效
   const flagIcons = useMemo(() => checkpoints.map(cp => createFlagIcon((cp.checkins || []).length, cp.type)), [checkpoints]);
@@ -282,6 +396,7 @@ export default function LocationMap() {
     loadLocations();
     const interval = setInterval(loadLocations, 15000);
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, shareToken]);
 
   // 打开页面时自动获取自己的 GPS 位置
@@ -298,7 +413,7 @@ export default function LocationMap() {
     );
   }, [id, shareToken]);
 
-  // GPS 轨迹追踪（hiking 状态下持续记录）
+  // GPS 轨迹追踪（hiking 状态下持续记录，页面不可见时暂停以省电）
   useEffect(() => {
     if (!id || shareToken) return;
     const isHiking = groupData?.hikeStatus === 'hiking';
@@ -319,42 +434,75 @@ export default function LocationMap() {
       );
     };
 
-    // 立即执行一次
-    tick();
-    gpsInterval = setInterval(tick, 15000);
+    const startTracking = () => {
+      tick();
+      gpsInterval = setInterval(tick, 15000);
+    };
 
-    return () => { if (gpsInterval) clearInterval(gpsInterval); };
-  }, [id, shareToken, groupData?.hikeStatus]);
+    const stopTracking = () => {
+      if (gpsInterval) { clearInterval(gpsInterval); gpsInterval = null; }
+    };
+
+    // 页面可见性变化时暂停/恢复 GPS 采集
+    const handleVisibility = () => {
+      if (document.hidden) {
+        stopTracking();
+      } else {
+        startTracking();
+      }
+    };
+
+    startTracking();
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      stopTracking();
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
+  }, [id, shareToken, groupData?.hikeStatus, addTrackPoint]);
 
   const loadLocations = async () => {
     try {
       const res = await groupsApi.getLocations(id!, shareToken || undefined);
       const newLocations = res.locations || [];
-      const newCheckpoints = res.checkpoints || [];
-      // 数据无变化时不更新 state，避免 Marker 重渲染导致闪烁
-      if (JSON.stringify(newCheckpoints) !== JSON.stringify(checkpointsRef.current)) {
+      // 读取打卡点：优先从 getLocations，如为空则从 groupsApi.get 读取（两种来源互相补全）
+      let newCheckpoints: Checkpoint[] = res.checkpoints || [];
+      if (!shareToken && newCheckpoints.length === 0) {
+        try {
+          const g = await groupsApi.get(id!);
+          if (g && g.checkpoints && g.checkpoints.length > 0) newCheckpoints = g.checkpoints;
+        } catch { /* ignore */ }
+      }
+      const isCheckpointsChanged = JSON.stringify(newCheckpoints) !== JSON.stringify(checkpointsRef.current);
+      if (isCheckpointsChanged) {
         checkpointsRef.current = newCheckpoints;
         setCheckpoints(newCheckpoints);
+        if (id) {
+          try { localStorage.setItem(`checkpoints_${id}`, JSON.stringify(newCheckpoints)); } catch { /* ignore */ }
+        }
       }
-      if (JSON.stringify(newLocations) !== JSON.stringify(locationsRef.current)) {
+      const isLocationsChanged = newLocations.length !== locationsRef.current.length
+        || newLocations.some((loc: MemberLocation, i: number) => {
+          const old = locationsRef.current[i];
+          if (!old) return true;
+          return loc.lat !== old.lat || loc.lng !== old.lng || loc.userId !== old.userId || loc.sos !== old.sos;
+        });
+      if (isLocationsChanged) {
         locationsRef.current = newLocations;
         setLocations(newLocations);
-        // 检查当前用户 SOS 状态
-        const myLoc = newLocations.find((l: any) => l.userId === user?.id);
-        setSosActive(!!(myLoc && myLoc.sos));
       }
       setGroupName(res.groupName || '');
       setTeamInfo(res.teamInfo || null);
-      // 获取队伍详情以判断队长身份
+      // 获取队伍详情以判断队长身份（并确保 groupData.checkpoints 也是最新）
       if (!shareToken) {
         try {
           const g = await groupsApi.get(id!);
           setGroupData(g);
-        } catch {}
+        } catch { /* ignore */ }
       }
       setLoading(false);
-    } catch (err: any) {
-      setError(err.message || '加载失败');
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '加载失败');
       setLoading(false);
     }
   };
@@ -416,19 +564,21 @@ export default function LocationMap() {
               await groupsApi.update(id, { checkpoints: newCheckpoints });
             }
           }
-        } catch {}
+        } catch { // ignore
+        }
       }
       setShowCheckinModal(false);
       showToast(`签到成功！距打卡点${res.distance}米`);
       await loadLocations();
-    } catch (err: any) {
-      showToast(err.message || '签到失败');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '签到失败');
     } finally {
       setCheckingIn(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, currentCheckpoint, checkinNote, checkinPhotos, user, groupName, showToast]);
 
-  // 上传签到照片
+  // 上传签到照片（带 canvas 压缩）
   const handleCheckinPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -439,36 +589,36 @@ export default function LocationMap() {
     try {
       const uploadedUrls: string[] = [];
       for (const file of filesToUpload) {
-        const reader = new FileReader();
-        const base64 = await new Promise<string>((resolve) => {
-          reader.onload = () => resolve(reader.result as string);
-          reader.readAsDataURL(file);
+        // canvas 压缩到 1280px、质量 0.8
+        const compressed = await new Promise<string>((resolve) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let w = img.width, h = img.height;
+            if (w > 1280 || h > 1280) {
+              const ratio = Math.min(1280 / w, 1280 / h);
+              w = Math.round(w * ratio);
+              h = Math.round(h * ratio);
+            }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d')!.drawImage(img, 0, 0, w, h);
+            resolve(canvas.toDataURL('image/jpeg', 0.8));
+          };
+          img.onerror = () => resolve('');
+          img.src = URL.createObjectURL(file);
         });
-        const { url } = await usersApi.uploadImage(base64, file.name);
+        if (!compressed) continue;
+        const { url } = await usersApi.uploadImage(compressed, file.name);
         uploadedUrls.push(url);
       }
       setCheckinPhotos(prev => [...prev, ...uploadedUrls]);
-    } catch (err: any) {
-      showToast(err.message || '上传失败');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '上传失败');
     } finally {
       setUploadingCheckinPhoto(false);
       if (checkinPhotoInputRef.current) checkinPhotoInputRef.current.value = '';
     }
   };
-
-  // SOS 求助（切换）
-  const handleSos = useCallback(async () => {
-    if (!id || sendingSos) return;
-    setSendingSos(true);
-    try {
-      const res = await groupsApi.sos(id);
-      setSosActive(!!res.sos);
-    } catch (e: any) {
-      showToast(e.message || 'SOS 发送失败');
-    } finally {
-      setSendingSos(false);
-    }
-  }, [id, sendingSos]);
 
   const handleShare = async () => {
     if (!id) return;
@@ -482,8 +632,8 @@ export default function LocationMap() {
         await navigator.clipboard.writeText(link);
         showToast('链接已复制到剪贴板');
       }
-    } catch (err: any) {
-      if (err.name !== 'AbortError') {
+    } catch (err) {
+      if (!(err instanceof Error && err.name === 'AbortError')) {
         showToast('生成分享链接失败');
       }
     }
@@ -501,7 +651,8 @@ export default function LocationMap() {
     try {
       const name = await fetchLocationName(lat, lng);
       setNewCheckpointLabel(name);
-    } catch {}
+    } catch { // ignore
+    }
     setLoadingLocationName(false);
   }, [id, isLeader]);
 
@@ -517,12 +668,13 @@ export default function LocationMap() {
       setCheckpoints(newCheckpoints);
       setShowAddCheckpointDialog(false);
       showToast('打卡点已设置');
+      try { localStorage.setItem(`checkpoints_${id}`, JSON.stringify(newCheckpoints)); } catch { /* ignore */ }
       // 首个打卡点设置后自动返回队伍出发
       if (wasEmpty && groupData?.hikeStatus === 'idle') {
         setTimeout(() => navigate(`/team/${id}`), 800);
       }
-    } catch (err: any) {
-      showToast(err.message || '设置打卡点失败');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '设置打卡点失败');
     }
   }, [id, newCheckpointLat, newCheckpointLng, newCheckpointLabel, newCheckpointType, checkpoints, groupData?.hikeStatus, navigate, showToast]);
 
@@ -542,8 +694,9 @@ export default function LocationMap() {
       await groupsApi.update(id, { checkpoints: newCheckpoints });
       setCheckpoints(newCheckpoints);
       setSelectedCp(null);
-    } catch (err: any) {
-      showToast(err.message || '删除打卡点失败');
+      try { localStorage.setItem(`checkpoints_${id}`, JSON.stringify(newCheckpoints)); } catch { /* ignore */ }
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : '删除打卡点失败');
     }
   }, [id, checkpoints, confirmDialog, showToast]);
 
@@ -563,7 +716,7 @@ export default function LocationMap() {
       () => showToast('无法获取位置，请确保已开启定位权限'),
       { timeout: 10000, enableHighAccuracy: true }
     );
-  }, [id]);
+  }, [id, showToast]);
 
   // 默认中心点（深圳）
   const defaultCenter: [number, number] = [22.5431, 114.0579];
@@ -650,10 +803,10 @@ export default function LocationMap() {
           ) : (
             <>
             {/* 打卡点 Chip 横滑 */}
-            <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-hide">
-              {checkpoints.map((cp: any, i: number) => {
+            <div className="flex gap-2 px-4 pt-2 pb-3 overflow-x-auto scrollbar-hide">
+              {checkpoints.map((cp: Checkpoint, i: number) => {
                 const checkins = cp.checkins || [];
-                const myCheckedIn = checkins.some((c: any) => c.userId === user?.id);
+                const myCheckedIn = checkins.some((c: Checkin) => c.userId === user?.id);
                 const isSelected = selectedCp === i;
                 return (
                   <div key={i} className="shrink-0 flex flex-col items-center gap-1">
@@ -696,15 +849,15 @@ export default function LocationMap() {
                   : '选择打卡点查看签到情况'}
               </div>
               <div className="flex gap-1.5 flex-wrap">
-                {[...(groupData?.members || [])].map((m: any) => {
-                  const memberId = m.id || m;
+                {[...(groupData?.members || [])].map((m: Member) => {
+                  const memberId = m.id;
                   const memberName = m.name || m.userName || '?';
                   const avatarColor = m.avatarColor || '#10b981';
                   const checkedIn = selectedCp !== null
-                    ? (checkpoints[selectedCp]?.checkins || []).some((c: any) => c.userId === memberId)
+                    ? (checkpoints[selectedCp]?.checkins || []).some((c: Checkin) => c.userId === memberId)
                     : false;
                   const highlighted = selectedCp !== null && checkedIn;
-                  const loc = locations.find((l: any) => l.userId === memberId);
+                  const loc = locations.find((l: MemberLocation) => l.userId === memberId);
                   const isMe = memberId === user?.id;
                   const targetPos = loc ? [loc.lat, loc.lng] as [number, number] : (isMe && myPos ? myPos : null);
                   return (
@@ -741,18 +894,48 @@ export default function LocationMap() {
           <AddCheckpointClick enabled={addCheckpointMode} onAdd={(lat, lng) => { handleMapLongPress(lat, lng); setAddCheckpointMode(false); }} />
 
           {/* 成员位置标记 */}
-          {locations.map((loc, i) => (
+          {locations.map((loc, i) => {
+            const member = groupData?.members?.find((m: Member) => (m.id || m) === loc.userId);
+            const memberName = (member && typeof member === 'object' ? member.name : null) || loc.userName || '队友';
+            const memberAvatar = (member && typeof member === 'object' ? member.avatar || member.avatarUrl : null) || '';
+            const memberColor = (member && typeof member === 'object' ? member.avatarColor : null) || '#22c55e';
+            return (
             <Marker key={`loc-${i}`} position={[loc.lat, loc.lng]} icon={loc.sos ? sosIcon : teammateIcon}>
               <Popup>
-                <div className="text-center">
-                  <p className="font-bold text-xs">{loc.userName}{loc.sos ? ' 🆘' : ''}</p>
-                  <p className="text-[10px] text-gray-500 dark:text-gray-300">
-                    {loc.updatedAt ? `更新于 ${new Date(loc.updatedAt).toLocaleTimeString('zh-CN')}` : ''}
-                  </p>
+                <div className="min-w-[140px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                      style={{ background: memberColor }}>
+                      {memberAvatar ? <img src={memberAvatar} className="w-8 h-8 rounded-full object-cover" alt="" /> : memberName[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs text-gray-800 dark:text-gray-100">{memberName}{loc.sos ? ' 🆘' : ''}</p>
+                      <p className="text-[9px] text-gray-400 dark:text-gray-500">
+                        {loc.updatedAt ? new Date(loc.updatedAt).toLocaleTimeString('zh-CN') : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <button
+                      onClick={async () => {
+                        if (!loc.userId) return;
+                        try {
+                          const res = await groupsApi.createDM(loc.userId || '');
+                          if (res.group?.id) navigate(`/team/${res.group.id}`);
+                        } catch { showToast('发起私聊失败'); }
+                      }}
+                      className="flex-1 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors">
+                      💬 私信
+                    </button>
+                    <button disabled
+                      className="flex-1 py-1.5 rounded-lg bg-gray-50 dark:bg-gray-800 text-gray-300 dark:text-gray-600 text-[10px] font-bold">
+                      无联系电话
+                    </button>
+                  </div>
                 </div>
               </Popup>
             </Marker>
-          ))}
+          )})}
 
           {/* 自己的位置（蓝色圆点） */}
           {myPos && (
@@ -765,6 +948,48 @@ export default function LocationMap() {
               </Popup>
             </Marker>
           )}
+
+          {/* 附近信号标记 */}
+          {signals.filter(s => s.userId !== user?.id).map(s => {
+            const dist = currentLat && currentLng
+              ? (() => { const R = 6371; const dLat = (s.lat - currentLat) * Math.PI / 180; const dLon = (s.lng - currentLng) * Math.PI / 180; const a = Math.sin(dLat/2)**2 + Math.cos(currentLat*Math.PI/180)*Math.cos(s.lat*Math.PI/180)*Math.sin(dLon/2)**2; return (R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))).toFixed(1); })()
+              : null;
+            return (
+            <Marker key={`signal-${s.id}`} position={[s.lat, s.lng]} icon={s.type === 'sos' ? sosSignalIcon : helpIcon}>
+              <Popup>
+                <div className="min-w-[140px]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white shrink-0"
+                      style={{ background: s.avatarColor || (s.type === 'sos' ? '#ef4444' : '#f59e0b') }}>
+                      {s.userName[0]}
+                    </div>
+                    <div>
+                      <p className="font-bold text-xs text-gray-800 dark:text-gray-100">{s.userName}</p>
+                      <p className="text-[9px] text-gray-400 dark:text-gray-500">
+                        {s.type === 'sos' ? '🆘 求救' : '🙋 求助'}{dist ? ` · ${dist}km` : ''} · {formatDate(s.createdAt)}
+                      </p>
+                    </div>
+                  </div>
+                  {s.message && (
+                    <p className="text-[10px] text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-800 rounded-lg px-2 py-1.5 mb-2 leading-relaxed">
+                      {s.message}
+                    </p>
+                  )}
+                  <div className="flex gap-1.5">
+                    <button onClick={async () => {
+                      try {
+                        const res = await groupsApi.createDM(s.userId);
+                        if (res.group?.id) navigate(`/team/${res.group.id}`);
+                      } catch { showToast('发起私聊失败'); }
+                    }}
+                      className="flex-1 py-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-[10px] font-bold">
+                      💬 私信
+                    </button>
+                  </div>
+                </div>
+              </Popup>
+            </Marker>
+          )})}
 
           {/* 打卡点标记（彩色小旗+签到人数，仅队友可见） */}
           {isMember && (
@@ -797,6 +1022,18 @@ export default function LocationMap() {
             style={{ pointerEvents: 'auto' }}>
             <LocateFixed className="w-4 h-4 text-blue-500" />
           </button>
+          {/* 求助按钮 */}
+          <button onClick={handleHelp} title="求助"
+            className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shadow-lg active:scale-95 transition-all hover:bg-amber-600"
+            style={{ pointerEvents: 'auto' }}>
+            <HeartHandshake className="w-4 h-4" />
+          </button>
+          {/* 求救按钮 */}
+          <button onClick={handleSOS} title="求救"
+            className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center shadow-lg animate-pulse active:scale-95 transition-all hover:bg-red-600"
+            style={{ pointerEvents: 'auto' }}>
+            <Siren className="w-4 h-4" />
+          </button>
           {/* 添加打卡点按钮（仅队长可见，且处于等待出发状态） */}
           {isLeader && groupData?.hikeStatus === 'idle' && (
             <button
@@ -823,6 +1060,14 @@ export default function LocationMap() {
             </div>
           </div>
         )}
+
+        {/* 附近信号卡片列表 */}
+        <SignalCardList
+          signals={signals}
+          onClickSignal={(s) => { setFlyToPos([s.lat, s.lng]); setFlyVer(v => v + 1); }}
+          userLat={currentLat ?? undefined}
+          userLng={currentLng ?? undefined}
+        />
       </div>
     </div>
 
@@ -960,6 +1205,46 @@ export default function LocationMap() {
           </div>
         </div>
       )}
+      {/* SOS / Help 信息弹窗 */}
+      {showSOSModal && (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4" onClick={() => setShowSOSModal(false)}>
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
+          <div className="relative w-full max-w-sm bg-white dark:bg-gray-900 rounded-2xl shadow-2xl p-5" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-2 mb-3">
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${sosModalType === 'sos' ? 'bg-red-100 dark:bg-red-900/30 text-red-600' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600'}`}>
+                {sosModalType === 'sos' ? <Siren className="w-4 h-4" /> : <HeartHandshake className="w-4 h-4" />}
+              </div>
+              <div>
+                <h3 className="font-bold text-sm text-gray-800 dark:text-gray-100">
+                  {sosModalType === 'sos' ? '发送求救信号' : '发送求助信号'}
+                </h3>
+                <p className="text-[10px] text-gray-400 dark:text-gray-500">
+                  {sosModalType === 'sos' ? '你的位置将共享给附近在线用户' : '请求附近徒友协助'}
+                </p>
+              </div>
+            </div>
+            <textarea
+              value={sosMessage}
+              onChange={e => setSOSMessage(e.target.value)}
+              placeholder={sosModalType === 'sos' ? '描述你的紧急情况（可选）…' : '描述你需要什么帮助（可选）…'}
+              rows={3}
+              maxLength={200}
+              className="w-full px-3 py-2 rounded-xl bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200 placeholder:text-gray-400 outline-none focus:border-green-400 resize-none"
+            />
+            <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 mb-3 text-right">{sosMessage.length}/200</p>
+            <div className="flex gap-2">
+              <button onClick={() => setShowSOSModal(false)}
+                className="flex-1 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 text-sm font-bold">
+                取消
+              </button>
+              <button onClick={confirmSOS}
+                className={`flex-1 py-2.5 rounded-xl text-white text-sm font-bold ${sosModalType === 'sos' ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'}`}>
+                {sosModalType === 'sos' ? '发送求救' : '发送求助'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 添加打卡点弹窗 */}
       {showAddCheckpointDialog && (
         <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
@@ -998,12 +1283,12 @@ export default function LocationMap() {
 
             {/* 打卡点类型选择 */}
             <div className="flex gap-1.5 mb-3">
-              {[
+              {([
                 { key: 'meeting', label: '集合点', color: '#6366f1', icon: '📍' },
                 { key: 'start', label: '起点', color: '#10b981', icon: '🚩' },
                 { key: 'end', label: '终点', color: '#ef4444', icon: '🏁' },
                 { key: 'checkpoint', label: '打卡点', color: '#f59e0b', icon: '📌' },
-              ].map(({ key, label, color, icon }) => (
+              ] as const).map(({ key, label, color, icon }) => (
                 <button key={key}
                   onClick={() => setNewCheckpointType(key)}
                   className={`flex-1 py-2 rounded-lg text-[10px] font-bold transition-all ${

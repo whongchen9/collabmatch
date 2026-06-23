@@ -150,3 +150,24 @@ input, select, textarea {
 .rte-content table { border-collapse: collapse; margin: 0.3em 0; font-size: 0.9em; }
 .rte-content th, .rte-content td { border: 1px solid #d1d5db; padding: 0.3em 0.5em; }
 .rte-content img { max-width: 100%; height: auto; border-radius: 0.5em; margin: 0.3em 0; }
+
+/* SOS/Help 闪烁动画 */
+@keyframes help-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.5); }
+}
+.help-marker {
+  background: none !important;
+  border: none !important;
+  animation: help-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sos-fast-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.2; transform: scale(1.6); }
+}
+.sos-signal-marker {
+  background: none !important;
+  border: none !important;
+  animation: sos-fast-pulse 0.5s ease-in-out infinite;
+}

@@ -1,10 +1,16 @@
-import { MapPin, Navigation, Flag, CheckCircle, Map } from 'lucide-react';
+import { Navigation, Flag, CheckCircle, Map } from 'lucide-react';
 import MapPanel from '@/components/MapPanel';
 import { haversineDistance } from '@/lib/utils';
+import type { Group } from '@/types';
+
+type Checkpoint = NonNullable<Group['checkpoints']>[number];
+type Checkin = NonNullable<Checkpoint['checkins']>[number];
+type Member = Group['members'][number];
+type SortedCheckpoint = Checkpoint & { _origIdx: number; distance: number | null };
 
 interface LocationPanelProps {
-  checkpoints: any[];
-  members: any[];
+  checkpoints: Checkpoint[];
+  members: Member[];
   userPos: { lat: number; lng: number } | null;
   hikeStatus: string;
   user: { id: string } | null;
@@ -23,9 +29,9 @@ export default function LocationPanel({
   const isCompleted = hikeStatus === 'completed';
 
   // 已签到人数
-  const checkedInMemberCount = members.filter((m: any) => {
+  const checkedInMemberCount = members.filter((m: Member) => {
     const memberId = typeof m === 'string' ? m : m.id;
-    return checkpoints.some((cp: any) => (cp.checkins || []).some((c: any) => c.userId === memberId));
+    return checkpoints.some((cp: Checkpoint) => (cp.checkins || []).some((c: Checkin) => c.userId === memberId));
   }).length;
 
   // 排序打卡点：先算距离，保留原始索引用于比较
@@ -41,17 +47,17 @@ export default function LocationPanel({
     const userId = user?.id;
     // 先找最近的一个未签到的
     for (const cp of sortedCheckpoints) {
-      const checkedIn = (cp.checkins || []).some((c: any) => c.userId === userId);
+      const checkedIn = (cp.checkins || []).some((c: Checkin) => c.userId === userId);
       if (!checkedIn) return cp;
     }
     return null; // 全部签到了
   })();
 
   // 平均签到进度：总签到次数 / (成员数 × 打卡点数)
-  const totalCheckins = members.reduce((sum: number, m: any) => {
+  const totalCheckins = members.reduce((sum: number, m: Member) => {
     const memberId = typeof m === 'string' ? m : m.id;
-    const count = checkpoints.filter((cp: any) =>
-      (cp.checkins || []).some((c: any) => c.userId === memberId)
+    const count = checkpoints.filter((cp: Checkpoint) =>
+      (cp.checkins || []).some((c: Checkin) => c.userId === memberId)
     ).length;
     return sum + count;
   }, 0);
@@ -135,10 +141,10 @@ export default function LocationPanel({
 
             {/* 其余打卡点 */}
             <div>
-              {sortedCheckpoints.map((cp: any) => {
+              {sortedCheckpoints.map((cp: SortedCheckpoint) => {
                 const idx = cp._origIdx;
                 const userId = user?.id;
-                const myCheckedIn = (cp.checkins || []).some((c: any) => c.userId === userId);
+                const myCheckedIn = (cp.checkins || []).some((c: Checkin) => c.userId === userId);
                 const isNext = nextCp && cp._origIdx === nextCp._origIdx;
                 if (isNext && nextCp?.distance != null) return null; // 已在上面显示
 
@@ -178,12 +184,12 @@ export default function LocationPanel({
             </div>
 
             <div>
-              {members.map((m: any) => {
+              {members.map((m: Member) => {
                 const memberId = typeof m === 'string' ? m : m.id;
                 const memberName = typeof m === 'string' ? '未知' : (m.name || '未知');
                 const avatarColor = m.avatarColor || '#10b981';
-                const checkedCount = checkpoints.filter((cp: any) =>
-                  (cp.checkins || []).some((c: any) => c.userId === memberId)
+                const checkedCount = checkpoints.filter((cp: Checkpoint) =>
+                  (cp.checkins || []).some((c: Checkin) => c.userId === memberId)
                 ).length;
                 const pct = checkpoints.length > 0 ? (checkedCount / checkpoints.length) * 100 : 0;
 
