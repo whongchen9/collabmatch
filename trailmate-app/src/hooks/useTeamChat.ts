@@ -17,7 +17,7 @@ type Checkin = NonNullable<Checkpoint['checkins']>[number];
 
 export function useTeamChat(id?: string) {
   const navigate = useNavigate();
-  const { user, showToast, track, clearTrack, loadGroups } = useStore();
+  const { user, showToast, track, clearTrack, loadGroups, loadIntents, resetMatching } = useStore();
   const { confirm: confirmDialog, ConfirmDialog } = useConfirm();
 
   // ── 基础数据 ──
@@ -406,13 +406,18 @@ export function useTeamChat(id?: string) {
     if (!id) return;
     try {
       await groupsApi.leave(id);
+      // 取消关联的意图，避免退出后意图卡片仍显示且不可点击
+      if (group?.intentId) {
+        await intentApi.cancel(group.intentId).catch(() => {});
+      }
       showToast('已退出队伍');
-      await loadGroups();
+      await Promise.all([loadGroups(), loadIntents()]);
+      resetMatching();
       navigate('/teams');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : '退出失败');
     }
-  }, [id, showToast, navigate, loadGroups]);
+  }, [id, group, showToast, navigate, loadGroups, loadIntents, resetMatching]);
 
   const handleLeave = useCallback(async () => {
     const leaveMsg = group?.hikeStatus === 'completed' ? '确认退出？' : '确认退出队伍？';

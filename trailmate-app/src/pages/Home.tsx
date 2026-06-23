@@ -399,13 +399,18 @@ export default function Home() {
           {/* 输入框 */}
           <div className="px-3 pb-3 flex items-center gap-2">
             {!hasChat && (
-              <button onClick={() => setCreateTeamMode(!createTeamMode)}
-                className={`shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold transition-all active:scale-90 ${
-                  createTeamMode ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
-                }`}
-                title={createTeamMode ? (language === 'en' ? 'Recruit team' : '建队招募') : (language === 'en' ? 'Solo queue' : '单人排位')}>
-                {createTeamMode ? <DoorOpen className="w-3.5 h-3.5" /> : <Swords className="w-3.5 h-3.5" />}
-              </button>
+              <div className="shrink-0 flex flex-col items-center gap-0.5">
+                <button onClick={() => setCreateTeamMode(!createTeamMode)}
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-extrabold transition-all active:scale-90 ${
+                    createTeamMode ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500'
+                  }`}
+                  title={createTeamMode ? (language === 'en' ? 'Recruit team mode' : '建队招募模式') : (language === 'en' ? 'Solo queue mode' : '单人排位模式')}>
+                  {createTeamMode ? <DoorOpen className="w-3.5 h-3.5" /> : <Swords className="w-3.5 h-3.5" />}
+                </button>
+                <span className={`text-[8px] leading-none whitespace-nowrap ${createTeamMode ? 'text-amber-500 dark:text-amber-400 font-bold' : 'text-gray-400 dark:text-gray-500'}`}>
+                  {createTeamMode ? (language === 'en' ? 'Recruit' : '招募') : (language === 'en' ? 'Solo' : '排位')}
+                </span>
+              </div>
             )}
             <input ref={inputRef} type="text" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown}
               placeholder={language === 'en' ? 'I want to hike Wutong this weekend, no smoking...' : '我想周末去梧桐山，不喜欢有人抽烟...'}
